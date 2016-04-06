@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Background</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h2>Background</h2>
+
+<p>This document is to summarize some of the most salient themes from a few e-books written by Brian Caffo from the Biostats department of JHU.  </p>
+
+<ul>
+<li>Statistical Inference for Data Science<br/></li>
+<li>Regression Models for Data Science in R<br/></li>
+<li>Advanced Linear Models for Data Science (book only partially written)<br/></li>
+</ul>
+
+<p>The main objective of these notes is to shore up my background in these areas and to create a reference document for future use.  </p>
+
+<h2>Statistical Inference for Data Science</h2>
+
+<h3>Chaper 1: Introduction</h3>
+
+<p>Key concerns associated with statistical inferences include:  </p>
+
+<ul>
+<li>Is the sample representative of the population we want to draw inferences about?<br/></li>
+<li>Are there any of &ldquo;known and observed&rdquo;, &ldquo;known and unobserved&rdquo;, or &ldquo;unknown and unobserved&rdquo; variables that may contaminate our conclusions?<br/></li>
+<li>Is there systematic bias due to missing data or study design?<br/></li>
+<li>What randomness exists in the data, and what adjustments are merited?<br/>
+
+<ul>
+<li>Randomness may be dur to experiment design or implicit based on aggregations from an unknown process<br/></li>
+</ul></li>
+<li>Are we trying to estimate an underlying mechanistic model?<br/></li>
+</ul>
+
+<p>Statistical inference is the process of navigating the assumptions, tools, and concerns to consider how to draw conclusions from the data.  Typical goals of inference include:  </p>
+
+<ul>
+<li>Estimate a population quantity and the associated uncertainty (e.g., election polls)<br/></li>
+<li>Determine whether a population quantity hits a benchmark (e.g., treatment effectiveness in a clinical trial)<br/></li>
+<li>Infer a mechanistic relationship when quantities are measured with noise (e.g., slope for Hooke&#39;s Law)<br/></li>
+<li>Predict the impact of a policy (e.g., how would reducing pollution impact asthma)<br/></li>
+<li>Discuss the probability that something occurs<br/></li>
+</ul>
+
+<p>There are many tools of the trade, including but not limited to:  </p>
+
+<ol>
+<li>Randomization: balancing out potentially confounding variables<br/></li>
+<li>Random Sampling: obtain data that is representative of the full population<br/></li>
+<li>Sampling Models: creating a model for sampling (often iid - identical and independently distributed)<br/></li>
+<li>Hypothesis Testing: decision making in the presence of uncertainty<br/></li>
+<li>Confidence Intervals: quantifying uncertainty in estimates<br/></li>
+<li>Probability Models: formal connection between data and the population of interest (often assumed or approximated)<br/></li>
+<li>Study Design: Deisgning an experiment to minimize biases and variability<br/></li>
+<li>Non-parametric Bootstrapping: Creating inferences from the data with minimal Probability Model assumptions<br/></li>
+<li>Permutation: Using permutations (randomization, exchanges) to perform inferences<br/></li>
+</ol>
+
+<p>Lastly, there are several different styles of thinking about probability.  While the frequentist approach is the most common (and covered first), success often comes from leveraging each style, and hybrids, as needed:  </p>
+
+<ul>
+<li>Frequency probability: long run proportion of times events occur with repeated iid<br/></li>
+<li>Frequency inference: control for error rates using frequency interpretations of probabilities (keep overall level of mistakes to a &ldquo;tolerable&rdquo; level)<br/></li>
+<li>Bayesian probability: probability calculus of beliefs given that beliefs follow certain rules<br/></li>
+<li>Bayesian inference: using Bayesian probability to perform inference (&ldquo;given my subjective beliefs and the objective data, what should I believe now&rdquo;)<br/></li>
+</ul>
+
+<h3>Chaper 2: Probability</h3>
+
+</body>
+
+</html>
