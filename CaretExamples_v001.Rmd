@@ -1,0 +1,67 @@
+---
+title: "Caret Examples"
+author: "davegoblue"
+date: "April 14, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overall Objective  
+
+This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  
+  
+The broad themes of care include:  
+  
+* Pre-processing data - preProcess()  
+* Partitioning raw data in to test/train - createDataPartition(), createResample(), createTimeSlices()  
+* Training models on the training data - train()  
+* Applying a training model to an analogous dataset - predict()  
+* Comparing predictions (often to reality) - confusionMatrix()  
+  
+## Caret Usage  
+####_Basic Example_  
+Below is a basic example for using caret to make and test a simple prediction.  The "spam" dataset from library "kernlab" is assessed through this simple example.  
+
+First, the relevant libraries are loaded, with a data partition index creates and then applied to create testing and training data.  Note that -inTrain means exclude the indices contained by inTrain, so testing and training will be mutually exclusive in this case.  
+
+```{r}
+library(caret); 
+library(kernlab); 
+data(spam)
+
+## Use createDataPartition() to create an index with 75% of the row numbers
+inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+dim(training)
+
+```
+
+Next, we use caret to run GLM on the training data.  The training syntax almost always looks just like this, although with changes to the ~ formula and/or method statement.  Depending on the method (e.g., bootstrap or resample), there is sometimes an RNG component and thus merit to setting the seed.  Note that caret and all of its sub-components are frequently being updated (sometimes with impact on RNG), so there is no real guarantee of reproducibility once any component(s) of the version originally used has been sunsetted.  
+
+```{r}
+set.seed(32343)
+
+## Runs the GLM and stores the outputs as ModelFit
+modelFit <- train(type ~ ., data=training, method="glm")
+
+## Prints descriptors of modelFit
+modelFit
+
+## Prints coefficients that come back from the final GLM selected
+modelFit$finalModel
+
+## Applies modelFit (which was built from training) to make predictions on the testing data
+predictions <- predict(modelFit, newdata=testing)
+
+## Runs the confusion matrix and outputs some interesting statistics
+confusionMatrix(predictions, testing$type)
+
+```
+  
+There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.
+
+####_Data Slicing_  
