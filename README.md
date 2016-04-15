@@ -6,3 +6,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
   
 ### Caret Summaries  
 * 14-APR-2016 - Created initial summary of basic usage of the caret library, with an example  
+* 15-APR-2016 - Summary of folds, resamples, and time slices  
+  
