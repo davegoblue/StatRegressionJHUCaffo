@@ -30,7 +30,7 @@ First, the relevant libraries are loaded, with a data partition index creates an
 ```{r}
 library(caret); 
 library(kernlab); 
-data(spam)
+data(spam, package="kernlab") ## make sure to get the kernlab version rather than ElemStatLearn
 
 ## Use createDataPartition() to create an index with 75% of the row numbers
 inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
@@ -45,7 +45,7 @@ Next, we use caret to run GLM on the training data.  The training syntax almost 
 ```{r}
 set.seed(32343)
 
-## Runs the GLM and stores the outputs as ModelFit
+## Runs the GLM and stores the outputs as modelFit
 modelFit <- train(type ~ ., data=training, method="glm")
 
 ## Prints descriptors of modelFit
@@ -62,6 +62,54 @@ confusionMatrix(predictions, testing$type)
 
 ```
   
-There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.
-
+There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.  
+  
 ####_Data Slicing_  
+Continuing with the spam dataset, we may want to slice it.  There are three common methods described below:  
+  
+* k-fold  
+* resample  
+* time slices  
+  
+```{r}
+
+## ?createFolds will bring up the help menu for all types of data splitting
+
+## Document the length of the spam dataset
+length(spam$type)
+
+## Create 10 folds (all independent)
+set.seed(32323)
+folds <- createFolds(y=spam$type, k=10, list=TRUE, returnTrain=FALSE)
+sapply(folds, FUN=length)
+sum(sapply(folds, FUN=length)) ## same length as original
+myCheck <- NULL
+for (intCtr in 1:10) { myCheck <- c(myCheck, folds[[intCtr]]) }
+identical(1:length(spam$type), myCheck[order(myCheck)]) ## all elements used exactly once
+folds[[1]][1:10]
+
+## Create 10 resamples (data can be used multiple times)
+set.seed(32323)
+folds <- createResample(y=spam$type, times=10, list=TRUE)
+sapply(folds, length) ## Each fold same length as original
+myCheck <- NULL
+for (intCtr in 1:10) { myCheck <- c(myCheck, folds[[intCtr]]) }
+myCount <- NULL
+for (intCtr in 1:length(spam$type)) { myCount <- c(myCount, sum(myCheck==intCtr)) }
+plot(x=1:length(spam$type), y=myCount, col="red", pch=19) ## Indices used different # times
+
+## Create test/train data for a time series (needs to be reasonably contiguous)
+set.seed(32323)
+tme <- 1:1000 ## For my series, I am interested in times 1-1000
+folds <- createTimeSlices(y=tme, initialWindow=20, horizon=10) ## train on 20, test on 10
+names(folds)
+folds$train[[1]] ## First fold trains on 1-20
+folds$test[[1]] ## First fold tests on 21-30
+folds$train[[length(folds$train)]] ## Last fold trains on 971-990 (max is 1000 per tme)
+folds$test[[length(folds$train)]] ## Last fold tests on 991-1000 (max is 1000 per tme)
+
+```
+
+Some of the algorithms in the caret library take care of these automatically.  However, it is nice to have the flexibility to create partitions in whatever manner is best suited for the task at hand.  
+  
+####_Training options_  

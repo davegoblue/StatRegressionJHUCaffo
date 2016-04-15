@@ -223,34 +223,8 @@ Below is a basic example for using caret to make and test a simple prediction.  
 <p>First, the relevant libraries are loaded, with a data partition index creates and then applied to create testing and training data.  Note that -inTrain means exclude the indices contained by inTrain, so testing and training will be mutually exclusive in this case.  </p>
 
 <pre><code class="r">library(caret); 
-</code></pre>
-
-<pre><code>## Warning: package &#39;caret&#39; was built under R version 3.2.4
-</code></pre>
-
-<pre><code>## Loading required package: lattice
-</code></pre>
-
-<pre><code>## Loading required package: ggplot2
-</code></pre>
-
-<pre><code>## Stackoverflow is a great place to get help:
-## http://stackoverflow.com/tags/ggplot2.
-</code></pre>
-
-<pre><code class="r">library(kernlab); 
-</code></pre>
-
-<pre><code>## 
-## Attaching package: &#39;kernlab&#39;
-</code></pre>
-
-<pre><code>## The following object is masked from &#39;package:ggplot2&#39;:
-## 
-##     alpha
-</code></pre>
-
-<pre><code class="r">data(spam)
+library(kernlab); 
+data(spam, package=&quot;kernlab&quot;) ## make sure to get the kernlab version rather than ElemStatLearn
 
 ## Use createDataPartition() to create an index with 75% of the row numbers
 inTrain &lt;- createDataPartition(y=spam$type, p=0.75, list=FALSE)
@@ -266,7 +240,7 @@ dim(training)
 
 <pre><code class="r">set.seed(32343)
 
-## Runs the GLM and stores the outputs as ModelFit
+## Runs the GLM and stores the outputs as modelFit
 modelFit &lt;- train(type ~ ., data=training, method=&quot;glm&quot;)
 </code></pre>
 
@@ -277,30 +251,6 @@ modelFit &lt;- train(type ~ ., data=training, method=&quot;glm&quot;)
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-</code></pre>
-
-<pre><code>## Warning: glm.fit: algorithm did not converge
-</code></pre>
-
-<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
@@ -319,6 +269,30 @@ modelFit &lt;- train(type ~ ., data=training, method=&quot;glm&quot;)
 </code></pre>
 
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+</code></pre>
+
+<pre><code>## Warning: glm.fit: algorithm did not converge
+</code></pre>
+
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
@@ -347,7 +321,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy  Kappa      Accuracy SD  Kappa SD  
-##   0.923121  0.8389263  0.01691353   0.03253963
+##   0.917132  0.8263397  0.01646928   0.03148507
 ## 
 ## 
 </code></pre>
@@ -361,49 +335,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##         -1.731625          -0.348812          -0.145606  
+##        -1.521e+00         -4.595e-01         -1.462e-01  
 ##               all              num3d                our  
-##          0.094021           2.801766           0.418297  
+##         2.402e-01          2.683e+00          5.731e-01  
 ##              over             remove           internet  
-##          0.899019           2.387235           0.621689  
+##         1.075e+00          2.166e+00          1.014e+00  
 ##             order               mail            receive  
-##          0.851444           0.236645          -0.274834  
+##         6.769e-01          1.433e-01         -3.651e-02  
 ##              will             people             report  
-##         -0.187986          -0.066072           0.629928  
+##        -2.165e-01         -1.718e-01          1.545e-01  
 ##         addresses               free           business  
-##          2.438863           1.135120           1.216860  
+##         6.325e-01          1.070e+00          1.179e+00  
 ##             email                you             credit  
-##          0.099025           0.091548           1.253789  
+##         1.997e-01          1.128e-01          1.539e+00  
 ##              your               font             num000  
-##          0.283981           0.115402           2.670458  
+##         2.199e-01          1.811e-01          1.982e+00  
 ##             money                 hp                hpl  
-##          0.300361          -1.530797          -0.943704  
+##         3.484e-01         -2.662e+00         -6.094e-01  
 ##            george             num650                lab  
-##        -16.813342           0.536525          -5.322161  
+##        -9.597e+00          3.763e-01         -2.291e+00  
 ##              labs             telnet             num857  
-##         -0.496610          -0.095964           2.865417  
+##        -5.698e-01          1.112e+00          2.479e+00  
 ##              data             num415              num85  
-##         -0.589594           0.175540          -2.597875  
+##        -6.901e-01         -1.231e+01         -1.621e+00  
 ##        technology            num1999              parts  
-##          0.525784          -0.174630          -0.655596  
+##         1.070e+00          1.651e-01          1.234e+00  
 ##                pm             direct                 cs  
-##         -0.759132          -0.219021         -51.654252  
+##        -8.523e-01         -4.626e-01         -5.432e+02  
 ##           meeting           original            project  
-##         -2.716734          -2.843124          -1.769273  
+##        -3.560e+00         -1.434e+00         -2.076e+00  
 ##                re                edu              table  
-##         -0.689593          -1.591044          -2.269718  
+##        -9.890e-01         -1.644e+00         -2.836e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##         -3.770700          -1.155507          -0.265916  
+##        -3.298e+00         -1.069e+00         -2.429e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##         -2.471210           0.657370           3.860895  
+##        -5.441e-01          2.625e-01          5.190e+00  
 ##          charHash         capitalAve        capitalLong  
-##          2.242630           0.049466           0.006836  
+##         2.238e+00          4.304e-03          8.004e-03  
 ##      capitalTotal  
-##          0.001013  
+##         6.973e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:       4628 
-## Residual Deviance: 1291  AIC: 1407
+## Residual Deviance: 1333  AIC: 1449
 </code></pre>
 
 <pre><code class="r">## Applies modelFit (which was built from training) to make predictions on the testing data
@@ -417,33 +391,139 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     657   53
-##    spam         40  400
+##    nonspam     661   48
+##    spam         36  405
 ##                                           
-##                Accuracy : 0.9191          
-##                  95% CI : (0.9018, 0.9342)
+##                Accuracy : 0.927           
+##                  95% CI : (0.9104, 0.9413)
 ##     No Information Rate : 0.6061          
 ##     P-Value [Acc &gt; NIR] : &lt;2e-16          
 ##                                           
-##                   Kappa : 0.8298          
-##  Mcnemar&#39;s Test P-Value : 0.2134          
+##                   Kappa : 0.8463          
+##  Mcnemar&#39;s Test P-Value : 0.2301          
 ##                                           
-##             Sensitivity : 0.9426          
-##             Specificity : 0.8830          
-##          Pos Pred Value : 0.9254          
-##          Neg Pred Value : 0.9091          
+##             Sensitivity : 0.9484          
+##             Specificity : 0.8940          
+##          Pos Pred Value : 0.9323          
+##          Neg Pred Value : 0.9184          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5713          
-##    Detection Prevalence : 0.6174          
-##       Balanced Accuracy : 0.9128          
+##          Detection Rate : 0.5748          
+##    Detection Prevalence : 0.6165          
+##       Balanced Accuracy : 0.9212          
 ##                                           
 ##        &#39;Positive&#39; Class : nonspam         
 ## 
 </code></pre>
 
-<p>There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.</p>
+<p>There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.  </p>
 
-<p>####<em>Data Slicing</em>  </p>
+<p>####<em>Data Slicing</em><br/>
+Continuing with the spam dataset, we may want to slice it.  There are three common methods described below:  </p>
+
+<ul>
+<li>k-fold<br/></li>
+<li>resample<br/></li>
+<li>time slices<br/></li>
+</ul>
+
+<pre><code class="r">## ?createFolds will bring up the help menu for all types of data splitting
+
+## Document the length of the spam dataset
+length(spam$type)
+</code></pre>
+
+<pre><code>## [1] 4601
+</code></pre>
+
+<pre><code class="r">## Create 10 folds (all independent)
+set.seed(32323)
+folds &lt;- createFolds(y=spam$type, k=10, list=TRUE, returnTrain=FALSE)
+sapply(folds, FUN=length)
+</code></pre>
+
+<pre><code>## Fold01 Fold02 Fold03 Fold04 Fold05 Fold06 Fold07 Fold08 Fold09 Fold10 
+##    460    461    460    459    461    459    460    460    461    460
+</code></pre>
+
+<pre><code class="r">sum(sapply(folds, FUN=length)) ## same length as original
+</code></pre>
+
+<pre><code>## [1] 4601
+</code></pre>
+
+<pre><code class="r">myCheck &lt;- NULL
+for (intCtr in 1:10) { myCheck &lt;- c(myCheck, folds[[intCtr]]) }
+identical(1:length(spam$type), myCheck[order(myCheck)]) ## all elements used exactly once
+</code></pre>
+
+<pre><code>## [1] TRUE
+</code></pre>
+
+<pre><code class="r">folds[[1]][1:10]
+</code></pre>
+
+<pre><code>##  [1] 24 27 32 40 41 43 55 58 63 68
+</code></pre>
+
+<pre><code class="r">## Create 10 resamples (data can be used multiple times)
+set.seed(32323)
+folds &lt;- createResample(y=spam$type, times=10, list=TRUE)
+sapply(folds, length) ## Each fold same length as original
+</code></pre>
+
+<pre><code>## Resample01 Resample02 Resample03 Resample04 Resample05 Resample06 
+##       4601       4601       4601       4601       4601       4601 
+## Resample07 Resample08 Resample09 Resample10 
+##       4601       4601       4601       4601
+</code></pre>
+
+<pre><code class="r">myCheck &lt;- NULL
+for (intCtr in 1:10) { myCheck &lt;- c(myCheck, folds[[intCtr]]) }
+myCount &lt;- NULL
+for (intCtr in 1:length(spam$type)) { myCount &lt;- c(myCount, sum(myCheck==intCtr)) }
+plot(x=1:length(spam$type), y=myCount, col=&quot;red&quot;, pch=19) ## Indices used different # times
+</code></pre>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk unnamed-chunk-3"/></p>
+
+<pre><code class="r">## Create test/train data for a time series (needs to be reasonably contiguous)
+set.seed(32323)
+tme &lt;- 1:1000 ## For my series, I am interested in times 1-1000
+folds &lt;- createTimeSlices(y=tme, initialWindow=20, horizon=10) ## train on 20, test on 10
+names(folds)
+</code></pre>
+
+<pre><code>## [1] &quot;train&quot; &quot;test&quot;
+</code></pre>
+
+<pre><code class="r">folds$train[[1]] ## First fold trains on 1-20
+</code></pre>
+
+<pre><code>##  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+</code></pre>
+
+<pre><code class="r">folds$test[[1]] ## First fold tests on 21-30
+</code></pre>
+
+<pre><code>##  [1] 21 22 23 24 25 26 27 28 29 30
+</code></pre>
+
+<pre><code class="r">folds$train[[length(folds$train)]] ## Last fold trains on 971-990 (max is 1000 per tme)
+</code></pre>
+
+<pre><code>##  [1] 971 972 973 974 975 976 977 978 979 980 981 982 983 984 985 986 987
+## [18] 988 989 990
+</code></pre>
+
+<pre><code class="r">folds$test[[length(folds$train)]] ## Last fold tests on 991-1000 (max is 1000 per tme)
+</code></pre>
+
+<pre><code>##  [1]  991  992  993  994  995  996  997  998  999 1000
+</code></pre>
+
+<p>Some of the algorithms in the caret library take care of these automatically.  However, it is nice to have the flexibility to create partitions in whatever manner is best suited for the task at hand.  </p>
+
+<p>####<em>Training options</em>  </p>
 
 </body>
 

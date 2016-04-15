@@ -28,42 +28,8 @@ First, the relevant libraries are loaded, with a data partition index creates an
 
 ```r
 library(caret); 
-```
-
-```
-## Warning: package 'caret' was built under R version 3.2.4
-```
-
-```
-## Loading required package: lattice
-```
-
-```
-## Loading required package: ggplot2
-```
-
-```
-## Stackoverflow is a great place to get help:
-## http://stackoverflow.com/tags/ggplot2.
-```
-
-```r
 library(kernlab); 
-```
-
-```
-## 
-## Attaching package: 'kernlab'
-```
-
-```
-## The following object is masked from 'package:ggplot2':
-## 
-##     alpha
-```
-
-```r
-data(spam)
+data(spam, package="kernlab") ## make sure to get the kernlab version rather than ElemStatLearn
 
 ## Use createDataPartition() to create an index with 75% of the row numbers
 inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
@@ -82,7 +48,7 @@ Next, we use caret to run GLM on the training data.  The training syntax almost 
 ```r
 set.seed(32343)
 
-## Runs the GLM and stores the outputs as ModelFit
+## Runs the GLM and stores the outputs as modelFit
 modelFit <- train(type ~ ., data=training, method="glm")
 ```
 
@@ -94,32 +60,6 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
-
-```
-## Warning: glm.fit: algorithm did not converge
-```
-
-```
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
@@ -139,6 +79,32 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ```
 
 ```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -170,7 +136,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy  Kappa      Accuracy SD  Kappa SD  
-##   0.923121  0.8389263  0.01691353   0.03253963
+##   0.917132  0.8263397  0.01646928   0.03148507
 ## 
 ## 
 ```
@@ -186,49 +152,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##         -1.731625          -0.348812          -0.145606  
+##        -1.521e+00         -4.595e-01         -1.462e-01  
 ##               all              num3d                our  
-##          0.094021           2.801766           0.418297  
+##         2.402e-01          2.683e+00          5.731e-01  
 ##              over             remove           internet  
-##          0.899019           2.387235           0.621689  
+##         1.075e+00          2.166e+00          1.014e+00  
 ##             order               mail            receive  
-##          0.851444           0.236645          -0.274834  
+##         6.769e-01          1.433e-01         -3.651e-02  
 ##              will             people             report  
-##         -0.187986          -0.066072           0.629928  
+##        -2.165e-01         -1.718e-01          1.545e-01  
 ##         addresses               free           business  
-##          2.438863           1.135120           1.216860  
+##         6.325e-01          1.070e+00          1.179e+00  
 ##             email                you             credit  
-##          0.099025           0.091548           1.253789  
+##         1.997e-01          1.128e-01          1.539e+00  
 ##              your               font             num000  
-##          0.283981           0.115402           2.670458  
+##         2.199e-01          1.811e-01          1.982e+00  
 ##             money                 hp                hpl  
-##          0.300361          -1.530797          -0.943704  
+##         3.484e-01         -2.662e+00         -6.094e-01  
 ##            george             num650                lab  
-##        -16.813342           0.536525          -5.322161  
+##        -9.597e+00          3.763e-01         -2.291e+00  
 ##              labs             telnet             num857  
-##         -0.496610          -0.095964           2.865417  
+##        -5.698e-01          1.112e+00          2.479e+00  
 ##              data             num415              num85  
-##         -0.589594           0.175540          -2.597875  
+##        -6.901e-01         -1.231e+01         -1.621e+00  
 ##        technology            num1999              parts  
-##          0.525784          -0.174630          -0.655596  
+##         1.070e+00          1.651e-01          1.234e+00  
 ##                pm             direct                 cs  
-##         -0.759132          -0.219021         -51.654252  
+##        -8.523e-01         -4.626e-01         -5.432e+02  
 ##           meeting           original            project  
-##         -2.716734          -2.843124          -1.769273  
+##        -3.560e+00         -1.434e+00         -2.076e+00  
 ##                re                edu              table  
-##         -0.689593          -1.591044          -2.269718  
+##        -9.890e-01         -1.644e+00         -2.836e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##         -3.770700          -1.155507          -0.265916  
+##        -3.298e+00         -1.069e+00         -2.429e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##         -2.471210           0.657370           3.860895  
+##        -5.441e-01          2.625e-01          5.190e+00  
 ##          charHash         capitalAve        capitalLong  
-##          2.242630           0.049466           0.006836  
+##         2.238e+00          4.304e-03          8.004e-03  
 ##      capitalTotal  
-##          0.001013  
+##         6.973e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1291 	AIC: 1407
+## Residual Deviance: 1333 	AIC: 1449
 ```
 
 ```r
@@ -244,30 +210,158 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     657   53
-##    spam         40  400
+##    nonspam     661   48
+##    spam         36  405
 ##                                           
-##                Accuracy : 0.9191          
-##                  95% CI : (0.9018, 0.9342)
+##                Accuracy : 0.927           
+##                  95% CI : (0.9104, 0.9413)
 ##     No Information Rate : 0.6061          
 ##     P-Value [Acc > NIR] : <2e-16          
 ##                                           
-##                   Kappa : 0.8298          
-##  Mcnemar's Test P-Value : 0.2134          
+##                   Kappa : 0.8463          
+##  Mcnemar's Test P-Value : 0.2301          
 ##                                           
-##             Sensitivity : 0.9426          
-##             Specificity : 0.8830          
-##          Pos Pred Value : 0.9254          
-##          Neg Pred Value : 0.9091          
+##             Sensitivity : 0.9484          
+##             Specificity : 0.8940          
+##          Pos Pred Value : 0.9323          
+##          Neg Pred Value : 0.9184          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5713          
-##    Detection Prevalence : 0.6174          
-##       Balanced Accuracy : 0.9128          
+##          Detection Rate : 0.5748          
+##    Detection Prevalence : 0.6165          
+##       Balanced Accuracy : 0.9212          
 ##                                           
 ##        'Positive' Class : nonspam         
 ## 
 ```
   
-There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.
-
+There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.  
+  
 ####_Data Slicing_  
+Continuing with the spam dataset, we may want to slice it.  There are three common methods described below:  
+  
+* k-fold  
+* resample  
+* time slices  
+  
+
+```r
+## ?createFolds will bring up the help menu for all types of data splitting
+
+## Document the length of the spam dataset
+length(spam$type)
+```
+
+```
+## [1] 4601
+```
+
+```r
+## Create 10 folds (all independent)
+set.seed(32323)
+folds <- createFolds(y=spam$type, k=10, list=TRUE, returnTrain=FALSE)
+sapply(folds, FUN=length)
+```
+
+```
+## Fold01 Fold02 Fold03 Fold04 Fold05 Fold06 Fold07 Fold08 Fold09 Fold10 
+##    460    461    460    459    461    459    460    460    461    460
+```
+
+```r
+sum(sapply(folds, FUN=length)) ## same length as original
+```
+
+```
+## [1] 4601
+```
+
+```r
+myCheck <- NULL
+for (intCtr in 1:10) { myCheck <- c(myCheck, folds[[intCtr]]) }
+identical(1:length(spam$type), myCheck[order(myCheck)]) ## all elements used exactly once
+```
+
+```
+## [1] TRUE
+```
+
+```r
+folds[[1]][1:10]
+```
+
+```
+##  [1] 24 27 32 40 41 43 55 58 63 68
+```
+
+```r
+## Create 10 resamples (data can be used multiple times)
+set.seed(32323)
+folds <- createResample(y=spam$type, times=10, list=TRUE)
+sapply(folds, length) ## Each fold same length as original
+```
+
+```
+## Resample01 Resample02 Resample03 Resample04 Resample05 Resample06 
+##       4601       4601       4601       4601       4601       4601 
+## Resample07 Resample08 Resample09 Resample10 
+##       4601       4601       4601       4601
+```
+
+```r
+myCheck <- NULL
+for (intCtr in 1:10) { myCheck <- c(myCheck, folds[[intCtr]]) }
+myCount <- NULL
+for (intCtr in 1:length(spam$type)) { myCount <- c(myCount, sum(myCheck==intCtr)) }
+plot(x=1:length(spam$type), y=myCount, col="red", pch=19) ## Indices used different # times
+```
+
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png)
+
+```r
+## Create test/train data for a time series (needs to be reasonably contiguous)
+set.seed(32323)
+tme <- 1:1000 ## For my series, I am interested in times 1-1000
+folds <- createTimeSlices(y=tme, initialWindow=20, horizon=10) ## train on 20, test on 10
+names(folds)
+```
+
+```
+## [1] "train" "test"
+```
+
+```r
+folds$train[[1]] ## First fold trains on 1-20
+```
+
+```
+##  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+```
+
+```r
+folds$test[[1]] ## First fold tests on 21-30
+```
+
+```
+##  [1] 21 22 23 24 25 26 27 28 29 30
+```
+
+```r
+folds$train[[length(folds$train)]] ## Last fold trains on 971-990 (max is 1000 per tme)
+```
+
+```
+##  [1] 971 972 973 974 975 976 977 978 979 980 981 982 983 984 985 986 987
+## [18] 988 989 990
+```
+
+```r
+folds$test[[length(folds$train)]] ## Last fold tests on 991-1000 (max is 1000 per tme)
+```
+
+```
+##  [1]  991  992  993  994  995  996  997  998  999 1000
+```
+
+Some of the algorithms in the caret library take care of these automatically.  However, it is nice to have the flexibility to create partitions in whatever manner is best suited for the task at hand.  
+  
+####_Training options_  
