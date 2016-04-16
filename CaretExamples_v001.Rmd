@@ -113,3 +113,81 @@ folds$test[[length(folds$train)]] ## Last fold tests on 991-1000 (max is 1000 pe
 Some of the algorithms in the caret library take care of these automatically.  However, it is nice to have the flexibility to create partitions in whatever manner is best suited for the task at hand.  
   
 ####_Training options_  
+There are many options that can be used while training the data.  Typically, it is fine to just use the defaults, but some of the options include:  
+```{r}
+
+args(train.default)
+## metric can be RMSE/RSquared for continuous and Accuracy/Kappa for categorical
+## weights would be if you have (for example) and unbalanced training set
+
+args(trainControl)
+
+```
+  
+Some of the key options for trainControl can include:  
+  
+* method= (boot, boot632, cv, repeatedcv, LOOCV) for (boostrap, bootstrap with adjustment, cross-validate, repeatedly cross-validate, leave-one-out-cross-validation)  
+* number= (for boot/cross-validation, number of samples to take)  
+* repeats= (number of times to repeat sub-sampling; if big, this can slow things down)  
+  
+It is generally valuable to set a seed, either overall or for each resample (especially for parallel fits).  
+  
+####_Plotting predictors_  
+Plotting the predictors can be a helpful component of exploratory data analysis prior to running prediction algorithms.  This example will focus on the "Wage" data from the ISLR library.  
+  
+```{r}
+
+library(ISLR); library(ggplot2); library(caret)
+data(Wage)
+summary(Wage)
+
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+dim(training); dim(testing)
+
+```
+
+One option is to create a feature plot for a few key variables.  
+```{r}
+featurePlot(x=training[ , c("age", "education", "jobclass")], y=training$wage, plot="pairs")
+```
+  
+Another option is to use ggplot2 for color and regression smoothning.  
+```{r}
+## Color by jobclass
+qplot(age, wage, data=training, color=jobclass)
+
+## Color by education and add a regression smooth
+qq <- qplot(age, wage, data=training, color=education)
+qq + geom_smooth(method="lm", formula=y~x)
+
+```
+
+Another option is to create factors and then use jitter to make the boxplot.  
+```{r}
+
+library(Hmisc)
+cutWage <- cut2(training$wage, g=3)
+table(cutWage)
+p2 <- qplot(cutWage, age, data=training, fill=cutWage, geom=c("boxplot", "jitter"))
+p2
+
+t1 <- table(cutWage, training$jobclass)
+t1
+prop.table(t1, 1)
+
+```
+  
+And yet another option is to look at the density plots.  
+```{r}
+qplot(wage, color=education, data=training, geom="density")
+```
+
+Some additional notes relevant to the prediction process include:  
+  
+1.  Only use the training data for plotting - no cheating with a peek at the test data!  
+2.  Look for imbalances in outcomes/predictors, outliers, groups of "unexplained" points, skewed variables, etc.  
+3.  Try to find the ggplot2 tutorial and the caret tutorial  
+  
+####_Pre-processing_  

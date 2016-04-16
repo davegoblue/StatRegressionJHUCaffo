@@ -29,6 +29,20 @@ First, the relevant libraries are loaded, with a data partition index creates an
 ```r
 library(caret); 
 library(kernlab); 
+```
+
+```
+## 
+## Attaching package: 'kernlab'
+```
+
+```
+## The following object is masked from 'package:ggplot2':
+## 
+##     alpha
+```
+
+```r
 data(spam, package="kernlab") ## make sure to get the kernlab version rather than ElemStatLearn
 
 ## Use createDataPartition() to create an index with 75% of the row numbers
@@ -72,6 +86,30 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ```
 
 ```
@@ -79,36 +117,6 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ```
 
 ```
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
-
-```
-## Warning: glm.fit: algorithm did not converge
-```
-
-```
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -135,8 +143,8 @@ modelFit
 ## Summary of sample sizes: 3451, 3451, 3451, 3451, 3451, 3451, ... 
 ## Resampling results
 ## 
-##   Accuracy  Kappa      Accuracy SD  Kappa SD  
-##   0.917132  0.8263397  0.01646928   0.03148507
+##   Accuracy   Kappa      Accuracy SD  Kappa SD 
+##   0.9191664  0.8300333  0.009175581  0.0185186
 ## 
 ## 
 ```
@@ -152,49 +160,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.521e+00         -4.595e-01         -1.462e-01  
+##        -1.585e+00         -3.803e-01         -1.482e-01  
 ##               all              num3d                our  
-##         2.402e-01          2.683e+00          5.731e-01  
+##         1.412e-01          2.708e+00          6.933e-01  
 ##              over             remove           internet  
-##         1.075e+00          2.166e+00          1.014e+00  
+##         8.351e-01          1.969e+00          6.186e-01  
 ##             order               mail            receive  
-##         6.769e-01          1.433e-01         -3.651e-02  
+##         5.398e-01          4.598e-02          1.835e-02  
 ##              will             people             report  
-##        -2.165e-01         -1.718e-01          1.545e-01  
+##        -1.705e-01         -2.102e-01          2.545e-01  
 ##         addresses               free           business  
-##         6.325e-01          1.070e+00          1.179e+00  
+##         1.558e+00          9.797e-01          9.915e-01  
 ##             email                you             credit  
-##         1.997e-01          1.128e-01          1.539e+00  
+##         2.802e-01          1.003e-01          7.758e-01  
 ##              your               font             num000  
-##         2.199e-01          1.811e-01          1.982e+00  
+##         2.123e-01          1.973e-01          3.191e+00  
 ##             money                 hp                hpl  
-##         3.484e-01         -2.662e+00         -6.094e-01  
+##         1.916e+00         -2.091e+00         -1.120e+00  
 ##            george             num650                lab  
-##        -9.597e+00          3.763e-01         -2.291e+00  
+##        -1.002e+01          4.907e-01         -1.980e+00  
 ##              labs             telnet             num857  
-##        -5.698e-01          1.112e+00          2.479e+00  
+##        -2.370e-01          1.560e+00          6.154e-01  
 ##              data             num415              num85  
-##        -6.901e-01         -1.231e+01         -1.621e+00  
+##        -1.182e+00         -9.935e+00         -3.889e+00  
 ##        technology            num1999              parts  
-##         1.070e+00          1.651e-01          1.234e+00  
+##         1.279e+00          5.989e-02         -5.860e-01  
 ##                pm             direct                 cs  
-##        -8.523e-01         -4.626e-01         -5.432e+02  
+##        -8.428e-01         -4.588e-01         -4.460e+01  
 ##           meeting           original            project  
-##        -3.560e+00         -1.434e+00         -2.076e+00  
+##        -2.509e+00         -1.168e+00         -1.241e+00  
 ##                re                edu              table  
-##        -9.890e-01         -1.644e+00         -2.836e+00  
+##        -7.946e-01         -1.184e+00         -2.905e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.298e+00         -1.069e+00         -2.429e-01  
+##        -4.284e+00         -1.448e+00         -1.651e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -5.441e-01          2.625e-01          5.190e+00  
+##        -7.570e-01          2.526e-01          3.892e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.238e+00          4.304e-03          8.004e-03  
+##         3.128e+00          1.138e-02          7.075e-03  
 ##      capitalTotal  
-##         6.973e-04  
+##         9.504e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1333 	AIC: 1449
+## Residual Deviance: 1356 	AIC: 1472
 ```
 
 ```r
@@ -210,27 +218,27 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     661   48
-##    spam         36  405
-##                                           
-##                Accuracy : 0.927           
-##                  95% CI : (0.9104, 0.9413)
-##     No Information Rate : 0.6061          
-##     P-Value [Acc > NIR] : <2e-16          
-##                                           
-##                   Kappa : 0.8463          
-##  Mcnemar's Test P-Value : 0.2301          
-##                                           
-##             Sensitivity : 0.9484          
-##             Specificity : 0.8940          
-##          Pos Pred Value : 0.9323          
-##          Neg Pred Value : 0.9184          
-##              Prevalence : 0.6061          
-##          Detection Rate : 0.5748          
-##    Detection Prevalence : 0.6165          
-##       Balanced Accuracy : 0.9212          
-##                                           
-##        'Positive' Class : nonspam         
+##    nonspam     658   53
+##    spam         39  400
+##                                          
+##                Accuracy : 0.92           
+##                  95% CI : (0.9028, 0.935)
+##     No Information Rate : 0.6061         
+##     P-Value [Acc > NIR] : <2e-16         
+##                                          
+##                   Kappa : 0.8315         
+##  Mcnemar's Test P-Value : 0.1753         
+##                                          
+##             Sensitivity : 0.9440         
+##             Specificity : 0.8830         
+##          Pos Pred Value : 0.9255         
+##          Neg Pred Value : 0.9112         
+##              Prevalence : 0.6061         
+##          Detection Rate : 0.5722         
+##    Detection Prevalence : 0.6183         
+##       Balanced Accuracy : 0.9135         
+##                                          
+##        'Positive' Class : nonspam        
 ## 
 ```
   
@@ -365,3 +373,193 @@ folds$test[[length(folds$train)]] ## Last fold tests on 991-1000 (max is 1000 pe
 Some of the algorithms in the caret library take care of these automatically.  However, it is nice to have the flexibility to create partitions in whatever manner is best suited for the task at hand.  
   
 ####_Training options_  
+There are many options that can be used while training the data.  Typically, it is fine to just use the defaults, but some of the options include:  
+
+```r
+args(train.default)
+```
+
+```
+## function (x, y, method = "rf", preProcess = NULL, ..., weights = NULL, 
+##     metric = ifelse(is.factor(y), "Accuracy", "RMSE"), maximize = ifelse(metric %in% 
+##         c("RMSE", "logLoss"), FALSE, TRUE), trControl = trainControl(), 
+##     tuneGrid = NULL, tuneLength = 3) 
+## NULL
+```
+
+```r
+## metric can be RMSE/RSquared for continuous and Accuracy/Kappa for categorical
+## weights would be if you have (for example) and unbalanced training set
+
+args(trainControl)
+```
+
+```
+## function (method = "boot", number = ifelse(grepl("cv", method), 
+##     10, 25), repeats = ifelse(grepl("cv", method), 1, number), 
+##     p = 0.75, search = "grid", initialWindow = NULL, horizon = 1, 
+##     fixedWindow = TRUE, verboseIter = FALSE, returnData = TRUE, 
+##     returnResamp = "final", savePredictions = FALSE, classProbs = FALSE, 
+##     summaryFunction = defaultSummary, selectionFunction = "best", 
+##     preProcOptions = list(thresh = 0.95, ICAcomp = 3, k = 5), 
+##     sampling = NULL, index = NULL, indexOut = NULL, timingSamps = 0, 
+##     predictionBounds = rep(FALSE, 2), seeds = NA, adaptive = list(min = 5, 
+##         alpha = 0.05, method = "gls", complete = TRUE), trim = FALSE, 
+##     allowParallel = TRUE) 
+## NULL
+```
+  
+Some of the key options for trainControl can include:  
+  
+* method= (boot, boot632, cv, repeatedcv, LOOCV) for (boostrap, bootstrap with adjustment, cross-validate, repeatedly cross-validate, leave-one-out-cross-validation)  
+* number= (for boot/cross-validation, number of samples to take)  
+* repeats= (number of times to repeat sub-sampling; if big, this can slow things down)  
+  
+It is generally valuable to set a seed, either overall or for each resample (especially for parallel fits).  
+  
+####_Plotting predictors_  
+Plotting the predictors can be a helpful component of exploratory data analysis prior to running prediction algorithms.  This example will focus on the "Wage" data from the ISLR library.  
+  
+
+```r
+library(ISLR); library(ggplot2); library(caret)
+data(Wage)
+summary(Wage)
+```
+
+```
+##       year           age               sex                    maritl    
+##  Min.   :2003   Min.   :18.00   1. Male  :3000   1. Never Married: 648  
+##  1st Qu.:2004   1st Qu.:33.75   2. Female:   0   2. Married      :2074  
+##  Median :2006   Median :42.00                    3. Widowed      :  19  
+##  Mean   :2006   Mean   :42.41                    4. Divorced     : 204  
+##  3rd Qu.:2008   3rd Qu.:51.00                    5. Separated    :  55  
+##  Max.   :2009   Max.   :80.00                                           
+##                                                                         
+##        race                   education                     region    
+##  1. White:2480   1. < HS Grad      :268   2. Middle Atlantic   :3000  
+##  2. Black: 293   2. HS Grad        :971   1. New England       :   0  
+##  3. Asian: 190   3. Some College   :650   3. East North Central:   0  
+##  4. Other:  37   4. College Grad   :685   4. West North Central:   0  
+##                  5. Advanced Degree:426   5. South Atlantic    :   0  
+##                                           6. East South Central:   0  
+##                                           (Other)              :   0  
+##            jobclass               health      health_ins      logwage     
+##  1. Industrial :1544   1. <=Good     : 858   1. Yes:2083   Min.   :3.000  
+##  2. Information:1456   2. >=Very Good:2142   2. No : 917   1st Qu.:4.447  
+##                                                            Median :4.653  
+##                                                            Mean   :4.654  
+##                                                            3rd Qu.:4.857  
+##                                                            Max.   :5.763  
+##                                                                           
+##       wage       
+##  Min.   : 20.09  
+##  1st Qu.: 85.38  
+##  Median :104.92  
+##  Mean   :111.70  
+##  3rd Qu.:128.68  
+##  Max.   :318.34  
+## 
+```
+
+```r
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+dim(training); dim(testing)
+```
+
+```
+## [1] 2102   12
+```
+
+```
+## [1] 898  12
+```
+
+One option is to create a feature plot for a few key variables.  
+
+```r
+featurePlot(x=training[ , c("age", "education", "jobclass")], y=training$wage, plot="pairs")
+```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
+  
+Another option is to use ggplot2 for color and regression smoothning.  
+
+```r
+## Color by jobclass
+qplot(age, wage, data=training, color=jobclass)
+```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
+
+```r
+## Color by education and add a regression smooth
+qq <- qplot(age, wage, data=training, color=education)
+qq + geom_smooth(method="lm", formula=y~x)
+```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-2.png)
+
+Another option is to create factors and then use jitter to make the boxplot.  
+
+```r
+library(Hmisc)
+cutWage <- cut2(training$wage, g=3)
+table(cutWage)
+```
+
+```
+## cutWage
+## [ 20.1, 91.7) [ 91.7,118.9) [118.9,318.3] 
+##           703           721           678
+```
+
+```r
+p2 <- qplot(cutWage, age, data=training, fill=cutWage, geom=c("boxplot", "jitter"))
+p2
+```
+
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png)
+
+```r
+t1 <- table(cutWage, training$jobclass)
+t1
+```
+
+```
+##                
+## cutWage         1. Industrial 2. Information
+##   [ 20.1, 91.7)           437            266
+##   [ 91.7,118.9)           373            348
+##   [118.9,318.3]           274            404
+```
+
+```r
+prop.table(t1, 1)
+```
+
+```
+##                
+## cutWage         1. Industrial 2. Information
+##   [ 20.1, 91.7)     0.6216216      0.3783784
+##   [ 91.7,118.9)     0.5173370      0.4826630
+##   [118.9,318.3]     0.4041298      0.5958702
+```
+  
+And yet another option is to look at the density plots.  
+
+```r
+qplot(wage, color=education, data=training, geom="density")
+```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png)
+
+Some additional notes relevant to the prediction process include:  
+  
+1.  Only use the training data for plotting - no cheating with a peek at the test data!  
+2.  Look for imbalances in outcomes/predictors, outliers, groups of "unexplained" points, skewed variables, etc.  
+3.  Try to find the ggplot2 tutorial and the caret tutorial  
+  
+####_Pre-processing_  
