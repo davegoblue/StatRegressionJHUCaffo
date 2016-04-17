@@ -11,7 +11,7 @@ output: html_document
 
 This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  
   
-The broad themes of care include:  
+The broad themes of caret include:  
   
 * Pre-processing data - preProcess()  
 * Partitioning raw data in to test/train - createDataPartition(), createResample(), createTimeSlices()  
@@ -28,6 +28,21 @@ First, the relevant libraries are loaded, with a data partition index creates an
 
 ```r
 library(caret); 
+```
+
+```
+## Warning: package 'caret' was built under R version 3.2.4
+```
+
+```
+## Loading required package: lattice
+```
+
+```
+## Loading required package: ggplot2
+```
+
+```r
 library(kernlab); 
 ```
 
@@ -80,19 +95,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
 
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+## Warning: glm.fit: algorithm did not converge
+```
 
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
+```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -124,6 +133,18 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ```
 
 ```r
@@ -143,8 +164,8 @@ modelFit
 ## Summary of sample sizes: 3451, 3451, 3451, 3451, 3451, 3451, ... 
 ## Resampling results
 ## 
-##   Accuracy   Kappa      Accuracy SD  Kappa SD 
-##   0.9191664  0.8300333  0.009175581  0.0185186
+##   Accuracy   Kappa      Accuracy SD  Kappa SD  
+##   0.9136534  0.8172455  0.02798358   0.06169858
 ## 
 ## 
 ```
@@ -160,49 +181,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.585e+00         -3.803e-01         -1.482e-01  
+##        -1.650e+00         -3.676e-01         -1.557e-01  
 ##               all              num3d                our  
-##         1.412e-01          2.708e+00          6.933e-01  
+##         1.991e-01          1.373e+00          6.552e-01  
 ##              over             remove           internet  
-##         8.351e-01          1.969e+00          6.186e-01  
+##         9.157e-01          2.161e+00          4.608e-01  
 ##             order               mail            receive  
-##         5.398e-01          4.598e-02          1.835e-02  
+##         5.049e-01          2.171e-02         -1.193e-01  
 ##              will             people             report  
-##        -1.705e-01         -2.102e-01          2.545e-01  
+##        -1.130e-01         -1.181e-01          3.095e-01  
 ##         addresses               free           business  
-##         1.558e+00          9.797e-01          9.915e-01  
+##         1.570e+00          9.330e-01          7.675e-01  
 ##             email                you             credit  
-##         2.802e-01          1.003e-01          7.758e-01  
+##         1.886e-02          6.802e-02          8.108e-01  
 ##              your               font             num000  
-##         2.123e-01          1.973e-01          3.191e+00  
+##         2.259e-01          1.833e-01          2.102e+00  
 ##             money                 hp                hpl  
-##         1.916e+00         -2.091e+00         -1.120e+00  
+##         2.993e-01         -1.729e+00         -2.196e+00  
 ##            george             num650                lab  
-##        -1.002e+01          4.907e-01         -1.980e+00  
+##        -6.513e+00          8.615e-01         -2.339e+00  
 ##              labs             telnet             num857  
-##        -2.370e-01          1.560e+00          6.154e-01  
+##        -2.611e-01         -2.023e-01          6.152e-01  
 ##              data             num415              num85  
-##        -1.182e+00         -9.935e+00         -3.889e+00  
+##        -8.063e-01          6.588e-01         -2.403e+00  
 ##        technology            num1999              parts  
-##         1.279e+00          5.989e-02         -5.860e-01  
+##         9.995e-01          3.628e-02         -6.152e-01  
 ##                pm             direct                 cs  
-##        -8.428e-01         -4.588e-01         -4.460e+01  
+##        -9.568e-01         -4.027e-01         -5.121e+02  
 ##           meeting           original            project  
-##        -2.509e+00         -1.168e+00         -1.241e+00  
+##        -3.612e+00         -1.400e+00         -1.404e+00  
 ##                re                edu              table  
-##        -7.946e-01         -1.184e+00         -2.905e+00  
+##        -7.528e-01         -1.387e+00         -1.501e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -4.284e+00         -1.448e+00         -1.651e-01  
+##        -5.489e+00         -1.235e+00         -4.096e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -7.570e-01          2.526e-01          3.892e+00  
+##        -6.747e-01          2.489e-01          5.227e+00  
 ##          charHash         capitalAve        capitalLong  
-##         3.128e+00          1.138e-02          7.075e-03  
+##         2.475e+00          6.379e-02          1.054e-02  
 ##      capitalTotal  
-##         9.504e-04  
+##         8.612e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1356 	AIC: 1472
+## Residual Deviance: 1372 	AIC: 1488
 ```
 
 ```r
@@ -218,32 +239,84 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     658   53
-##    spam         39  400
-##                                          
-##                Accuracy : 0.92           
-##                  95% CI : (0.9028, 0.935)
-##     No Information Rate : 0.6061         
-##     P-Value [Acc > NIR] : <2e-16         
-##                                          
-##                   Kappa : 0.8315         
-##  Mcnemar's Test P-Value : 0.1753         
-##                                          
-##             Sensitivity : 0.9440         
-##             Specificity : 0.8830         
-##          Pos Pred Value : 0.9255         
-##          Neg Pred Value : 0.9112         
-##              Prevalence : 0.6061         
-##          Detection Rate : 0.5722         
-##    Detection Prevalence : 0.6183         
-##       Balanced Accuracy : 0.9135         
-##                                          
-##        'Positive' Class : nonspam        
+##    nonspam     665   51
+##    spam         32  402
+##                                           
+##                Accuracy : 0.9278          
+##                  95% CI : (0.9113, 0.9421)
+##     No Information Rate : 0.6061          
+##     P-Value [Acc > NIR] : < 2e-16         
+##                                           
+##                   Kappa : 0.8477          
+##  Mcnemar's Test P-Value : 0.04818         
+##                                           
+##             Sensitivity : 0.9541          
+##             Specificity : 0.8874          
+##          Pos Pred Value : 0.9288          
+##          Neg Pred Value : 0.9263          
+##              Prevalence : 0.6061          
+##          Detection Rate : 0.5783          
+##    Detection Prevalence : 0.6226          
+##       Balanced Accuracy : 0.9208          
+##                                           
+##        'Positive' Class : nonspam         
 ## 
 ```
   
 There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.  
   
+####_Parallel Processing_  
+Len Greski wrote an excellent article on using parallel processing for the train() function in caret.  This is particularly valuable for computationally intensive approaches as it increases R's ability to use my CPU from ~25% to ~75%.  See <https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md>  
+
+The below is cut/pasted from Len's blog so that I can easily access it even when I am offine.  As setup, Len uses the "sonar" data from the "mlbench" library.  See below:  
+
+```r
+library(mlbench)
+```
+
+```
+## Warning: package 'mlbench' was built under R version 3.2.4
+```
+
+```r
+data(Sonar)
+
+inTraining <- createDataPartition(Sonar$Class, p = .75, list=FALSE)
+training <- Sonar[inTraining,]
+testing <- Sonar[-inTraining,]
+
+# set up training run for x / y syntax because model format performs poorly
+x <- training[,-61]
+y <- training[,61]
+```
+  
+Next, Len calls libraries for parallel processing and sets trainControl to allow for parallel processing.  
+
+```r
+## library(parallel)
+## library(doParallel)
+
+## cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+## registerDoParallel(cluster)
+
+## fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+```
+  
+Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
+
+```r
+## fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
+```
+  
+Lastly, the cluster is explicitly shut down:  
+
+```r
+## stopCluster(cluster)
+```
+  
+Len ran several experiments on a larger dataset and found that parallel processing on an HP Omen improved run time for a Random Forest called by train() from ~450 seconds to ~200 seconds.  This looks to be very handy.  
+  
+
 ####_Data Slicing_  
 Continuing with the spam dataset, we may want to slice it.  There are three common methods described below:  
   
@@ -323,7 +396,7 @@ for (intCtr in 1:length(spam$type)) { myCount <- c(myCount, sum(myCheck==intCtr)
 plot(x=1:length(spam$type), y=myCount, col="red", pch=19) ## Indices used different # times
 ```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png)
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
 
 ```r
 ## Create test/train data for a time series (needs to be reasonably contiguous)
@@ -423,6 +496,13 @@ Plotting the predictors can be a helpful component of exploratory data analysis 
 
 ```r
 library(ISLR); library(ggplot2); library(caret)
+```
+
+```
+## Warning: package 'ISLR' was built under R version 3.2.4
+```
+
+```r
 data(Wage)
 summary(Wage)
 ```
@@ -483,7 +563,7 @@ One option is to create a feature plot for a few key variables.
 featurePlot(x=training[ , c("age", "education", "jobclass")], y=training$wage, plot="pairs")
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png)
   
 Another option is to use ggplot2 for color and regression smoothning.  
 
@@ -492,7 +572,7 @@ Another option is to use ggplot2 for color and regression smoothning.
 qplot(age, wage, data=training, color=jobclass)
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
+![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11-1.png)
 
 ```r
 ## Color by education and add a regression smooth
@@ -500,12 +580,45 @@ qq <- qplot(age, wage, data=training, color=education)
 qq + geom_smooth(method="lm", formula=y~x)
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-2.png)
+![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11-2.png)
 
 Another option is to create factors and then use jitter to make the boxplot.  
 
 ```r
 library(Hmisc)
+```
+
+```
+## Loading required package: survival
+```
+
+```
+## 
+## Attaching package: 'survival'
+```
+
+```
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+```
+
+```
+## Loading required package: Formula
+```
+
+```
+## 
+## Attaching package: 'Hmisc'
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     format.pval, round.POSIXt, trunc.POSIXt, units
+```
+
+```r
 cutWage <- cut2(training$wage, g=3)
 table(cutWage)
 ```
@@ -521,7 +634,7 @@ p2 <- qplot(cutWage, age, data=training, fill=cutWage, geom=c("boxplot", "jitter
 p2
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png)
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png)
 
 ```r
 t1 <- table(cutWage, training$jobclass)
@@ -554,7 +667,7 @@ And yet another option is to look at the density plots.
 qplot(wage, color=education, data=training, geom="density")
 ```
 
-![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png)
+![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png)
 
 Some additional notes relevant to the prediction process include:  
   
@@ -563,3 +676,222 @@ Some additional notes relevant to the prediction process include:
 3.  Try to find the ggplot2 tutorial and the caret tutorial  
   
 ####_Pre-processing_  
+Exploratory data analysis may reveal issues requiring data pre-processing.  This can be particularly the case with parametric approaches where skew, collinearity, missing neighbors (NA) and the like can cause problems.  
+  
+The spam dataset can again be analyzed for an example.  Note the extremely significant skew in the runs of capital letters (capitalAve).  
+  
+
+```r
+library(caret); library(kernlab); data(spam)
+
+inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+
+hist(training$capitalAve, main="", xlab="Ave. capital run length")
+```
+
+![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14-1.png)
+
+```r
+mean(training$capitalAve) ; sd(training$capitalAve)
+```
+
+```
+## [1] 5.288555
+```
+
+```
+## [1] 32.53952
+```
+
+One option is to use base R to standardize each of the variables to N(0,1).  The mean and sd from the training set need to be applied to the test set data also, so that we stay uninformed as to the test set data. 
+
+
+```r
+## Calculate metrics from training set and apply to training set
+trainCapAve <- training$capitalAve
+trainCapAveS <- (trainCapAve - mean(trainCapAve)) / sd(trainCapAve)
+mean(trainCapAveS) ; sd(trainCapAveS)
+```
+
+```
+## [1] 9.100406e-18
+```
+
+```
+## [1] 1
+```
+
+```r
+## Apply the same transformations to the testing set
+testCapAve <- testing$capitalAve
+testCapAveS <- (testCapAve - mean(trainCapAve)) / sd(trainCapAve)
+mean(testCapAveS) ; sd(testCapAveS)
+```
+
+```
+## [1] -0.01193141
+```
+
+```
+## [1] 0.8966113
+```
+
+Alternately, the preProcess() command can be used to automatically take the same commands and apply them to the training and testing data.  
+  
+
+```r
+## Set up a preProcess() command
+preObj <- preProcess(training[,-58], method=c("center", "scale")) ## standardizes all variables
+
+## Apply to training
+trainCapAveS <- predict(preObj, training[,-58])$capitalAve
+mean(trainCapAveS); sd(trainCapAveS)
+```
+
+```
+## [1] 9.268499e-18
+```
+
+```
+## [1] 1
+```
+
+```r
+## Apply to testing
+testCapAveS <- predict(preObj, testing[,-58])$capitalAve
+mean(testCapAveS); sd(testCapAveS)
+```
+
+```
+## [1] -0.01193141
+```
+
+```
+## [1] 0.8966113
+```
+
+The preProcess commands can also be passed to the train() commands.  
+  
+
+```r
+set.seed(32343)
+modelFit <- train(type ~ ., data=training, preProcess=c("center", "scale"), method="glm")
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```r
+print(modelFit)
+```
+
+```
+## Generalized Linear Model 
+## 
+## 3451 samples
+##   57 predictor
+##    2 classes: 'nonspam', 'spam' 
+## 
+## Pre-processing: centered (57), scaled (57) 
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 3451, 3451, 3451, 3451, 3451, 3451, ... 
+## Resampling results
+## 
+##   Accuracy   Kappa      Accuracy SD  Kappa SD  
+##   0.9179809  0.8278154  0.01824708   0.03536902
+## 
+## 
+```
+
+The Box-Cox transform is available, though since it is continuous, it does not solve the "many zeroes" problem, as shown by the decidedly non-linear QQ plot.  
+  
+
+```r
+preObj <- preProcess(training[,-58], method=c("BoxCox")) ## standardizes all variables with Box-Cox
+trainCapAveS <- predict(preObj, training[,-58])$capitalAve
+par(mfrow=c(1,2)) ; hist(trainCapAveS) ; qqnorm(trainCapAveS) ; par(mfrow=c(1,1))
+```
+
+![plot of chunk unnamed-chunk-18](figure/unnamed-chunk-18-1.png)
+
+Since many prediction algorithms do not work well with NA, the k-nearest-neighbors approach can be applied to impute those:  
+  
+
+```r
+## Create some fake NA data
+set.seed(13343)
+training$capAve <- training$capitalAve
+selectNA <- rbinom(dim(training)[1], size=1, prob=0.05)==1
+training$capAve[selectNA] <- NA
+
+## Impute using knn
+preObj <- preProcess(training[,-58], method="knnImpute")
+capAve <- predict(preObj, training[,-58])$capAve
+```
+
+The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.

@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  
   
-The broad themes of care include:  
+The broad themes of caret include:  
   
 * Pre-processing data - preProcess()  
 * Partitioning raw data in to test/train - createDataPartition(), createResample(), createTimeSlices()  
@@ -64,6 +64,47 @@ confusionMatrix(predictions, testing$type)
   
 There are frequently warnings thrown back by the caret library, though they often do not seem to impact the predictive ability.  The library is sometimes a bit of a black-box, and prediction is an area that often contains extreme trade-offs between parsimony, intepretability, scalability, predictive power, and the like.  It is wise to be sure the approach and final model align reasonably with how the specific end-user for the algorithm might prioritize these aims.  
   
+####_Parallel Processing_  
+Len Greski wrote an excellent article on using parallel processing for the train() function in caret.  This is particularly valuable for computationally intensive approaches as it increases R's ability to use my CPU from ~25% to ~75%.  See <https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md>  
+
+The below is cut/pasted from Len's blog so that I can easily access it even when I am offine.  As setup, Len uses the "sonar" data from the "mlbench" library.  See below:  
+```{r}
+library(mlbench)
+data(Sonar)
+
+inTraining <- createDataPartition(Sonar$Class, p = .75, list=FALSE)
+training <- Sonar[inTraining,]
+testing <- Sonar[-inTraining,]
+
+# set up training run for x / y syntax because model format performs poorly
+x <- training[,-61]
+y <- training[,61]
+```
+  
+Next, Len calls libraries for parallel processing and sets trainControl to allow for parallel processing.  
+```{r}
+## library(parallel)
+## library(doParallel)
+
+## cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+## registerDoParallel(cluster)
+
+## fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+```
+  
+Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
+```{r}
+## fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
+```
+  
+Lastly, the cluster is explicitly shut down:  
+```{r}
+## stopCluster(cluster)
+```
+  
+Len ran several experiments on a larger dataset and found that parallel processing on an HP Omen improved run time for a Random Forest called by train() from ~450 seconds to ~200 seconds.  This looks to be very handy.  
+  
+
 ####_Data Slicing_  
 Continuing with the spam dataset, we may want to slice it.  There are three common methods described below:  
   
@@ -191,3 +232,90 @@ Some additional notes relevant to the prediction process include:
 3.  Try to find the ggplot2 tutorial and the caret tutorial  
   
 ####_Pre-processing_  
+Exploratory data analysis may reveal issues requiring data pre-processing.  This can be particularly the case with parametric approaches where skew, collinearity, missing neighbors (NA) and the like can cause problems.  
+  
+The spam dataset can again be analyzed for an example.  Note the extremely significant skew in the runs of capital letters (capitalAve).  
+  
+```{r}
+library(caret); library(kernlab); data(spam)
+
+inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+
+hist(training$capitalAve, main="", xlab="Ave. capital run length")
+
+mean(training$capitalAve) ; sd(training$capitalAve)
+
+```
+
+One option is to use base R to standardize each of the variables to N(0,1).  The mean and sd from the training set need to be applied to the test set data also, so that we stay uninformed as to the test set data. 
+
+```{r}
+
+## Calculate metrics from training set and apply to training set
+trainCapAve <- training$capitalAve
+trainCapAveS <- (trainCapAve - mean(trainCapAve)) / sd(trainCapAve)
+mean(trainCapAveS) ; sd(trainCapAveS)
+
+## Apply the same transformations to the testing set
+testCapAve <- testing$capitalAve
+testCapAveS <- (testCapAve - mean(trainCapAve)) / sd(trainCapAve)
+mean(testCapAveS) ; sd(testCapAveS)
+
+```
+
+Alternately, the preProcess() command can be used to automatically take the same commands and apply them to the training and testing data.  
+  
+```{r}
+
+## Set up a preProcess() command
+preObj <- preProcess(training[,-58], method=c("center", "scale")) ## standardizes all variables
+
+## Apply to training
+trainCapAveS <- predict(preObj, training[,-58])$capitalAve
+mean(trainCapAveS); sd(trainCapAveS)
+
+## Apply to testing
+testCapAveS <- predict(preObj, testing[,-58])$capitalAve
+mean(testCapAveS); sd(testCapAveS)
+
+```
+
+The preProcess commands can also be passed to the train() commands.  
+  
+```{r}
+
+set.seed(32343)
+modelFit <- train(type ~ ., data=training, preProcess=c("center", "scale"), method="glm")
+print(modelFit)
+
+```
+
+The Box-Cox transform is available, though since it is continuous, it does not solve the "many zeroes" problem, as shown by the decidedly non-linear QQ plot.  
+  
+```{r}
+
+preObj <- preProcess(training[,-58], method=c("BoxCox")) ## standardizes all variables with Box-Cox
+trainCapAveS <- predict(preObj, training[,-58])$capitalAve
+par(mfrow=c(1,2)) ; hist(trainCapAveS) ; qqnorm(trainCapAveS) ; par(mfrow=c(1,1))
+
+```
+
+Since many prediction algorithms do not work well with NA, the k-nearest-neighbors approach can be applied to impute those:  
+  
+```{r}
+
+## Create some fake NA data
+set.seed(13343)
+training$capAve <- training$capitalAve
+selectNA <- rbinom(dim(training)[1], size=1, prob=0.05)==1
+training$capAve[selectNA] <- NA
+
+## Impute using knn
+preObj <- preProcess(training[,-58], method="knnImpute")
+capAve <- predict(preObj, training[,-58])$capAve
+
+```
+
+The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.
