@@ -95,13 +95,7 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
 
-```
-## Warning: glm.fit: algorithm did not converge
-```
-
-```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -119,13 +113,7 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
 
-```
-## Warning: glm.fit: algorithm did not converge
-```
-
-```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -165,7 +153,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9136534  0.8172455  0.02798358   0.06169858
+##   0.9175644  0.8263704  0.006742687  0.01391462
 ## 
 ## 
 ```
@@ -181,49 +169,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.650e+00         -3.676e-01         -1.557e-01  
+##        -1.741e+00         -3.191e-01         -1.354e-01  
 ##               all              num3d                our  
-##         1.991e-01          1.373e+00          6.552e-01  
+##         7.972e-02          2.091e+00          5.951e-01  
 ##              over             remove           internet  
-##         9.157e-01          2.161e+00          4.608e-01  
+##         9.765e-01          2.126e+00          7.840e-01  
 ##             order               mail            receive  
-##         5.049e-01          2.171e-02         -1.193e-01  
+##         5.227e-01          4.974e-02         -4.102e-01  
 ##              will             people             report  
-##        -1.130e-01         -1.181e-01          3.095e-01  
+##        -9.627e-02          1.034e-02          4.553e-01  
 ##         addresses               free           business  
-##         1.570e+00          9.330e-01          7.675e-01  
+##         1.337e+00          1.014e+00          7.928e-01  
 ##             email                you             credit  
-##         1.886e-02          6.802e-02          8.108e-01  
+##         1.806e-01          5.896e-02          8.806e-01  
 ##              your               font             num000  
-##         2.259e-01          1.833e-01          2.102e+00  
+##         2.249e-01          1.830e-01          1.979e+00  
 ##             money                 hp                hpl  
-##         2.993e-01         -1.729e+00         -2.196e+00  
+##         6.363e-01         -1.909e+00         -8.177e-01  
 ##            george             num650                lab  
-##        -6.513e+00          8.615e-01         -2.339e+00  
+##        -7.410e+00          3.370e-01         -1.839e+00  
 ##              labs             telnet             num857  
-##        -2.611e-01         -2.023e-01          6.152e-01  
+##        -2.007e-01         -6.031e+00          2.820e+00  
 ##              data             num415              num85  
-##        -8.063e-01          6.588e-01         -2.403e+00  
+##        -6.896e-01         -1.210e-01         -2.885e+00  
 ##        technology            num1999              parts  
-##         9.995e-01          3.628e-02         -6.152e-01  
+##         8.893e-01         -1.414e-01         -5.671e-01  
 ##                pm             direct                 cs  
-##        -9.568e-01         -4.027e-01         -5.121e+02  
+##        -7.882e-01         -3.256e-01         -4.233e+01  
 ##           meeting           original            project  
-##        -3.612e+00         -1.400e+00         -1.404e+00  
+##        -2.757e+00         -1.551e+00         -1.450e+00  
 ##                re                edu              table  
-##        -7.528e-01         -1.387e+00         -1.501e+00  
+##        -5.889e-01         -1.279e+00         -1.710e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -5.489e+00         -1.235e+00         -4.096e-01  
+##        -3.689e+00         -1.361e+00         -7.036e-03  
 ## charSquarebracket    charExclamation         charDollar  
-##        -6.747e-01          2.489e-01          5.227e+00  
+##        -2.151e+00          5.936e-01          4.452e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.475e+00          6.379e-02          1.054e-02  
+##         2.701e+00          5.905e-02          8.600e-03  
 ##      capitalTotal  
-##         8.612e-04  
+##         9.253e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1372 	AIC: 1488
+## Residual Deviance: 1380 	AIC: 1496
 ```
 
 ```r
@@ -239,25 +227,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     665   51
-##    spam         32  402
+##    nonspam     667   43
+##    spam         30  410
 ##                                           
-##                Accuracy : 0.9278          
-##                  95% CI : (0.9113, 0.9421)
+##                Accuracy : 0.9365          
+##                  95% CI : (0.9208, 0.9499)
 ##     No Information Rate : 0.6061          
-##     P-Value [Acc > NIR] : < 2e-16         
+##     P-Value [Acc > NIR] : <2e-16          
 ##                                           
-##                   Kappa : 0.8477          
-##  Mcnemar's Test P-Value : 0.04818         
+##                   Kappa : 0.8664          
+##  Mcnemar's Test P-Value : 0.1602          
 ##                                           
-##             Sensitivity : 0.9541          
-##             Specificity : 0.8874          
-##          Pos Pred Value : 0.9288          
-##          Neg Pred Value : 0.9263          
+##             Sensitivity : 0.9570          
+##             Specificity : 0.9051          
+##          Pos Pred Value : 0.9394          
+##          Neg Pred Value : 0.9318          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5783          
-##    Detection Prevalence : 0.6226          
-##       Balanced Accuracy : 0.9208          
+##          Detection Rate : 0.5800          
+##    Detection Prevalence : 0.6174          
+##       Balanced Accuracy : 0.9310          
 ##                                           
 ##        'Positive' Class : nonspam         
 ## 
@@ -293,25 +281,79 @@ y <- training[,61]
 Next, Len calls libraries for parallel processing and sets trainControl to allow for parallel processing.  
 
 ```r
-## library(parallel)
-## library(doParallel)
+library(parallel)
+library(doParallel)
+```
 
-## cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-## registerDoParallel(cluster)
+```
+## Warning: package 'doParallel' was built under R version 3.2.4
+```
 
-## fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+```
+## Loading required package: foreach
+```
+
+```
+## Warning: package 'foreach' was built under R version 3.2.4
+```
+
+```
+## foreach: simple, scalable parallel programming from Revolution Analytics
+## Use Revolution R for scalability, fault tolerance and more.
+## http://www.revolutionanalytics.com
+```
+
+```
+## Loading required package: iterators
+```
+
+```r
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
 ```
   
 Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
 
 ```r
-## fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
+fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
+```
+
+```
+## Loading required package: randomForest
+```
+
+```
+## Warning: package 'randomForest' was built under R version 3.2.4
+```
+
+```
+## randomForest 4.6-12
+```
+
+```
+## Type rfNews() to see new features/changes/bug fixes.
+```
+
+```
+## 
+## Attaching package: 'randomForest'
+```
+
+```
+## The following object is masked from 'package:ggplot2':
+## 
+##     margin
 ```
   
 Lastly, the cluster is explicitly shut down:  
 
 ```r
-## stopCluster(cluster)
+stopCluster(cluster)
+
+## Seems to be needed, at least for my machine
+registerDoSEQ() ## per http://stackoverflow.com/questions/25097729/un-register-a-doparallel-cluster
 ```
   
 Len ran several experiments on a larger dataset and found that parallel processing on an HP Omen improved run time for a Random Forest called by train() from ~450 seconds to ~200 seconds.  This looks to be very handy.  
@@ -610,6 +652,12 @@ library(Hmisc)
 ```
 ## 
 ## Attaching package: 'Hmisc'
+```
+
+```
+## The following object is masked from 'package:randomForest':
+## 
+##     combine
 ```
 
 ```

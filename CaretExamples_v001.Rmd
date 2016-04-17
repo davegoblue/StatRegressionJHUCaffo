@@ -83,23 +83,26 @@ y <- training[,61]
   
 Next, Len calls libraries for parallel processing and sets trainControl to allow for parallel processing.  
 ```{r}
-## library(parallel)
-## library(doParallel)
+library(parallel)
+library(doParallel)
 
-## cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-## registerDoParallel(cluster)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
 
-## fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
 ```
   
 Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
 ```{r}
-## fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
+fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
 ```
   
 Lastly, the cluster is explicitly shut down:  
 ```{r}
-## stopCluster(cluster)
+stopCluster(cluster)
+
+## Seems to be needed, at least for my machine
+registerDoSEQ() ## per http://stackoverflow.com/questions/25097729/un-register-a-doparallel-cluster
 ```
   
 Len ran several experiments on a larger dataset and found that parallel processing on an HP Omen improved run time for a Random Forest called by train() from ~450 seconds to ~200 seconds.  This looks to be very handy.  
