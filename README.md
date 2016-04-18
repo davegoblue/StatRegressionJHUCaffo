@@ -9,4 +9,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 15-APR-2016 - Summary of folds, resamples, and time slices  
 * 16-APR-2016 - Summary of training options and exploratory predictor plotting  
 * 17-APR-2016 - Parallel processing, and pre-processing    
+* 18-APR-2016 - Covariate creation      
   
