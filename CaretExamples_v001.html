@@ -234,6 +234,10 @@ Below is a basic example for using caret to make and test a simple prediction.  
 <pre><code>## Loading required package: ggplot2
 </code></pre>
 
+<pre><code>## Want to understand how all the pieces fit together? Buy the
+## ggplot2 book: http://ggplot2.org/book/
+</code></pre>
+
 <pre><code class="r">library(kernlab); 
 </code></pre>
 
@@ -273,8 +277,12 @@ modelFit &lt;- train(type ~ ., data=training, method=&quot;glm&quot;)
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+</code></pre>
 
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+<pre><code>## Warning: glm.fit: algorithm did not converge
+</code></pre>
+
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
@@ -335,7 +343,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9175644  0.8263704  0.006742687  0.01391462
+##   0.9187823  0.8291534  0.01134362   0.02224423
 ## 
 ## 
 </code></pre>
@@ -349,49 +357,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.741e+00         -3.191e-01         -1.354e-01  
+##        -1.711e+00         -2.506e-01         -1.515e-01  
 ##               all              num3d                our  
-##         7.972e-02          2.091e+00          5.951e-01  
+##         1.182e-01          1.839e+00          5.768e-01  
 ##              over             remove           internet  
-##         9.765e-01          2.126e+00          7.840e-01  
+##         5.921e-01          2.873e+00          5.254e-01  
 ##             order               mail            receive  
-##         5.227e-01          4.974e-02         -4.102e-01  
+##         4.243e-01          1.230e-01         -5.866e-01  
 ##              will             people             report  
-##        -9.627e-02          1.034e-02          4.553e-01  
+##        -1.639e-01         -1.527e-01          9.342e-02  
 ##         addresses               free           business  
-##         1.337e+00          1.014e+00          7.928e-01  
+##         1.081e+00          9.776e-01          9.700e-01  
 ##             email                you             credit  
-##         1.806e-01          5.896e-02          8.806e-01  
+##         1.470e-01          8.642e-02          8.641e-01  
 ##              your               font             num000  
-##         2.249e-01          1.830e-01          1.979e+00  
+##         2.505e-01          1.018e-01          3.038e+00  
 ##             money                 hp                hpl  
-##         6.363e-01         -1.909e+00         -8.177e-01  
+##         2.140e-01         -1.782e+00         -1.056e+00  
 ##            george             num650                lab  
-##        -7.410e+00          3.370e-01         -1.839e+00  
+##        -6.767e+00          4.411e-01         -3.007e+00  
 ##              labs             telnet             num857  
-##        -2.007e-01         -6.031e+00          2.820e+00  
+##        -7.969e-02         -1.383e-01          2.050e+00  
 ##              data             num415              num85  
-##        -6.896e-01         -1.210e-01         -2.885e+00  
+##        -6.739e-01          5.094e-01         -2.151e+00  
 ##        technology            num1999              parts  
-##         8.893e-01         -1.414e-01         -5.671e-01  
+##         9.915e-01         -4.035e-01          1.061e+00  
 ##                pm             direct                 cs  
-##        -7.882e-01         -3.256e-01         -4.233e+01  
+##        -8.186e-01         -4.554e-01         -5.681e+02  
 ##           meeting           original            project  
-##        -2.757e+00         -1.551e+00         -1.450e+00  
+##        -4.283e+00         -1.071e+00         -2.025e+00  
 ##                re                edu              table  
-##        -5.889e-01         -1.279e+00         -1.710e+00  
+##        -8.848e-01         -1.253e+00         -2.463e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.689e+00         -1.361e+00         -7.036e-03  
+##        -3.916e+00         -1.220e+00         -1.430e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -2.151e+00          5.936e-01          4.452e+00  
+##        -1.253e+00          2.621e-01          4.770e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.701e+00          5.905e-02          8.600e-03  
+##         2.121e+00          1.380e-01          3.612e-03  
 ##      capitalTotal  
-##         9.253e-04  
+##         1.138e-03  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:       4628 
-## Residual Deviance: 1380  AIC: 1496
+## Residual Deviance: 1379  AIC: 1495
 </code></pre>
 
 <pre><code class="r">## Applies modelFit (which was built from training) to make predictions on the testing data
@@ -405,25 +413,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     667   43
-##    spam         30  410
+##    nonspam     662   45
+##    spam         35  408
 ##                                           
-##                Accuracy : 0.9365          
-##                  95% CI : (0.9208, 0.9499)
+##                Accuracy : 0.9304          
+##                  95% CI : (0.9142, 0.9445)
 ##     No Information Rate : 0.6061          
 ##     P-Value [Acc &gt; NIR] : &lt;2e-16          
 ##                                           
-##                   Kappa : 0.8664          
-##  Mcnemar&#39;s Test P-Value : 0.1602          
+##                   Kappa : 0.8537          
+##  Mcnemar&#39;s Test P-Value : 0.3143          
 ##                                           
-##             Sensitivity : 0.9570          
-##             Specificity : 0.9051          
-##          Pos Pred Value : 0.9394          
-##          Neg Pred Value : 0.9318          
+##             Sensitivity : 0.9498          
+##             Specificity : 0.9007          
+##          Pos Pred Value : 0.9364          
+##          Neg Pred Value : 0.9210          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5800          
-##    Detection Prevalence : 0.6174          
-##       Balanced Accuracy : 0.9310          
+##          Detection Rate : 0.5757          
+##    Detection Prevalence : 0.6148          
+##       Balanced Accuracy : 0.9252          
 ##                                           
 ##        &#39;Positive&#39; Class : nonspam         
 ## 
@@ -1020,7 +1028,134 @@ preObj &lt;- preProcess(training[,-58], method=&quot;knnImpute&quot;)
 capAve &lt;- predict(preObj, training[,-58])$capAve
 </code></pre>
 
-<p>The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.</p>
+<p>The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.  </p>
+
+<p>####<em>Covariate creaion</em><br/>
+Covariates (aka features or predictors) are the variables to be used in the model.  There are two levels:  </p>
+
+<ul>
+<li>Level 1 - from raw data to covariate (such as converting an e-mail to multiple descriptive statistics that could be used to predict whether it is spam)<br/></li>
+<li>Level 2 - transforming to create tidy covariates (such as squaring or taking a log or the like)<br/></li>
+</ul>
+
+<p>Level 1 extractions tend to be domain specific, and the &ldquo;science&rdquo; (research) component is especially important during this phase.  Some guiding principles apply:  </p>
+
+<ul>
+<li>The balancing act is summarization vs. information loss<br/></li>
+<li>Examples include: 
+
+<ol>
+<li> Text Files: Frequency of words, frequency of phrases (google &ldquo;ngrams&rdquo;), proportion of capital letters, etc.<br/></li>
+<li> Images: edges, corners, blobs, ridges (&ldquo;computer vision feature detection&rdquo;)<br/></li>
+<li> Webpages: Number/type of elements, colors, videos (&ldquo;A/B testing&rdquo;)<br/></li>
+<li> People: Height, weight, hair color, sex, country of origin<br/></li>
+</ol></li>
+<li>The more you know about the domain, the better job you will do<br/></li>
+<li>When in doubt, err on the side of more features<br/></li>
+<li>This phase can be automated, but be very careful!  There is high risk of over-fitting, finding features that work great on the training data and not at all on the testing data<br/></li>
+</ul>
+
+<p>Level 2 conversions make tidy covariates (Level 1) in to transformed covariates (Level 2):  </p>
+
+<ul>
+<li>This is more often for some methods (regression, svm) than others (trees, forests)<br/></li>
+<li>Should only be run on the training data<br/></li>
+<li>Exploratory data analysis (plotting, tables, etc.) is the core component<br/></li>
+<li>New covariates should be added to data frames, and with recognizable names<br/></li>
+</ul>
+
+<p>The wage data (ISLR) will again be used for an example:  </p>
+
+<pre><code class="r">library(ISLR) ; library(caret) ; data(Wage)
+inTrain &lt;- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training &lt;- Wage[inTrain, ]
+testing &lt;- Wage[-inTrain, ]
+</code></pre>
+
+<p>One common approach is to create indicator (dummy) variables:  </p>
+
+<pre><code class="r">table(training$jobclass)
+</code></pre>
+
+<pre><code>## 
+##  1. Industrial 2. Information 
+##           1051           1051
+</code></pre>
+
+<pre><code class="r">dummies &lt;- dummyVars(wage ~ jobclass, data=training) ## dummyVars is a caret function
+head(predict(dummies, newdata=training)) ## using predict() on dummies creates the dummy variables
+</code></pre>
+
+<pre><code>##        jobclass.1. Industrial jobclass.2. Information
+## 86582                       0                       1
+## 161300                      1                       0
+## 155159                      0                       1
+## 11443                       0                       1
+## 376662                      0                       1
+## 450601                      1                       0
+</code></pre>
+
+<p>There is a function for identifying variables with near zero variance.  This is handy, as these will have no predictive power:  </p>
+
+<pre><code class="r">nsv &lt;- nearZeroVar(training, saveMetrics=TRUE)
+nsv
+</code></pre>
+
+<pre><code>##            freqRatio percentUnique zeroVar   nzv
+## year        1.037356    0.33301618   FALSE FALSE
+## age         1.027027    2.85442436   FALSE FALSE
+## sex         0.000000    0.04757374    TRUE  TRUE
+## maritl      3.272931    0.23786870   FALSE FALSE
+## race        8.938776    0.19029496   FALSE FALSE
+## education   1.389002    0.23786870   FALSE FALSE
+## region      0.000000    0.04757374    TRUE  TRUE
+## jobclass    1.000000    0.09514748   FALSE FALSE
+## health      2.468647    0.09514748   FALSE FALSE
+## health_ins  2.352472    0.09514748   FALSE FALSE
+## logwage     1.061728   19.17221694   FALSE FALSE
+## wage        1.061728   19.17221694   FALSE FALSE
+</code></pre>
+
+<p>Additionally, splines can be created on the training data and then applied to the test data:  </p>
+
+<pre><code class="r">library(splines)
+bsBasis &lt;- bs(training$age, df=3) ## Creates a polynomial variable
+head(bsBasis) ## column 1 is age, column 2 is age^2, column 3 is age^3
+</code></pre>
+
+<pre><code>##              1          2           3
+## [1,] 0.2368501 0.02537679 0.000906314
+## [2,] 0.4163380 0.32117502 0.082587862
+## [3,] 0.4308138 0.29109043 0.065560908
+## [4,] 0.3625256 0.38669397 0.137491189
+## [5,] 0.3063341 0.42415495 0.195763821
+## [6,] 0.4241549 0.30633413 0.073747105
+</code></pre>
+
+<pre><code class="r">## Plot the results from the cubic spline
+lm1 &lt;- lm(wage ~ bsBasis, data=training)
+plot(training$age, training$wage, pch=19, cex=0.75)
+points(training$age, predict(lm1, newdata=training), col=&quot;red&quot;, cex=1.5, pch=19)
+</code></pre>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk unnamed-chunk-23"/></p>
+
+<pre><code class="r">## Application of the spline to the test data
+head(predict(bsBasis, age=testing$age)) ## need to use the exact same procedure
+</code></pre>
+
+<pre><code>##              1          2           3
+## [1,] 0.2368501 0.02537679 0.000906314
+## [2,] 0.4163380 0.32117502 0.082587862
+## [3,] 0.4308138 0.29109043 0.065560908
+## [4,] 0.3625256 0.38669397 0.137491189
+## [5,] 0.3063341 0.42415495 0.195763821
+## [6,] 0.4241549 0.30633413 0.073747105
+</code></pre>
+
+<p>There is a guide on preprcessing with caret that may be valuable to look at.  Good science and domain knowledge are the keys - google &ldquo;feature extraction for [good search term]&rdquo; before starting in a new area.  And, leverage good exploratory analysis techniques (training set only) and then the preProcess() function in caret.  Be very careful not to overfit, and maintain a clean &ldquo;test&rdquo; data set to understand out of model error.  </p>
+
+<p>####<em>Pre-processing with principal component analysis (PCA)</em>  </p>
 
 </body>
 

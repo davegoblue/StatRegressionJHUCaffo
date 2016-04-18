@@ -321,4 +321,72 @@ capAve <- predict(preObj, training[,-58])$capAve
 
 ```
 
-The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.
+The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.  
+  
+####_Covariate creaion_  
+Covariates (aka features or predictors) are the variables to be used in the model.  There are two levels:  
+  
+* Level 1 - from raw data to covariate (such as converting an e-mail to multiple descriptive statistics that could be used to predict whether it is spam)  
+* Level 2 - transforming to create tidy covariates (such as squaring or taking a log or the like)  
+  
+Level 1 extractions tend to be domain specific, and the "science" (research) component is especially important during this phase.  Some guiding principles apply:  
+  
+* The balancing act is summarization vs. information loss  
+* Examples include: 
+  1.  Text Files: Frequency of words, frequency of phrases (google "ngrams"), proportion of capital letters, etc.  
+  2.  Images: edges, corners, blobs, ridges ("computer vision feature detection")  
+  3.  Webpages: Number/type of elements, colors, videos ("A/B testing")  
+  4.  People: Height, weight, hair color, sex, country of origin  
+* The more you know about the domain, the better job you will do  
+* When in doubt, err on the side of more features  
+* This phase can be automated, but be very careful!  There is high risk of over-fitting, finding features that work great on the training data and not at all on the testing data  
+  
+Level 2 conversions make tidy covariates (Level 1) in to transformed covariates (Level 2):  
+  
+* This is more often for some methods (regression, svm) than others (trees, forests)  
+* Should only be run on the training data  
+* Exploratory data analysis (plotting, tables, etc.) is the core component  
+* New covariates should be added to data frames, and with recognizable names  
+  
+The wage data (ISLR) will again be used for an example:  
+```{r}
+library(ISLR) ; library(caret) ; data(Wage)
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+
+```
+  
+One common approach is to create indicator (dummy) variables:  
+```{r}
+table(training$jobclass)
+dummies <- dummyVars(wage ~ jobclass, data=training) ## dummyVars is a caret function
+head(predict(dummies, newdata=training)) ## using predict() on dummies creates the dummy variables
+
+```
+  
+There is a function for identifying variables with near zero variance.  This is handy, as these will have no predictive power:  
+```{r}
+nsv <- nearZeroVar(training, saveMetrics=TRUE)
+nsv
+```
+  
+Additionally, splines can be created on the training data and then applied to the test data:  
+```{r}
+library(splines)
+bsBasis <- bs(training$age, df=3) ## Creates a polynomial variable
+head(bsBasis) ## column 1 is age, column 2 is age^2, column 3 is age^3
+
+## Plot the results from the cubic spline
+lm1 <- lm(wage ~ bsBasis, data=training)
+plot(training$age, training$wage, pch=19, cex=0.75)
+points(training$age, predict(lm1, newdata=training), col="red", cex=1.5, pch=19)
+
+## Application of the spline to the test data
+head(predict(bsBasis, age=testing$age)) ## need to use the exact same procedure
+
+```
+
+There is a guide on preprcessing with caret that may be valuable to look at.  Good science and domain knowledge are the keys - google "feature extraction for [good search term]" before starting in a new area.  And, leverage good exploratory analysis techniques (training set only) and then the preProcess() function in caret.  Be very careful not to overfit, and maintain a clean "test" data set to understand out of model error.  
+  
+####_Pre-processing with principal component analysis (PCA)_  

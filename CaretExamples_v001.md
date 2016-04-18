@@ -42,6 +42,11 @@ library(caret);
 ## Loading required package: ggplot2
 ```
 
+```
+## Want to understand how all the pieces fit together? Buy the
+## ggplot2 book: http://ggplot2.org/book/
+```
+
 ```r
 library(kernlab); 
 ```
@@ -89,7 +94,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
 
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -153,7 +164,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9175644  0.8263704  0.006742687  0.01391462
+##   0.9187823  0.8291534  0.01134362   0.02224423
 ## 
 ## 
 ```
@@ -169,49 +180,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.741e+00         -3.191e-01         -1.354e-01  
+##        -1.711e+00         -2.506e-01         -1.515e-01  
 ##               all              num3d                our  
-##         7.972e-02          2.091e+00          5.951e-01  
+##         1.182e-01          1.839e+00          5.768e-01  
 ##              over             remove           internet  
-##         9.765e-01          2.126e+00          7.840e-01  
+##         5.921e-01          2.873e+00          5.254e-01  
 ##             order               mail            receive  
-##         5.227e-01          4.974e-02         -4.102e-01  
+##         4.243e-01          1.230e-01         -5.866e-01  
 ##              will             people             report  
-##        -9.627e-02          1.034e-02          4.553e-01  
+##        -1.639e-01         -1.527e-01          9.342e-02  
 ##         addresses               free           business  
-##         1.337e+00          1.014e+00          7.928e-01  
+##         1.081e+00          9.776e-01          9.700e-01  
 ##             email                you             credit  
-##         1.806e-01          5.896e-02          8.806e-01  
+##         1.470e-01          8.642e-02          8.641e-01  
 ##              your               font             num000  
-##         2.249e-01          1.830e-01          1.979e+00  
+##         2.505e-01          1.018e-01          3.038e+00  
 ##             money                 hp                hpl  
-##         6.363e-01         -1.909e+00         -8.177e-01  
+##         2.140e-01         -1.782e+00         -1.056e+00  
 ##            george             num650                lab  
-##        -7.410e+00          3.370e-01         -1.839e+00  
+##        -6.767e+00          4.411e-01         -3.007e+00  
 ##              labs             telnet             num857  
-##        -2.007e-01         -6.031e+00          2.820e+00  
+##        -7.969e-02         -1.383e-01          2.050e+00  
 ##              data             num415              num85  
-##        -6.896e-01         -1.210e-01         -2.885e+00  
+##        -6.739e-01          5.094e-01         -2.151e+00  
 ##        technology            num1999              parts  
-##         8.893e-01         -1.414e-01         -5.671e-01  
+##         9.915e-01         -4.035e-01          1.061e+00  
 ##                pm             direct                 cs  
-##        -7.882e-01         -3.256e-01         -4.233e+01  
+##        -8.186e-01         -4.554e-01         -5.681e+02  
 ##           meeting           original            project  
-##        -2.757e+00         -1.551e+00         -1.450e+00  
+##        -4.283e+00         -1.071e+00         -2.025e+00  
 ##                re                edu              table  
-##        -5.889e-01         -1.279e+00         -1.710e+00  
+##        -8.848e-01         -1.253e+00         -2.463e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.689e+00         -1.361e+00         -7.036e-03  
+##        -3.916e+00         -1.220e+00         -1.430e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -2.151e+00          5.936e-01          4.452e+00  
+##        -1.253e+00          2.621e-01          4.770e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.701e+00          5.905e-02          8.600e-03  
+##         2.121e+00          1.380e-01          3.612e-03  
 ##      capitalTotal  
-##         9.253e-04  
+##         1.138e-03  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1380 	AIC: 1496
+## Residual Deviance: 1379 	AIC: 1495
 ```
 
 ```r
@@ -227,25 +238,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     667   43
-##    spam         30  410
+##    nonspam     662   45
+##    spam         35  408
 ##                                           
-##                Accuracy : 0.9365          
-##                  95% CI : (0.9208, 0.9499)
+##                Accuracy : 0.9304          
+##                  95% CI : (0.9142, 0.9445)
 ##     No Information Rate : 0.6061          
 ##     P-Value [Acc > NIR] : <2e-16          
 ##                                           
-##                   Kappa : 0.8664          
-##  Mcnemar's Test P-Value : 0.1602          
+##                   Kappa : 0.8537          
+##  Mcnemar's Test P-Value : 0.3143          
 ##                                           
-##             Sensitivity : 0.9570          
-##             Specificity : 0.9051          
-##          Pos Pred Value : 0.9394          
-##          Neg Pred Value : 0.9318          
+##             Sensitivity : 0.9498          
+##             Specificity : 0.9007          
+##          Pos Pred Value : 0.9364          
+##          Neg Pred Value : 0.9210          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5800          
-##    Detection Prevalence : 0.6174          
-##       Balanced Accuracy : 0.9310          
+##          Detection Rate : 0.5757          
+##    Detection Prevalence : 0.6148          
+##       Balanced Accuracy : 0.9252          
 ##                                           
 ##        'Positive' Class : nonspam         
 ## 
@@ -942,4 +953,134 @@ preObj <- preProcess(training[,-58], method="knnImpute")
 capAve <- predict(preObj, training[,-58])$capAve
 ```
 
-The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.
+The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.  
+  
+####_Covariate creaion_  
+Covariates (aka features or predictors) are the variables to be used in the model.  There are two levels:  
+  
+* Level 1 - from raw data to covariate (such as converting an e-mail to multiple descriptive statistics that could be used to predict whether it is spam)  
+* Level 2 - transforming to create tidy covariates (such as squaring or taking a log or the like)  
+  
+Level 1 extractions tend to be domain specific, and the "science" (research) component is especially important during this phase.  Some guiding principles apply:  
+  
+* The balancing act is summarization vs. information loss  
+* Examples include: 
+  1.  Text Files: Frequency of words, frequency of phrases (google "ngrams"), proportion of capital letters, etc.  
+  2.  Images: edges, corners, blobs, ridges ("computer vision feature detection")  
+  3.  Webpages: Number/type of elements, colors, videos ("A/B testing")  
+  4.  People: Height, weight, hair color, sex, country of origin  
+* The more you know about the domain, the better job you will do  
+* When in doubt, err on the side of more features  
+* This phase can be automated, but be very careful!  There is high risk of over-fitting, finding features that work great on the training data and not at all on the testing data  
+  
+Level 2 conversions make tidy covariates (Level 1) in to transformed covariates (Level 2):  
+  
+* This is more often for some methods (regression, svm) than others (trees, forests)  
+* Should only be run on the training data  
+* Exploratory data analysis (plotting, tables, etc.) is the core component  
+* New covariates should be added to data frames, and with recognizable names  
+  
+The wage data (ISLR) will again be used for an example:  
+
+```r
+library(ISLR) ; library(caret) ; data(Wage)
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+```
+  
+One common approach is to create indicator (dummy) variables:  
+
+```r
+table(training$jobclass)
+```
+
+```
+## 
+##  1. Industrial 2. Information 
+##           1051           1051
+```
+
+```r
+dummies <- dummyVars(wage ~ jobclass, data=training) ## dummyVars is a caret function
+head(predict(dummies, newdata=training)) ## using predict() on dummies creates the dummy variables
+```
+
+```
+##        jobclass.1. Industrial jobclass.2. Information
+## 86582                       0                       1
+## 161300                      1                       0
+## 155159                      0                       1
+## 11443                       0                       1
+## 376662                      0                       1
+## 450601                      1                       0
+```
+  
+There is a function for identifying variables with near zero variance.  This is handy, as these will have no predictive power:  
+
+```r
+nsv <- nearZeroVar(training, saveMetrics=TRUE)
+nsv
+```
+
+```
+##            freqRatio percentUnique zeroVar   nzv
+## year        1.037356    0.33301618   FALSE FALSE
+## age         1.027027    2.85442436   FALSE FALSE
+## sex         0.000000    0.04757374    TRUE  TRUE
+## maritl      3.272931    0.23786870   FALSE FALSE
+## race        8.938776    0.19029496   FALSE FALSE
+## education   1.389002    0.23786870   FALSE FALSE
+## region      0.000000    0.04757374    TRUE  TRUE
+## jobclass    1.000000    0.09514748   FALSE FALSE
+## health      2.468647    0.09514748   FALSE FALSE
+## health_ins  2.352472    0.09514748   FALSE FALSE
+## logwage     1.061728   19.17221694   FALSE FALSE
+## wage        1.061728   19.17221694   FALSE FALSE
+```
+  
+Additionally, splines can be created on the training data and then applied to the test data:  
+
+```r
+library(splines)
+bsBasis <- bs(training$age, df=3) ## Creates a polynomial variable
+head(bsBasis) ## column 1 is age, column 2 is age^2, column 3 is age^3
+```
+
+```
+##              1          2           3
+## [1,] 0.2368501 0.02537679 0.000906314
+## [2,] 0.4163380 0.32117502 0.082587862
+## [3,] 0.4308138 0.29109043 0.065560908
+## [4,] 0.3625256 0.38669397 0.137491189
+## [5,] 0.3063341 0.42415495 0.195763821
+## [6,] 0.4241549 0.30633413 0.073747105
+```
+
+```r
+## Plot the results from the cubic spline
+lm1 <- lm(wage ~ bsBasis, data=training)
+plot(training$age, training$wage, pch=19, cex=0.75)
+points(training$age, predict(lm1, newdata=training), col="red", cex=1.5, pch=19)
+```
+
+![plot of chunk unnamed-chunk-23](figure/unnamed-chunk-23-1.png)
+
+```r
+## Application of the spline to the test data
+head(predict(bsBasis, age=testing$age)) ## need to use the exact same procedure
+```
+
+```
+##              1          2           3
+## [1,] 0.2368501 0.02537679 0.000906314
+## [2,] 0.4163380 0.32117502 0.082587862
+## [3,] 0.4308138 0.29109043 0.065560908
+## [4,] 0.3625256 0.38669397 0.137491189
+## [5,] 0.3063341 0.42415495 0.195763821
+## [6,] 0.4241549 0.30633413 0.073747105
+```
+
+There is a guide on preprcessing with caret that may be valuable to look at.  Good science and domain knowledge are the keys - google "feature extraction for [good search term]" before starting in a new area.  And, leverage good exploratory analysis techniques (training set only) and then the preProcess() function in caret.  Be very careful not to overfit, and maintain a clean "test" data set to understand out of model error.  
+  
+####_Pre-processing with principal component analysis (PCA)_  
