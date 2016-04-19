@@ -390,3 +390,121 @@ head(predict(bsBasis, age=testing$age)) ## need to use the exact same procedure
 There is a guide on preprcessing with caret that may be valuable to look at.  Good science and domain knowledge are the keys - google "feature extraction for [good search term]" before starting in a new area.  And, leverage good exploratory analysis techniques (training set only) and then the preProcess() function in caret.  Be very careful not to overfit, and maintain a clean "test" data set to understand out of model error.  
   
 ####_Pre-processing with principal component analysis (PCA)_  
+Principal Component Analysis (PCA) is a topic that I want to explore further.  This module provided a few basic pointers about the concept and its usage in R.  
+  
+The basic idea is that many of the predictor variables may be highly correlated.  It may be nice to include a summary subset that retains most of the information but little of the correlation.  Broadly, there are two goals:  
+  
+1.  Statistics - find a new set of variables that are uncorrelated but explain as much variance as possible  
+2.  Compression - find the lowest-rank (fewest variables) matrix that explains the original data  
+  
+The "spam" dataset can again be analyzed to explore the concept:  
+```{r}
+library(caret); library(kernlab); data(spam)
+
+inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+
+## Column 58 is the factor we want to predict; find all the other correlations
+## Set the diagonals (variables with self, which will have r=1) all to 0
+## Flag everything else with an 80%+ magnitude of correlation
+M <- abs(cor(training[ , -58]))
+diag(M) <- 0 ## takes care of the correlation with self issue
+which(M > 0.8, arr.ind=TRUE)
+
+## Identify the culprits, and plot them
+names(spam)[c(32, 34, 40)]
+plot(spam[,34], spam[, 32])
+plot(spam[,40], spam[, 32])
+
+```
+  
+The basic idea behind PCA is that we might not need (or even want) every predictor:  
+  
+1.  Weighted combinations of predictors may work better  
+2.  Combinations should be chosen to retain as much information (explain as much variance) as possible  
+3.  Benefits include both a smaller dataset (fewer predictors) and reduced noise (benefit of averaging)  
+  
+One potential idea is to "rotate"" the data - see below for an example:  
+```{r}
+
+## Recall that 0.71 is sqrt(2), so this essentially "preserves"" the length
+X <- 0.71 * training$num415 + 0.71 * training$num857 ## captures almost all of the information
+Y <- 0.71 * training$num415 - 0.71 * training$num857 ## captures almost none of the information
+plot(X, Y)
+
+```
+  
+The scaled solutions are SVD and PCA:  
+  
+* SVD - Suppose that X is a matrix with each variable in a column and each observation in a row, then SVD is a matrix decomposition such that X = U % * % D % * % t(V), where the columns of U are orthogonal (left singular vectors), the columns of V are orthogonal (right singular vectors), and D is diagnonal (singular values)  
+* PCA - The principal components are equal to the right singular vectors (columns of V) if you first standardize (subtract mu, then divide by sigma) all of the variables  
+  
+A small example can again be drawn from the spam dataset:  
+```{r}
+
+## Create a small dataset and then use it
+smallSpam <- spam[,c(34,32)]
+prComp <- prcomp(smallSpam)
+plot(prComp$x[,1], prComp$x[,2]) ## pretty much like what we saw with the 0.71 (sqrt(2)) transform above
+
+## See which rotations have been performed
+## PC1 explains the most variation, PC2 explains the second most variation, etc.
+prComp$rotation
+
+```
+  
+The example can be extended to the full spam dataset, seeing how well the PC correlate to the outcome:  
+```{r}
+
+typeColor <- ((spam$type=="spam")*1 + 1)
+prComp <- prcomp(log10(spam[,-58]+1)) ## often needed in PCA to deal with extreme skew in the data
+plot(prComp$x[,1], prComp$x[,2], col=typeColor, xlab="PC1", ylab="PC2")
+
+```
+  
+PCA can also be run inside the caret function, making use of preProcess:  
+```{r}
+
+## pcaComp is the number of components to create
+## log10 is used to solve for the problem of extreme skew in the underlying data
+preProc <- preProcess(log10(spam[,-58]+1), method="pca", pcaComp=2)
+spamPC <- predict(preProc, log10(spam[,-58]+1))
+plot(spamPC[,1], spamPC[,2], col=typeColor)
+
+```
+
+Lastly, the full process can be used to train the model and then test it.  Note that preProcess ensures that we use the same parameters on the test data.  It is over-fitting if we update PCA to use new transformations based on what could be observed in the test data.  We should be going in to this blind.  
+  
+```{r}
+
+## Create PCA from the training data, use methodology on training data, fit GLM
+preProc <- preProcess(log10(training[,-58]+1), method="pca", pcaComp=2)
+trainPC <- predict(preProc, log10(training[,-58]+1))
+modelFit <- train(training$type ~ ., method="glm", data=trainPC)
+
+## Use identical methodology on testing data, and review the accuracy
+testPC <- predict(preProc, log10(testing[,-58]+1))
+confusionMatrix(predict(modelFit, testPC), testing$type)
+
+```
+  
+This process alone, using just two principal components, is ~89% accurate in classifying e-mail as spam.  This significantly improves on the no-information rate of ~61%.  
+  
+Lastly, the PCA approach can be passed directly to the train() function, which will create the same number of PCA as predictors in the initial data.  This drives accuracy up slightly more to ~92%:  
+```{r}
+
+modelFit <- train(training$type ~ ., method="glm", preProcess="pca", data=training)
+confusionMatrix(predict(modelFit, testing), testing$type)
+
+```
+  
+A few final thoughts on PCA include:  
+  
+* It tends to be most useful for linear models such as LDA (linear discriminant)  
+* It will likely make it harder to interpret the predictors  
+* Watch out for outliers, which are especially bad for PCA!  Plot to identify, transform (log, Box-Cox, etc.) as needed prior to PCA  
+* Additional details are in "Exploratory Data Analysis" (JHU Coursera) and "Elements of Statistical Learning"  
+  
+####_Predicting with regression_  
+  

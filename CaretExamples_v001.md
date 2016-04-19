@@ -42,11 +42,6 @@ library(caret);
 ## Loading required package: ggplot2
 ```
 
-```
-## Want to understand how all the pieces fit together? Buy the
-## ggplot2 book: http://ggplot2.org/book/
-```
-
 ```r
 library(kernlab); 
 ```
@@ -94,6 +89,10 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ```
 
 ```
@@ -101,10 +100,6 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ```
 
 ```
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -164,7 +159,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9187823  0.8291534  0.01134362   0.02224423
+##   0.9148573  0.8205463  0.00951268   0.02055983
 ## 
 ## 
 ```
@@ -180,49 +175,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.711e+00         -2.506e-01         -1.515e-01  
+##         -1.561085          -0.660350          -0.156876  
 ##               all              num3d                our  
-##         1.182e-01          1.839e+00          5.768e-01  
+##          0.144093           2.782078           0.494316  
 ##              over             remove           internet  
-##         5.921e-01          2.873e+00          5.254e-01  
+##          1.575599           3.031630           0.495090  
 ##             order               mail            receive  
-##         4.243e-01          1.230e-01         -5.866e-01  
+##          0.429122           0.306079          -0.119431  
 ##              will             people             report  
-##        -1.639e-01         -1.527e-01          9.342e-02  
+##         -0.101857          -0.209213           0.116494  
 ##         addresses               free           business  
-##         1.081e+00          9.776e-01          9.700e-01  
+##          1.156503           0.927406           0.683236  
 ##             email                you             credit  
-##         1.470e-01          8.642e-02          8.641e-01  
+##          0.079425           0.058952           1.161395  
 ##              your               font             num000  
-##         2.505e-01          1.018e-01          3.038e+00  
+##          0.256049           0.147884           2.082741  
 ##             money                 hp                hpl  
-##         2.140e-01         -1.782e+00         -1.056e+00  
+##          0.583266          -1.907525          -1.603798  
 ##            george             num650                lab  
-##        -6.767e+00          4.411e-01         -3.007e+00  
+##        -10.018588           0.438901          -5.094464  
 ##              labs             telnet             num857  
-##        -7.969e-02         -1.383e-01          2.050e+00  
+##         -0.345425          -0.134957           0.634045  
 ##              data             num415              num85  
-##        -6.739e-01          5.094e-01         -2.151e+00  
+##         -1.044341           0.944510          -1.546656  
 ##        technology            num1999              parts  
-##         9.915e-01         -4.035e-01          1.061e+00  
+##          1.357468           0.045556          -0.574255  
 ##                pm             direct                 cs  
-##        -8.186e-01         -4.554e-01         -5.681e+02  
+##         -1.198244          -0.349738         -46.523658  
 ##           meeting           original            project  
-##        -4.283e+00         -1.071e+00         -2.025e+00  
+##         -3.687602          -1.355462          -1.265268  
 ##                re                edu              table  
-##        -8.848e-01         -1.253e+00         -2.463e+00  
+##         -0.929413          -1.176235          -2.421049  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.916e+00         -1.220e+00         -1.430e-01  
+##         -4.476581          -1.191435          -0.181647  
 ## charSquarebracket    charExclamation         charDollar  
-##        -1.253e+00          2.621e-01          4.770e+00  
+##         -0.667377           0.306907           4.915994  
 ##          charHash         capitalAve        capitalLong  
-##         2.121e+00          1.380e-01          3.612e-03  
+##          2.277949           0.008561           0.007575  
 ##      capitalTotal  
-##         1.138e-03  
+##          0.001276  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1379 	AIC: 1495
+## Residual Deviance: 1357 	AIC: 1473
 ```
 
 ```r
@@ -238,25 +233,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     662   45
-##    spam         35  408
+##    nonspam     662   49
+##    spam         35  404
 ##                                           
-##                Accuracy : 0.9304          
-##                  95% CI : (0.9142, 0.9445)
+##                Accuracy : 0.927           
+##                  95% CI : (0.9104, 0.9413)
 ##     No Information Rate : 0.6061          
 ##     P-Value [Acc > NIR] : <2e-16          
 ##                                           
-##                   Kappa : 0.8537          
-##  Mcnemar's Test P-Value : 0.3143          
+##                   Kappa : 0.8462          
+##  Mcnemar's Test P-Value : 0.1561          
 ##                                           
 ##             Sensitivity : 0.9498          
-##             Specificity : 0.9007          
-##          Pos Pred Value : 0.9364          
-##          Neg Pred Value : 0.9210          
+##             Specificity : 0.8918          
+##          Pos Pred Value : 0.9311          
+##          Neg Pred Value : 0.9203          
 ##              Prevalence : 0.6061          
 ##          Detection Rate : 0.5757          
-##    Detection Prevalence : 0.6148          
-##       Balanced Accuracy : 0.9252          
+##    Detection Prevalence : 0.6183          
+##       Balanced Accuracy : 0.9208          
 ##                                           
 ##        'Positive' Class : nonspam         
 ## 
@@ -1084,3 +1079,328 @@ head(predict(bsBasis, age=testing$age)) ## need to use the exact same procedure
 There is a guide on preprcessing with caret that may be valuable to look at.  Good science and domain knowledge are the keys - google "feature extraction for [good search term]" before starting in a new area.  And, leverage good exploratory analysis techniques (training set only) and then the preProcess() function in caret.  Be very careful not to overfit, and maintain a clean "test" data set to understand out of model error.  
   
 ####_Pre-processing with principal component analysis (PCA)_  
+Principal Component Analysis (PCA) is a topic that I want to explore further.  This module provided a few basic pointers about the concept and its usage in R.  
+  
+The basic idea is that many of the predictor variables may be highly correlated.  It may be nice to include a summary subset that retains most of the information but little of the correlation.  Broadly, there are two goals:  
+  
+1.  Statistics - find a new set of variables that are uncorrelated but explain as much variance as possible  
+2.  Compression - find the lowest-rank (fewest variables) matrix that explains the original data  
+  
+The "spam" dataset can again be analyzed to explore the concept:  
+
+```r
+library(caret); library(kernlab); data(spam)
+
+inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+
+## Column 58 is the factor we want to predict; find all the other correlations
+## Set the diagonals (variables with self, which will have r=1) all to 0
+## Flag everything else with an 80%+ magnitude of correlation
+M <- abs(cor(training[ , -58]))
+diag(M) <- 0 ## takes care of the correlation with self issue
+which(M > 0.8, arr.ind=TRUE)
+```
+
+```
+##        row col
+## num415  34  32
+## direct  40  32
+## num857  32  34
+## direct  40  34
+## num857  32  40
+## num415  34  40
+```
+
+```r
+## Identify the culprits, and plot them
+names(spam)[c(32, 34, 40)]
+```
+
+```
+## [1] "num857" "num415" "direct"
+```
+
+```r
+plot(spam[,34], spam[, 32])
+```
+
+![plot of chunk unnamed-chunk-24](figure/unnamed-chunk-24-1.png)
+
+```r
+plot(spam[,40], spam[, 32])
+```
+
+![plot of chunk unnamed-chunk-24](figure/unnamed-chunk-24-2.png)
+  
+The basic idea behind PCA is that we might not need (or even want) every predictor:  
+  
+1.  Weighted combinations of predictors may work better  
+2.  Combinations should be chosen to retain as much information (explain as much variance) as possible  
+3.  Benefits include both a smaller dataset (fewer predictors) and reduced noise (benefit of averaging)  
+  
+One potential idea is to "rotate"" the data - see below for an example:  
+
+```r
+## Recall that 0.71 is sqrt(2), so this essentially "preserves"" the length
+X <- 0.71 * training$num415 + 0.71 * training$num857 ## captures almost all of the information
+Y <- 0.71 * training$num415 - 0.71 * training$num857 ## captures almost none of the information
+plot(X, Y)
+```
+
+![plot of chunk unnamed-chunk-25](figure/unnamed-chunk-25-1.png)
+  
+The scaled solutions are SVD and PCA:  
+  
+* SVD - Suppose that X is a matrix with each variable in a column and each observation in a row, then SVD is a matrix decomposition such that X = U % * % D % * % t(V), where the columns of U are orthogonal (left singular vectors), the columns of V are orthogonal (right singular vectors), and D is diagnonal (singular values)  
+* PCA - The principal components are equal to the right singular vectors (columns of V) if you first standardize (subtract mu, then divide by sigma) all of the variables  
+  
+A small example can again be drawn from the spam dataset:  
+
+```r
+## Create a small dataset and then use it
+smallSpam <- spam[,c(34,32)]
+prComp <- prcomp(smallSpam)
+plot(prComp$x[,1], prComp$x[,2]) ## pretty much like what we saw with the 0.71 (sqrt(2)) transform above
+```
+
+![plot of chunk unnamed-chunk-26](figure/unnamed-chunk-26-1.png)
+
+```r
+## See which rotations have been performed
+## PC1 explains the most variation, PC2 explains the second most variation, etc.
+prComp$rotation
+```
+
+```
+##              PC1        PC2
+## num415 0.7080625  0.7061498
+## num857 0.7061498 -0.7080625
+```
+  
+The example can be extended to the full spam dataset, seeing how well the PC correlate to the outcome:  
+
+```r
+typeColor <- ((spam$type=="spam")*1 + 1)
+prComp <- prcomp(log10(spam[,-58]+1)) ## often needed in PCA to deal with extreme skew in the data
+plot(prComp$x[,1], prComp$x[,2], col=typeColor, xlab="PC1", ylab="PC2")
+```
+
+![plot of chunk unnamed-chunk-27](figure/unnamed-chunk-27-1.png)
+  
+PCA can also be run inside the caret function, making use of preProcess:  
+
+```r
+## pcaComp is the number of components to create
+## log10 is used to solve for the problem of extreme skew in the underlying data
+preProc <- preProcess(log10(spam[,-58]+1), method="pca", pcaComp=2)
+spamPC <- predict(preProc, log10(spam[,-58]+1))
+plot(spamPC[,1], spamPC[,2], col=typeColor)
+```
+
+![plot of chunk unnamed-chunk-28](figure/unnamed-chunk-28-1.png)
+
+Lastly, the full process can be used to train the model and then test it.  Note that preProcess ensures that we use the same parameters on the test data.  It is over-fitting if we update PCA to use new transformations based on what could be observed in the test data.  We should be going in to this blind.  
+  
+
+```r
+## Create PCA from the training data, use methodology on training data, fit GLM
+preProc <- preProcess(log10(training[,-58]+1), method="pca", pcaComp=2)
+trainPC <- predict(preProc, log10(training[,-58]+1))
+modelFit <- train(training$type ~ ., method="glm", data=trainPC)
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```r
+## Use identical methodology on testing data, and review the accuracy
+testPC <- predict(preProc, log10(testing[,-58]+1))
+confusionMatrix(predict(modelFit, testPC), testing$type)
+```
+
+```
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction nonspam spam
+##    nonspam     645   73
+##    spam         52  380
+##                                           
+##                Accuracy : 0.8913          
+##                  95% CI : (0.8719, 0.9087)
+##     No Information Rate : 0.6061          
+##     P-Value [Acc > NIR] : < 2e-16         
+##                                           
+##                   Kappa : 0.7705          
+##  Mcnemar's Test P-Value : 0.07364         
+##                                           
+##             Sensitivity : 0.9254          
+##             Specificity : 0.8389          
+##          Pos Pred Value : 0.8983          
+##          Neg Pred Value : 0.8796          
+##              Prevalence : 0.6061          
+##          Detection Rate : 0.5609          
+##    Detection Prevalence : 0.6243          
+##       Balanced Accuracy : 0.8821          
+##                                           
+##        'Positive' Class : nonspam         
+## 
+```
+  
+This process alone, using just two principal components, is ~89% accurate in classifying e-mail as spam.  This significantly improves on the no-information rate of ~61%.  
+  
+Lastly, the PCA approach can be passed directly to the train() function, which will create the same number of PCA as predictors in the initial data.  This drives accuracy up slightly more to ~92%:  
+
+```r
+modelFit <- train(training$type ~ ., method="glm", preProcess="pca", data=training)
+```
+
+```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+
+```r
+confusionMatrix(predict(modelFit, testing), testing$type)
+```
+
+```
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction nonspam spam
+##    nonspam     658   50
+##    spam         39  403
+##                                           
+##                Accuracy : 0.9226          
+##                  95% CI : (0.9056, 0.9374)
+##     No Information Rate : 0.6061          
+##     P-Value [Acc > NIR] : <2e-16          
+##                                           
+##                   Kappa : 0.8372          
+##  Mcnemar's Test P-Value : 0.2891          
+##                                           
+##             Sensitivity : 0.9440          
+##             Specificity : 0.8896          
+##          Pos Pred Value : 0.9294          
+##          Neg Pred Value : 0.9118          
+##              Prevalence : 0.6061          
+##          Detection Rate : 0.5722          
+##    Detection Prevalence : 0.6157          
+##       Balanced Accuracy : 0.9168          
+##                                           
+##        'Positive' Class : nonspam         
+## 
+```
+  
+A few final thoughts on PCA include:  
+  
+* It tends to be most useful for linear models such as LDA (linear discriminant)  
+* It will likely make it harder to interpret the predictors  
+* Watch out for outliers, which are especially bad for PCA!  Plot to identify, transform (log, Box-Cox, etc.) as needed prior to PCA  
+* Additional details are in "Exploratory Data Analysis" (JHU Coursera) and "Elements of Statistical Learning"  
+  
+####_Predicting with regression_  
+  
