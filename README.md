@@ -11,4 +11,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 17-APR-2016 - Parallel processing, and pre-processing    
 * 18-APR-2016 - Covariate creation  
 * 19-APR-2016 - PCA (principal components) for pre-processing  
+* 20-APR-2016 - Using caret capabilities for simple regression    
   
