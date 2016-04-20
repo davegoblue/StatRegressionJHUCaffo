@@ -8,8 +8,7 @@ output: html_document
 
 
 ## Overall Objective  
-
-This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  
+This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  The document primarily captures the code used in the JHU module for my personal future reference, along with a mix of instructor thoughts and a few of my syntheses.
   
 The broad themes of caret include:  
   
@@ -93,13 +92,7 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
 
-```
-## Warning: glm.fit: algorithm did not converge
-```
-
-```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -159,7 +152,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9148573  0.8205463  0.00951268   0.02055983
+##   0.9183567  0.8279095  0.007309417  0.01494435
 ## 
 ## 
 ```
@@ -175,49 +168,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##         -1.561085          -0.660350          -0.156876  
+##        -1.715e+00         -1.907e-01         -1.348e-01  
 ##               all              num3d                our  
-##          0.144093           2.782078           0.494316  
+##         1.400e-01          2.086e+00          6.017e-01  
 ##              over             remove           internet  
-##          1.575599           3.031630           0.495090  
+##         6.921e-01          2.363e+00          6.442e-01  
 ##             order               mail            receive  
-##          0.429122           0.306079          -0.119431  
+##         4.383e-01          1.264e-01         -5.628e-01  
 ##              will             people             report  
-##         -0.101857          -0.209213           0.116494  
+##        -1.427e-01         -1.643e-02          3.411e-01  
 ##         addresses               free           business  
-##          1.156503           0.927406           0.683236  
+##         1.354e+00          9.911e-01          8.592e-01  
 ##             email                you             credit  
-##          0.079425           0.058952           1.161395  
+##         8.997e-02          1.131e-01          8.973e-01  
 ##              your               font             num000  
-##          0.256049           0.147884           2.082741  
+##         2.142e-01          1.438e-01          2.588e+00  
 ##             money                 hp                hpl  
-##          0.583266          -1.907525          -1.603798  
+##         2.907e-01         -1.799e+00         -1.369e+00  
 ##            george             num650                lab  
-##        -10.018588           0.438901          -5.094464  
+##        -2.037e+01          4.838e-01         -2.175e+00  
 ##              labs             telnet             num857  
-##         -0.345425          -0.134957           0.634045  
+##        -1.459e-02          6.039e-01          2.021e+01  
 ##              data             num415              num85  
-##         -1.044341           0.944510          -1.546656  
+##        -1.369e+00         -1.899e+01         -1.929e+00  
 ##        technology            num1999              parts  
-##          1.357468           0.045556          -0.574255  
+##         9.138e-01          5.989e-02          1.816e+00  
 ##                pm             direct                 cs  
-##         -1.198244          -0.349738         -46.523658  
+##        -7.874e-01         -4.295e-01         -4.461e+01  
 ##           meeting           original            project  
-##         -3.687602          -1.355462          -1.265268  
+##        -3.802e+00         -1.723e+00         -1.484e+00  
 ##                re                edu              table  
-##         -0.929413          -1.176235          -2.421049  
+##        -8.548e-01         -1.222e+00         -1.674e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##         -4.476581          -1.191435          -0.181647  
+##        -4.443e+00         -1.236e+00          5.656e-02  
 ## charSquarebracket    charExclamation         charDollar  
-##         -0.667377           0.306907           4.915994  
+##        -3.637e-01          2.345e-01          5.391e+00  
 ##          charHash         capitalAve        capitalLong  
-##          2.277949           0.008561           0.007575  
+##         2.504e+00          4.627e-02          1.068e-02  
 ##      capitalTotal  
-##          0.001276  
+##         9.979e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1357 	AIC: 1473
+## Residual Deviance: 1343 	AIC: 1459
 ```
 
 ```r
@@ -233,25 +226,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     662   49
-##    spam         35  404
+##    nonspam     660   57
+##    spam         37  396
 ##                                           
-##                Accuracy : 0.927           
-##                  95% CI : (0.9104, 0.9413)
+##                Accuracy : 0.9183          
+##                  95% CI : (0.9009, 0.9334)
 ##     No Information Rate : 0.6061          
-##     P-Value [Acc > NIR] : <2e-16          
+##     P-Value [Acc > NIR] : < 2e-16         
 ##                                           
-##                   Kappa : 0.8462          
-##  Mcnemar's Test P-Value : 0.1561          
+##                   Kappa : 0.8275          
+##  Mcnemar's Test P-Value : 0.05003         
 ##                                           
-##             Sensitivity : 0.9498          
-##             Specificity : 0.8918          
-##          Pos Pred Value : 0.9311          
-##          Neg Pred Value : 0.9203          
+##             Sensitivity : 0.9469          
+##             Specificity : 0.8742          
+##          Pos Pred Value : 0.9205          
+##          Neg Pred Value : 0.9145          
 ##              Prevalence : 0.6061          
-##          Detection Rate : 0.5757          
-##    Detection Prevalence : 0.6183          
-##       Balanced Accuracy : 0.9208          
+##          Detection Rate : 0.5739          
+##    Detection Prevalence : 0.6235          
+##       Balanced Accuracy : 0.9105          
 ##                                           
 ##        'Positive' Class : nonspam         
 ## 
@@ -1403,4 +1396,157 @@ A few final thoughts on PCA include:
 * Additional details are in "Exploratory Data Analysis" (JHU Coursera) and "Elements of Statistical Learning"  
   
 ####_Predicting with regression_  
+The caret library works well with regression, layering on top some of the machine-learning components (ease of test/train, predictions, etc.).  The advantage of regression is its simplicity (implement and interpret) and accuracy in linear settings.  The disadvantage of regression is that it typically shows poor performance in decidedly non-linear setting.  
   
+The Old Faithful eruptions data (datasets "faithful") serves as a background for this example:  
+
+```r
+library(caret); data(faithful); set.seed(333)
+inTrain <- createDataPartition(y=faithful$waiting, p=0.5, list=FALSE)
+trainFaith <- faithful[inTrain, ]; testFaith <- faithful[-inTrain, ]
+head(trainFaith)
+```
+
+```
+##   eruptions waiting
+## 1     3.600      79
+## 3     3.333      74
+## 5     4.533      85
+## 6     2.883      55
+## 7     4.700      88
+## 8     3.600      85
+```
+
+```r
+## Data are largely linear - fit an LM accordingly
+plot(trainFaith$waiting, trainFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lm1 <- lm(eruptions ~ waiting, data=trainFaith)
+summary(lm1)
+```
+
+```
+## 
+## Call:
+## lm(formula = eruptions ~ waiting, data = trainFaith)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.26990 -0.34789  0.03979  0.36589  1.05020 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -1.792739   0.227869  -7.867 1.04e-12 ***
+## waiting      0.073901   0.003148  23.474  < 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.495 on 135 degrees of freedom
+## Multiple R-squared:  0.8032,	Adjusted R-squared:  0.8018 
+## F-statistic:   551 on 1 and 135 DF,  p-value: < 2.2e-16
+```
+
+```r
+lines(trainFaith$waiting, lm1$fitted, lwd=3)
+```
+
+![plot of chunk unnamed-chunk-31](figure/unnamed-chunk-31-1.png)
+
+Given the linearity of the relationship, the typical lm() approach from previous modules would likely work fine.  See for example:  
+
+```r
+## Predict forward on to some new data
+## Base R/Stats commands
+coef(lm1)[[1]] + coef(lm1)[[2]]*80
+```
+
+```
+## [1] 4.119307
+```
+
+```r
+## Predict function
+newdata <- data.frame(waiting=80)
+predict(lm1, newdata)
+```
+
+```
+##        1 
+## 4.119307
+```
+  
+The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "outof sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
+
+```r
+par(mfrow=c(1,2))
+
+## Apply to training data
+plot(trainFaith$waiting, trainFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lines(trainFaith$waiting, predict(lm1), lwd=3)
+
+## Apply to testing data
+plot(testFaith$waiting, testFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lines(testFaith$waiting, predict(lm1, newdata=testFaith), lwd=3)
+```
+
+![plot of chunk unnamed-chunk-33](figure/unnamed-chunk-33-1.png)
+
+```r
+## Compare RMSE
+sqrt(mean((lm1$fitted - trainFaith$eruptions)^2))
+```
+
+```
+## [1] 0.4914146
+```
+
+```r
+sqrt(mean((predict(lm1, newdata=testFaith) - testFaith$eruptions)^2))
+```
+
+```
+## [1] 0.5025031
+```
+
+```r
+par(mfrow=c(1,1))
+
+## Plot the prediction intervals as well
+pred1 <- predict(lm1, newdata=testFaith, interval="prediction")
+ord <- order(testFaith$waiting)
+plot(testFaith$waiting, testFaith$eruptions, pch=19, col="blue")
+matlines(testFaith$waiting[ord], pred1[ord, ], type="l", col=c(1,2,2), lty=c(1,1,1), lwd=3)
+```
+
+![plot of chunk unnamed-chunk-33](figure/unnamed-chunk-33-2.png)
+  
+The identical model can be achieved using the train() function in the caret library:  
+
+```r
+modFit <- train(eruptions ~ waiting, data=trainFaith, method="lm")
+summary(modFit$finalModel)
+```
+
+```
+## 
+## Call:
+## lm(formula = .outcome ~ ., data = dat)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.26990 -0.34789  0.03979  0.36589  1.05020 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -1.792739   0.227869  -7.867 1.04e-12 ***
+## waiting      0.073901   0.003148  23.474  < 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.495 on 135 degrees of freedom
+## Multiple R-squared:  0.8032,	Adjusted R-squared:  0.8018 
+## F-statistic:   551 on 1 and 135 DF,  p-value: < 2.2e-16
+```
+
+In summary, the caret library can be a useful aid to linear regression.  Sometimes, the many advantages of regression make this an optimal predictive approach.  Other times, the much higher predictive power of other approaches (especially when data are non-linear) pushes regression in to the background.  
+  
+####_Predicting with regression (multiple covariates)_  

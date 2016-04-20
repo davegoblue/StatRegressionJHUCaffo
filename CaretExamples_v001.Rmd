@@ -10,8 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Overall Objective  
-
-This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  
+This R Markdown is to document some key ideas I have seen about the "caret" library in a JHU Coursera module on Practical Machine Learning.  The basic syntax of caret ports across many different analysis techniques, and it seems extremely handy for many phases of analysis.  The document primarily captures the code used in the JHU module for my personal future reference, along with a mix of instructor thoughts and a few of my syntheses.
   
 The broad themes of caret include:  
   
@@ -507,4 +506,71 @@ A few final thoughts on PCA include:
 * Additional details are in "Exploratory Data Analysis" (JHU Coursera) and "Elements of Statistical Learning"  
   
 ####_Predicting with regression_  
+The caret library works well with regression, layering on top some of the machine-learning components (ease of test/train, predictions, etc.).  The advantage of regression is its simplicity (implement and interpret) and accuracy in linear settings.  The disadvantage of regression is that it typically shows poor performance in decidedly non-linear setting.  
   
+The Old Faithful eruptions data (datasets "faithful") serves as a background for this example:  
+```{r}
+
+library(caret); data(faithful); set.seed(333)
+inTrain <- createDataPartition(y=faithful$waiting, p=0.5, list=FALSE)
+trainFaith <- faithful[inTrain, ]; testFaith <- faithful[-inTrain, ]
+head(trainFaith)
+
+## Data are largely linear - fit an LM accordingly
+plot(trainFaith$waiting, trainFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lm1 <- lm(eruptions ~ waiting, data=trainFaith)
+summary(lm1)
+lines(trainFaith$waiting, lm1$fitted, lwd=3)
+
+```
+
+Given the linearity of the relationship, the typical lm() approach from previous modules would likely work fine.  See for example:  
+```{r}
+
+## Predict forward on to some new data
+## Base R/Stats commands
+coef(lm1)[[1]] + coef(lm1)[[2]]*80
+
+## Predict function
+newdata <- data.frame(waiting=80)
+predict(lm1, newdata)
+
+```
+  
+The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "outof sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
+```{r}
+
+par(mfrow=c(1,2))
+
+## Apply to training data
+plot(trainFaith$waiting, trainFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lines(trainFaith$waiting, predict(lm1), lwd=3)
+
+## Apply to testing data
+plot(testFaith$waiting, testFaith$eruptions, pch=19, col="blue", xlab="Waiting", ylab="Duration")
+lines(testFaith$waiting, predict(lm1, newdata=testFaith), lwd=3)
+
+## Compare RMSE
+sqrt(mean((lm1$fitted - trainFaith$eruptions)^2))
+sqrt(mean((predict(lm1, newdata=testFaith) - testFaith$eruptions)^2))
+
+par(mfrow=c(1,1))
+
+## Plot the prediction intervals as well
+pred1 <- predict(lm1, newdata=testFaith, interval="prediction")
+ord <- order(testFaith$waiting)
+plot(testFaith$waiting, testFaith$eruptions, pch=19, col="blue")
+matlines(testFaith$waiting[ord], pred1[ord, ], type="l", col=c(1,2,2), lty=c(1,1,1), lwd=3)
+
+```
+  
+The identical model can be achieved using the train() function in the caret library:  
+```{r}
+modFit <- train(eruptions ~ waiting, data=trainFaith, method="lm")
+summary(modFit$finalModel)
+
+```
+
+In summary, the caret library can be a useful aid to linear regression.  Sometimes, the many advantages of regression make this an optimal predictive approach.  Other times, the much higher predictive power of other approaches (especially when data are non-linear) pushes regression in to the background.  
+  
+####_Predicting with regression (multiple covariates)_  
