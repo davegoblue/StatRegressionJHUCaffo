@@ -152,7 +152,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9183567  0.8279095  0.007309417  0.01494435
+##   0.9215749  0.8347498  0.006824115  0.01447269
 ## 
 ## 
 ```
@@ -168,49 +168,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.715e+00         -1.907e-01         -1.348e-01  
+##        -1.632e+00         -5.431e-01         -1.341e-01  
 ##               all              num3d                our  
-##         1.400e-01          2.086e+00          6.017e-01  
+##         1.206e-01          1.764e+00          6.635e-01  
 ##              over             remove           internet  
-##         6.921e-01          2.363e+00          6.442e-01  
+##         8.210e-01          2.491e+00          5.994e-01  
 ##             order               mail            receive  
-##         4.383e-01          1.264e-01         -5.628e-01  
+##         5.982e-01          9.400e-02         -2.204e-01  
 ##              will             people             report  
-##        -1.427e-01         -1.643e-02          3.411e-01  
+##        -1.147e-01         -1.697e-01          1.543e-01  
 ##         addresses               free           business  
-##         1.354e+00          9.911e-01          8.592e-01  
+##         1.063e+00          8.821e-01          7.483e-01  
 ##             email                you             credit  
-##         8.997e-02          1.131e-01          8.973e-01  
+##         8.650e-02          7.963e-02          8.613e-01  
 ##              your               font             num000  
-##         2.142e-01          1.438e-01          2.588e+00  
+##         3.109e-01          3.689e-01          2.146e+00  
 ##             money                 hp                hpl  
-##         2.907e-01         -1.799e+00         -1.369e+00  
+##         3.154e-01         -2.114e+00         -1.510e+00  
 ##            george             num650                lab  
-##        -2.037e+01          4.838e-01         -2.175e+00  
+##        -9.580e+00          4.242e-01         -2.269e+00  
 ##              labs             telnet             num857  
-##        -1.459e-02          6.039e-01          2.021e+01  
+##        -4.494e-01          7.480e-01          2.394e+00  
 ##              data             num415              num85  
-##        -1.369e+00         -1.899e+01         -1.929e+00  
+##        -5.743e-01          5.356e-01         -2.133e+00  
 ##        technology            num1999              parts  
-##         9.138e-01          5.989e-02          1.816e+00  
+##         1.088e+00          2.145e-01         -5.010e-01  
 ##                pm             direct                 cs  
-##        -7.874e-01         -4.295e-01         -4.461e+01  
+##        -7.903e-01         -1.343e-01         -4.335e+01  
 ##           meeting           original            project  
-##        -3.802e+00         -1.723e+00         -1.484e+00  
+##        -2.843e+00         -1.204e+00         -1.531e+00  
 ##                re                edu              table  
-##        -8.548e-01         -1.222e+00         -1.674e+00  
+##        -7.704e-01         -1.315e+00         -2.443e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -4.443e+00         -1.236e+00          5.656e-02  
+##        -3.687e+00         -1.521e+00         -2.571e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -3.637e-01          2.345e-01          5.391e+00  
+##        -5.075e-01          7.019e-01          5.628e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.504e+00          4.627e-02          1.068e-02  
+##         2.021e+00         -3.066e-03          9.252e-03  
 ##      capitalTotal  
-##         9.979e-04  
+##         8.048e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1343 	AIC: 1459
+## Residual Deviance: 1335 	AIC: 1451
 ```
 
 ```r
@@ -226,27 +226,27 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     660   57
-##    spam         37  396
-##                                           
-##                Accuracy : 0.9183          
-##                  95% CI : (0.9009, 0.9334)
-##     No Information Rate : 0.6061          
-##     P-Value [Acc > NIR] : < 2e-16         
-##                                           
-##                   Kappa : 0.8275          
-##  Mcnemar's Test P-Value : 0.05003         
-##                                           
-##             Sensitivity : 0.9469          
-##             Specificity : 0.8742          
-##          Pos Pred Value : 0.9205          
-##          Neg Pred Value : 0.9145          
-##              Prevalence : 0.6061          
-##          Detection Rate : 0.5739          
-##    Detection Prevalence : 0.6235          
-##       Balanced Accuracy : 0.9105          
-##                                           
-##        'Positive' Class : nonspam         
+##    nonspam     662   42
+##    spam         35  411
+##                                          
+##                Accuracy : 0.933          
+##                  95% CI : (0.917, 0.9468)
+##     No Information Rate : 0.6061         
+##     P-Value [Acc > NIR] : <2e-16         
+##                                          
+##                   Kappa : 0.8594         
+##  Mcnemar's Test P-Value : 0.4941         
+##                                          
+##             Sensitivity : 0.9498         
+##             Specificity : 0.9073         
+##          Pos Pred Value : 0.9403         
+##          Neg Pred Value : 0.9215         
+##              Prevalence : 0.6061         
+##          Detection Rate : 0.5757         
+##    Detection Prevalence : 0.6122         
+##       Balanced Accuracy : 0.9285         
+##                                          
+##        'Positive' Class : nonspam        
 ## 
 ```
   
@@ -1550,3 +1550,264 @@ summary(modFit$finalModel)
 In summary, the caret library can be a useful aid to linear regression.  Sometimes, the many advantages of regression make this an optimal predictive approach.  Other times, the much higher predictive power of other approaches (especially when data are non-linear) pushes regression in to the background.  
   
 ####_Predicting with regression (multiple covariates)_  
+This topic serves as a mix of using multiple covariates and exploring which are important.  This portion will focus on the ISLR "Wage" dataset.  The standard approach is run to create test/training data, followed by some exploratory plotting.  
+  
+
+```r
+library(ISLR); library(ggplot2); library(caret)
+data(Wage); Wage <- subset(Wage, select=-c(logwage)) ## we are going to predict logwage in this case
+summary(Wage)
+```
+
+```
+##       year           age               sex                    maritl    
+##  Min.   :2003   Min.   :18.00   1. Male  :3000   1. Never Married: 648  
+##  1st Qu.:2004   1st Qu.:33.75   2. Female:   0   2. Married      :2074  
+##  Median :2006   Median :42.00                    3. Widowed      :  19  
+##  Mean   :2006   Mean   :42.41                    4. Divorced     : 204  
+##  3rd Qu.:2008   3rd Qu.:51.00                    5. Separated    :  55  
+##  Max.   :2009   Max.   :80.00                                           
+##                                                                         
+##        race                   education                     region    
+##  1. White:2480   1. < HS Grad      :268   2. Middle Atlantic   :3000  
+##  2. Black: 293   2. HS Grad        :971   1. New England       :   0  
+##  3. Asian: 190   3. Some College   :650   3. East North Central:   0  
+##  4. Other:  37   4. College Grad   :685   4. West North Central:   0  
+##                  5. Advanced Degree:426   5. South Atlantic    :   0  
+##                                           6. East South Central:   0  
+##                                           (Other)              :   0  
+##            jobclass               health      health_ins  
+##  1. Industrial :1544   1. <=Good     : 858   1. Yes:2083  
+##  2. Information:1456   2. >=Very Good:2142   2. No : 917  
+##                                                           
+##                                                           
+##                                                           
+##                                                           
+##                                                           
+##       wage       
+##  Min.   : 20.09  
+##  1st Qu.: 85.38  
+##  Median :104.92  
+##  Mean   :111.70  
+##  3rd Qu.:128.68  
+##  Max.   :318.34  
+## 
+```
+
+```r
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ] ; testing <- Wage[-inTrain, ]
+dim(training) ; dim(testing)
+```
+
+```
+## [1] 2102   11
+```
+
+```
+## [1] 898  11
+```
+
+```r
+featurePlot(x=training[ , c("age", "education", "jobclass")], y=training$wage, plot="pairs")
+```
+
+![plot of chunk unnamed-chunk-35](figure/unnamed-chunk-35-1.png)
+
+```r
+qplot(age, wage, data=training)
+```
+
+![plot of chunk unnamed-chunk-35](figure/unnamed-chunk-35-2.png)
+
+```r
+qplot(age, wage, data=training, color=jobclass)
+```
+
+![plot of chunk unnamed-chunk-35](figure/unnamed-chunk-35-3.png)
+
+```r
+qplot(age, wage, data=training, color=education)
+```
+
+![plot of chunk unnamed-chunk-35](figure/unnamed-chunk-35-4.png)
+  
+The train() command can be used to fit an LM.  The defaults are 25 reps of bootstrapping for error estimation.  
+
+```r
+modFit <- train(wage ~ age + jobclass + education, method="lm", data=training)
+finMod <- modFit$finalModel
+print(modFit)
+```
+
+```
+## Linear Regression 
+## 
+## 2102 samples
+##   10 predictor
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 2102, 2102, 2102, 2102, 2102, 2102, ... 
+## Resampling results
+## 
+##   RMSE      Rsquared  RMSE SD   Rsquared SD
+##   36.43771  0.267012  1.281502  0.01740793 
+## 
+## 
+```
+  
+And, diagnostics plots can be valuable also:  
+
+```r
+## Plot the residuals
+plot(finMod, 1, pch=19, cex=0.5, col="#00000010")
+```
+
+![plot of chunk unnamed-chunk-37](figure/unnamed-chunk-37-1.png)
+
+```r
+## Shade by race (possible confounder not included in original LM)
+qplot(finMod$fitted, finMod$residuals, color=race, data=training)
+```
+
+![plot of chunk unnamed-chunk-37](figure/unnamed-chunk-37-2.png)
+
+```r
+## Check for any patterns in residuals by index (missing variable)
+plot(finMod$residuals, pch=19)
+```
+
+![plot of chunk unnamed-chunk-37](figure/unnamed-chunk-37-3.png)
+
+```r
+## Apply to the testing data and see how the model has performed
+pred <- predict(modFit, testing)
+qplot(wage, pred, color=year, data=testing)
+```
+
+![plot of chunk unnamed-chunk-37](figure/unnamed-chunk-37-4.png)
+  
+Alternately, the models could be called for all of the covariates:  
+
+```r
+modFitAll <- train(wage ~ ., data=training, method="lm")
+```
+
+```
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+```
+
+```r
+print(modFitAll)
+```
+
+```
+## Linear Regression 
+## 
+## 2102 samples
+##   10 predictor
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 2102, 2102, 2102, 2102, 2102, 2102, ... 
+## Resampling results
+## 
+##   RMSE      Rsquared   RMSE SD   Rsquared SD
+##   33.68616  0.3404667  1.588016  0.01892668 
+## 
+## 
+```
+
+```r
+pred <- predict(modFitAll, testing)
+```
+
+```
+## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient
+## fit may be misleading
+```
+
+```r
+qplot(wage, pred, data=testing)
+```
+
+![plot of chunk unnamed-chunk-38](figure/unnamed-chunk-38-1.png)
+
+So, the train() function takes multivariate regression and 1) simplifies the test/train process, while 2) better estimating error rates by using bootstrapping over multiple samples.  
+  
+####_Predicting with trees_  
+  
