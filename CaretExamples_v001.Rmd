@@ -537,7 +537,7 @@ predict(lm1, newdata)
 
 ```
   
-The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "outof sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
+The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "out of sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
 ```{r}
 
 par(mfrow=c(1,2))
@@ -627,4 +627,59 @@ qplot(wage, pred, data=testing)
 So, the train() function takes multivariate regression and 1) simplifies the test/train process, while 2) better estimating error rates by using bootstrapping over multiple samples.  
   
 ####_Predicting with trees_  
+The key idea for prediction with trees include:  
+  
+* Iteratively split the data in groups  
+* Evaluate homogeneity within groups  
+* Split again when necessary  
+* PROS: Easy to interpret, good with non-linearity  
+* CONS: Over-fitting (especially if no cross-fit or pruning), variable results, hard to estimate uncertainty  
+  
+The basic algorithm runs as follows:  
+  
+* Start with all variable in a single group  
+* Find the variable/split that best separates the groups  
+* Divide the data in two groups ("leaves") on that split ("node")  
+* Within each split, find the best variable/split for separating the outcomes  
+* Continue until the groups are either too small or sufficiently pure  
+  
+Measures of impurity include:  
+  
+* Misclassification: average percentage of "minority outcome" (0=perfect purity, 0.5=random)  
+* Gini: 1 - probability^2 (0=perfect purity, 0.5=random)  
+* Deviance/information-gain: -(sum-of p*log2(p)) where 0=perfect purity and 1=no purity  
+* Wikipedia defines Gini as the probability that an element would be wrongly labeled if it were assigned at random in proportion to the group; so 60-40 would be 0.6 * 0.4 + 0.4 * 0.6 = .48  
+  
+The iris data can be handy for an example:  
+```{r}
+data(iris); library(caret); library(ggplot2); names(iris)
+table(iris$Species)
+
+## Create the test and train data
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+
+## Exploratory plotting
+qplot(Petal.Width, Sepal.Width, color=Species, data=training)
+
+## Tree-based modeling (rpart)
+modFit <- train(Species ~ ., method="rpart", data=training)
+print(modFit$finalModel)
+
+## Ugly plots
+plot(modFit$finalModel, uniform=TRUE, main="Classification Tree")
+text(modFit$finalModel, use.n=TRUE, all=TRUE, cex=0.8)
+
+## Prettier plots
+library(rattle)
+fancyRpartPlot(modFit$finalModel)
+
+## Predictions
+predict(modFit, newdata=testing)
+
+```
+  
+Classification trees are non-linear models in which all monotonic transforms will produce the same outcome.  They are especially good for finding interactions among variables.  In addition to "rpart" within caret, R has libraries for "party" and "tree".  
   

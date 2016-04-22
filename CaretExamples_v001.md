@@ -96,7 +96,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
 
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -110,7 +116,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
 
+```
+## Warning: glm.fit: algorithm did not converge
+```
+
+```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -152,7 +164,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9215749  0.8347498  0.006824115  0.01447269
+##   0.9134489  0.8168165  0.02155913   0.04903341
 ## 
 ## 
 ```
@@ -168,49 +180,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.632e+00         -5.431e-01         -1.341e-01  
+##        -1.567e+00         -3.378e-01         -1.397e-01  
 ##               all              num3d                our  
-##         1.206e-01          1.764e+00          6.635e-01  
+##         8.067e-02          1.760e+00          4.146e-01  
 ##              over             remove           internet  
-##         8.210e-01          2.491e+00          5.994e-01  
+##         1.015e+00          2.022e+00          8.698e-01  
 ##             order               mail            receive  
-##         5.982e-01          9.400e-02         -2.204e-01  
+##         7.393e-01          2.113e-01         -4.184e-01  
 ##              will             people             report  
-##        -1.147e-01         -1.697e-01          1.543e-01  
+##        -8.815e-02         -4.638e-03          1.719e-01  
 ##         addresses               free           business  
-##         1.063e+00          8.821e-01          7.483e-01  
+##         2.527e+00          1.026e+00          1.227e+00  
 ##             email                you             credit  
-##         8.650e-02          7.963e-02          8.613e-01  
+##         5.152e-02          1.014e-01          9.239e-01  
 ##              your               font             num000  
-##         3.109e-01          3.689e-01          2.146e+00  
+##         2.226e-01          1.191e-01          1.847e+00  
 ##             money                 hp                hpl  
-##         3.154e-01         -2.114e+00         -1.510e+00  
+##         2.535e-01         -2.434e+00         -8.976e-01  
 ##            george             num650                lab  
-##        -9.580e+00          4.242e-01         -2.269e+00  
+##        -1.057e+01          5.142e-01         -2.213e+00  
 ##              labs             telnet             num857  
-##        -4.494e-01          7.480e-01          2.394e+00  
+##        -2.521e+00         -1.027e-01          1.378e+01  
 ##              data             num415              num85  
-##        -5.743e-01          5.356e-01         -2.133e+00  
+##        -8.066e-01         -1.457e+01         -2.982e+00  
 ##        technology            num1999              parts  
-##         1.088e+00          2.145e-01         -5.010e-01  
+##         9.410e-01          1.861e-01         -6.352e-01  
 ##                pm             direct                 cs  
-##        -7.903e-01         -1.343e-01         -4.335e+01  
+##        -9.918e-01         -2.933e-01         -4.762e+01  
 ##           meeting           original            project  
-##        -2.843e+00         -1.204e+00         -1.531e+00  
+##        -2.256e+00         -1.475e+00         -1.916e+00  
 ##                re                edu              table  
-##        -7.704e-01         -1.315e+00         -2.443e+00  
+##        -8.683e-01         -1.514e+00         -2.910e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.687e+00         -1.521e+00         -2.571e-01  
+##        -4.231e+00         -1.070e+00         -1.337e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -5.075e-01          7.019e-01          5.628e+00  
+##        -6.816e-01          4.257e-01          5.929e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.021e+00         -3.066e-03          9.252e-03  
+##         2.461e+00          2.254e-02          6.791e-03  
 ##      capitalTotal  
-##         8.048e-04  
+##         9.987e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1335 	AIC: 1451
+## Residual Deviance: 1350 	AIC: 1466
 ```
 
 ```r
@@ -226,25 +238,25 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     662   42
-##    spam         35  411
+##    nonspam     668   49
+##    spam         29  404
 ##                                          
-##                Accuracy : 0.933          
-##                  95% CI : (0.917, 0.9468)
+##                Accuracy : 0.9322         
+##                  95% CI : (0.9161, 0.946)
 ##     No Information Rate : 0.6061         
-##     P-Value [Acc > NIR] : <2e-16         
+##     P-Value [Acc > NIR] : < 2e-16        
 ##                                          
-##                   Kappa : 0.8594         
-##  Mcnemar's Test P-Value : 0.4941         
+##                   Kappa : 0.8568         
+##  Mcnemar's Test P-Value : 0.03145        
 ##                                          
-##             Sensitivity : 0.9498         
-##             Specificity : 0.9073         
-##          Pos Pred Value : 0.9403         
-##          Neg Pred Value : 0.9215         
+##             Sensitivity : 0.9584         
+##             Specificity : 0.8918         
+##          Pos Pred Value : 0.9317         
+##          Neg Pred Value : 0.9330         
 ##              Prevalence : 0.6061         
-##          Detection Rate : 0.5757         
-##    Detection Prevalence : 0.6122         
-##       Balanced Accuracy : 0.9285         
+##          Detection Rate : 0.5809         
+##    Detection Prevalence : 0.6235         
+##       Balanced Accuracy : 0.9251         
 ##                                          
 ##        'Positive' Class : nonspam        
 ## 
@@ -1474,7 +1486,7 @@ predict(lm1, newdata)
 ## 4.119307
 ```
   
-The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "outof sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
+The error rates can be compared on the test and training data.  The test data gives a more realistic estimate for the "out of sample" (true) error, since it is not at all influenced (at least not favorably!) by any overfitting to noise in the training data.  
 
 ```r
 par(mfrow=c(1,2))
@@ -1810,4 +1822,144 @@ qplot(wage, pred, data=testing)
 So, the train() function takes multivariate regression and 1) simplifies the test/train process, while 2) better estimating error rates by using bootstrapping over multiple samples.  
   
 ####_Predicting with trees_  
+The key idea for prediction with trees include:  
+  
+* Iteratively split the data in groups  
+* Evaluate homogeneity within groups  
+* Split again when necessary  
+* PROS: Easy to interpret, good with non-linearity  
+* CONS: Over-fitting (especially if no cross-fit or pruning), variable results, hard to estimate uncertainty  
+  
+The basic algorithm runs as follows:  
+  
+* Start with all variable in a single group  
+* Find the variable/split that best separates the groups  
+* Divide the data in two groups ("leaves") on that split ("node")  
+* Within each split, find the best variable/split for separating the outcomes  
+* Continue until the groups are either too small or sufficiently pure  
+  
+Measures of impurity include:  
+  
+* Misclassification: average percentage of "minority outcome" (0=perfect purity, 0.5=random)  
+* Gini: 1 - probability^2 (0=perfect purity, 0.5=random)  
+* Deviance/information-gain: -(sum-of p*log2(p)) where 0=perfect purity and 1=no purity  
+* Wikipedia defines Gini as the probability that an element would be wrongly labeled if it were assigned at random in proportion to the group; so 60-40 would be 0.6 * 0.4 + 0.4 * 0.6 = .48  
+  
+The iris data can be handy for an example:  
+
+```r
+data(iris); library(caret); library(ggplot2); names(iris)
+```
+
+```
+## [1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width" 
+## [5] "Species"
+```
+
+```r
+table(iris$Species)
+```
+
+```
+## 
+##     setosa versicolor  virginica 
+##         50         50         50
+```
+
+```r
+## Create the test and train data
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+```
+
+```
+## [1] 105   5
+```
+
+```
+## [1] 45  5
+```
+
+```r
+## Exploratory plotting
+qplot(Petal.Width, Sepal.Width, color=Species, data=training)
+```
+
+![plot of chunk unnamed-chunk-39](figure/unnamed-chunk-39-1.png)
+
+```r
+## Tree-based modeling (rpart)
+modFit <- train(Species ~ ., method="rpart", data=training)
+```
+
+```
+## Loading required package: rpart
+```
+
+```r
+print(modFit$finalModel)
+```
+
+```
+## n= 105 
+## 
+## node), split, n, loss, yval, (yprob)
+##       * denotes terminal node
+## 
+## 1) root 105 70 setosa (0.33333333 0.33333333 0.33333333)  
+##   2) Petal.Length< 2.45 35  0 setosa (1.00000000 0.00000000 0.00000000) *
+##   3) Petal.Length>=2.45 70 35 versicolor (0.00000000 0.50000000 0.50000000)  
+##     6) Petal.Width< 1.65 34  1 versicolor (0.00000000 0.97058824 0.02941176) *
+##     7) Petal.Width>=1.65 36  2 virginica (0.00000000 0.05555556 0.94444444) *
+```
+
+```r
+## Ugly plots
+plot(modFit$finalModel, uniform=TRUE, main="Classification Tree")
+text(modFit$finalModel, use.n=TRUE, all=TRUE, cex=0.8)
+```
+
+![plot of chunk unnamed-chunk-39](figure/unnamed-chunk-39-2.png)
+
+```r
+## Prettier plots
+library(rattle)
+```
+
+```
+## Warning: package 'rattle' was built under R version 3.2.4
+```
+
+```
+## Rattle: A free graphical interface for data mining with R.
+## Version 4.1.0 Copyright (c) 2006-2015 Togaware Pty Ltd.
+## Type 'rattle()' to shake, rattle, and roll your data.
+```
+
+```r
+fancyRpartPlot(modFit$finalModel)
+```
+
+![plot of chunk unnamed-chunk-39](figure/unnamed-chunk-39-3.png)
+
+```r
+## Predictions
+predict(modFit, newdata=testing)
+```
+
+```
+##  [1] setosa     setosa     setosa     setosa     setosa     setosa    
+##  [7] setosa     setosa     setosa     setosa     setosa     setosa    
+## [13] setosa     setosa     setosa     versicolor versicolor versicolor
+## [19] versicolor versicolor versicolor versicolor versicolor versicolor
+## [25] versicolor versicolor versicolor versicolor versicolor versicolor
+## [31] virginica  virginica  virginica  virginica  virginica  versicolor
+## [37] virginica  virginica  versicolor virginica  versicolor virginica 
+## [43] virginica  virginica  virginica 
+## Levels: setosa versicolor virginica
+```
+  
+Classification trees are non-linear models in which all monotonic transforms will produce the same outcome.  They are especially good for finding interactions among variables.  In addition to "rpart" within caret, R has libraries for "party" and "tree".  
   
