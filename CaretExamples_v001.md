@@ -28,20 +28,6 @@ First, the relevant libraries are loaded, with a data partition index creates an
 ```r
 library(caret); 
 library(kernlab); 
-```
-
-```
-## 
-## Attaching package: 'kernlab'
-```
-
-```
-## The following object is masked from 'package:ggplot2':
-## 
-##     alpha
-```
-
-```r
 data(spam, package="kernlab") ## make sure to get the kernlab version rather than ElemStatLearn
 
 ## Use createDataPartition() to create an index with 75% of the row numbers
@@ -103,12 +89,6 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ```
 
 ```
@@ -117,13 +97,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 
 ```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
 
-```
-## Warning: glm.fit: algorithm did not converge
-```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
-```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -149,7 +129,7 @@ modelFit
 ## Resampling results
 ## 
 ##   Accuracy  Kappa      Accuracy SD  Kappa SD  
-##   0.921489  0.8333852  0.01793132   0.04181646
+##   0.916194  0.8242647  0.01566505   0.03004501
 ## 
 ## 
 ```
@@ -165,49 +145,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.926e+00         -4.784e-01         -1.412e-01  
+##        -1.577e+00         -4.337e-01         -1.407e-01  
 ##               all              num3d                our  
-##         7.391e-02          2.057e+00          5.377e-01  
+##         1.116e-01          3.038e+00          6.409e-01  
 ##              over             remove           internet  
-##         1.179e+00          2.431e+00          6.666e-01  
+##         1.156e+00          2.388e+00          7.148e-01  
 ##             order               mail            receive  
-##         7.425e-01          5.616e-02         -3.276e-01  
+##         1.546e+00          1.076e-01         -4.560e-01  
 ##              will             people             report  
-##        -1.212e-01         -1.578e-01          1.473e-01  
+##        -1.858e-01         -6.315e-02          9.888e-02  
 ##         addresses               free           business  
-##         1.685e+00          1.009e+00          1.359e+00  
+##         9.238e-01          9.231e-01          8.279e-01  
 ##             email                you             credit  
-##         1.337e-01          8.112e-02          1.398e+00  
+##         1.423e-01          7.929e-02          8.660e-01  
 ##              your               font             num000  
-##         2.389e-01          1.856e-01          2.430e+00  
+##         2.832e-01          2.196e-01          1.903e+00  
 ##             money                 hp                hpl  
-##         3.488e-01         -2.008e+00         -1.076e+00  
+##         3.511e-01         -1.692e+00         -1.250e+00  
 ##            george             num650                lab  
-##        -5.556e+00          4.636e-01         -1.875e+00  
+##        -1.077e+01          4.627e-01         -5.797e+00  
 ##              labs             telnet             num857  
-##        -1.952e-01         -8.667e+00          4.251e-01  
+##        -4.006e-01         -1.513e-01          2.632e+00  
 ##              data             num415              num85  
-##        -3.999e-01         -1.553e-01         -2.418e+00  
+##        -8.748e-01          8.329e-01         -2.002e+00  
 ##        technology            num1999              parts  
-##         9.546e-01          2.603e-02         -5.898e-01  
+##         9.402e-01          9.377e-02         -5.590e-01  
 ##                pm             direct                 cs  
-##        -8.965e-01         -1.191e-01         -3.852e+02  
+##        -1.077e+00         -2.021e-01         -3.813e+02  
 ##           meeting           original            project  
-##        -1.801e+00         -9.525e-01         -2.064e+00  
+##        -2.913e+00         -9.854e-01         -1.447e+00  
 ##                re                edu              table  
-##        -5.821e-01         -1.636e+00         -1.659e+00  
+##        -7.633e-01         -1.754e+00         -3.128e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -3.270e+00         -1.231e+00         -5.615e-01  
+##        -4.217e+00         -1.394e+00         -1.466e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -2.555e+00          7.491e-01          4.866e+00  
+##        -3.214e-01          2.577e-01          4.927e+00  
 ##          charHash         capitalAve        capitalLong  
-##         1.844e+00          1.183e-01          7.498e-03  
+##         2.514e+00          1.858e-02          6.881e-03  
 ##      capitalTotal  
-##         8.101e-04  
+##         9.027e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1278 	AIC: 1394
+## Residual Deviance: 1359 	AIC: 1475
 ```
 
 ```r
@@ -223,27 +203,27 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     664   48
-##    spam         33  405
-##                                           
-##                Accuracy : 0.9296          
-##                  95% CI : (0.9132, 0.9437)
-##     No Information Rate : 0.6061          
-##     P-Value [Acc > NIR] : <2e-16          
-##                                           
-##                   Kappa : 0.8516          
-##  Mcnemar's Test P-Value : 0.1198          
-##                                           
-##             Sensitivity : 0.9527          
-##             Specificity : 0.8940          
-##          Pos Pred Value : 0.9326          
-##          Neg Pred Value : 0.9247          
-##              Prevalence : 0.6061          
-##          Detection Rate : 0.5774          
-##    Detection Prevalence : 0.6191          
-##       Balanced Accuracy : 0.9233          
-##                                           
-##        'Positive' Class : nonspam         
+##    nonspam     667   57
+##    spam         30  396
+##                                          
+##                Accuracy : 0.9243         
+##                  95% CI : (0.9075, 0.939)
+##     No Information Rate : 0.6061         
+##     P-Value [Acc > NIR] : < 2.2e-16      
+##                                          
+##                   Kappa : 0.8399         
+##  Mcnemar's Test P-Value : 0.005312       
+##                                          
+##             Sensitivity : 0.9570         
+##             Specificity : 0.8742         
+##          Pos Pred Value : 0.9213         
+##          Neg Pred Value : 0.9296         
+##              Prevalence : 0.6061         
+##          Detection Rate : 0.5800         
+##    Detection Prevalence : 0.6296         
+##       Balanced Accuracy : 0.9156         
+##                                          
+##        'Positive' Class : nonspam        
 ## 
 ```
   
@@ -256,13 +236,6 @@ The below is cut/pasted from Len's blog so that I can easily access it even when
 
 ```r
 library(mlbench)
-```
-
-```
-## Warning: package 'mlbench' was built under R version 3.2.4
-```
-
-```r
 data(Sonar)
 
 inTraining <- createDataPartition(Sonar$Class, p = .75, list=FALSE)
@@ -483,13 +456,6 @@ Plotting the predictors can be a helpful component of exploratory data analysis 
 
 ```r
 library(ISLR); library(ggplot2); library(caret)
-```
-
-```
-## Warning: package 'ISLR' was built under R version 3.2.4
-```
-
-```r
 data(Wage)
 summary(Wage)
 ```
@@ -573,45 +539,6 @@ Another option is to create factors and then use jitter to make the boxplot.
 
 ```r
 library(Hmisc)
-```
-
-```
-## Loading required package: survival
-```
-
-```
-## 
-## Attaching package: 'survival'
-```
-
-```
-## The following object is masked from 'package:caret':
-## 
-##     cluster
-```
-
-```
-## Loading required package: Formula
-```
-
-```
-## 
-## Attaching package: 'Hmisc'
-```
-
-```
-## The following object is masked from 'package:randomForest':
-## 
-##     combine
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     format.pval, round.POSIXt, trunc.POSIXt, units
-```
-
-```r
 cutWage <- cut2(training$wage, g=3)
 table(cutWage)
 ```
@@ -2043,3 +1970,107 @@ print(ctreeBag$aggregate)
 This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
   
 ####_Random Forests_  
+Random forests are in many ways an extension of bagging.  They are often one of the winning techniques (along with boosting) in prediction contests.  The general process includes:  
+  
+1.  Bootstrap the samples (grow trees for each of the sub-samples)  
+2.  At each split, bootstrap the variables (allow different variables to be considered)  
+3.  Grow multiple trees and vote (run each new observation through all the trees, then vote/average)  
+  
+PROS: Especially good for accuracy  
+CONS: Speed, Interpretation, Overfitting  
+  
+The iris data can serve as an example of the process:  
+
+```r
+data(iris); library(ggplot2); library(caret)
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+
+## Run the model - prox=TRUE provides some extra helpful data
+modFit <- train(Species ~ ., data=training, method="rf", prox=TRUE) 
+
+## Print descriptive model statistics
+modFit
+```
+
+```
+## Random Forest 
+## 
+## 105 samples
+##   4 predictor
+##   3 classes: 'setosa', 'versicolor', 'virginica' 
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 105, 105, 105, 105, 105, 105, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD  
+##   2     0.9704284  0.9548336  0.02516307   0.03845742
+##   3     0.9692520  0.9530742  0.02583390   0.03940106
+##   4     0.9682763  0.9515738  0.02507369   0.03823664
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 2.
+```
+
+```r
+## Review tree #2 (k determines the tree)
+getTree(modFit$finalModel, k=2, labelVar=TRUE)
+```
+
+```
+##    left daughter right daughter    split var split point status prediction
+## 1              2              3 Sepal.Length        5.45      1       <NA>
+## 2              4              5 Petal.Length        2.45      1       <NA>
+## 3              6              7  Petal.Width        1.70      1       <NA>
+## 4              0              0         <NA>        0.00     -1     setosa
+## 5              8              9 Sepal.Length        5.00      1       <NA>
+## 6             10             11  Sepal.Width        3.55      1       <NA>
+## 7              0              0         <NA>        0.00     -1  virginica
+## 8              0              0         <NA>        0.00     -1  virginica
+## 9              0              0         <NA>        0.00     -1 versicolor
+## 10            12             13 Petal.Length        5.00      1       <NA>
+## 11             0              0         <NA>        0.00     -1     setosa
+## 12             0              0         <NA>        0.00     -1 versicolor
+## 13             0              0         <NA>        0.00     -1  virginica
+```
+
+```r
+## Review the location of the centers -- requires the prox=TRUE from train() as per above
+irisP <- classCenter(training[, c(3,4)], training$Species, modFit$finalModel$prox)
+irisP <- as.data.frame(irisP)
+irisP$Species <- rownames(irisP)
+
+## Plot the relevant data and centers
+p <- qplot(Petal.Width, Petal.Length, col=Species, data=training)
+p + geom_point(aes(x=Petal.Width, y=Petal.Length, col=Species), size=5, shape=4, data=irisP)
+```
+
+![plot of chunk unnamed-chunk-42](figure/unnamed-chunk-42-1.png)
+
+```r
+## Predict new values
+pred <- predict(modFit, testing); testing$predRight <- pred==testing$Species
+table(pred, testing$Species)
+```
+
+```
+##             
+## pred         setosa versicolor virginica
+##   setosa         15          0         0
+##   versicolor      0         13         0
+##   virginica       0          2        15
+```
+
+```r
+qplot(Petal.Width, Petal.Length, color=predRight, data=testing, main="newdata Predictions")
+```
+
+![plot of chunk unnamed-chunk-42](figure/unnamed-chunk-42-2.png)
+  
+Random forests are often both very accurate and very difficult to interpret.  The goal is to push accuracy at the expense of parsimony.  There is some risk of overfitting - see rfcv().  
+  
+####_Boosting_  
+  

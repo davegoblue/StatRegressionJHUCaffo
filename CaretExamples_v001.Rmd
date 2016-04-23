@@ -751,3 +751,47 @@ print(ctreeBag$aggregate)
 This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
   
 ####_Random Forests_  
+Random forests are in many ways an extension of bagging.  They are often one of the winning techniques (along with boosting) in prediction contests.  The general process includes:  
+  
+1.  Bootstrap the samples (grow trees for each of the sub-samples)  
+2.  At each split, bootstrap the variables (allow different variables to be considered)  
+3.  Grow multiple trees and vote (run each new observation through all the trees, then vote/average)  
+  
+PROS: Especially good for accuracy  
+CONS: Speed, Interpretation, Overfitting  
+  
+The iris data can serve as an example of the process:  
+```{r}
+data(iris); library(ggplot2); library(caret)
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+
+## Run the model - prox=TRUE provides some extra helpful data
+modFit <- train(Species ~ ., data=training, method="rf", prox=TRUE) 
+
+## Print descriptive model statistics
+modFit
+
+## Review tree #2 (k determines the tree)
+getTree(modFit$finalModel, k=2, labelVar=TRUE)
+
+## Review the location of the centers -- requires the prox=TRUE from train() as per above
+irisP <- classCenter(training[, c(3,4)], training$Species, modFit$finalModel$prox)
+irisP <- as.data.frame(irisP)
+irisP$Species <- rownames(irisP)
+
+## Plot the relevant data and centers
+p <- qplot(Petal.Width, Petal.Length, col=Species, data=training)
+p + geom_point(aes(x=Petal.Width, y=Petal.Length, col=Species), size=5, shape=4, data=irisP)
+
+## Predict new values
+pred <- predict(modFit, testing); testing$predRight <- pred==testing$Species
+table(pred, testing$Species)
+qplot(Petal.Width, Petal.Length, color=predRight, data=testing, main="newdata Predictions")
+```
+  
+Random forests are often both very accurate and very difficult to interpret.  The goal is to push accuracy at the expense of parsimony.  There is some risk of overfitting - see rfcv().  
+  
+####_Boosting_  
+  
