@@ -27,21 +27,6 @@ First, the relevant libraries are loaded, with a data partition index creates an
 
 ```r
 library(caret); 
-```
-
-```
-## Warning: package 'caret' was built under R version 3.2.4
-```
-
-```
-## Loading required package: lattice
-```
-
-```
-## Loading required package: ggplot2
-```
-
-```r
 library(kernlab); 
 ```
 
@@ -96,13 +81,21 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-```
 
-```
-## Warning: glm.fit: algorithm did not converge
-```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
-```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -124,21 +117,13 @@ modelFit <- train(type ~ ., data=training, method="glm")
 
 ```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
 
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+```
+## Warning: glm.fit: algorithm did not converge
+```
 
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
+```
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -163,8 +148,8 @@ modelFit
 ## Summary of sample sizes: 3451, 3451, 3451, 3451, 3451, 3451, ... 
 ## Resampling results
 ## 
-##   Accuracy   Kappa      Accuracy SD  Kappa SD  
-##   0.9134489  0.8168165  0.02155913   0.04903341
+##   Accuracy  Kappa      Accuracy SD  Kappa SD  
+##   0.921489  0.8333852  0.01793132   0.04181646
 ## 
 ## 
 ```
@@ -180,49 +165,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.567e+00         -3.378e-01         -1.397e-01  
+##        -1.926e+00         -4.784e-01         -1.412e-01  
 ##               all              num3d                our  
-##         8.067e-02          1.760e+00          4.146e-01  
+##         7.391e-02          2.057e+00          5.377e-01  
 ##              over             remove           internet  
-##         1.015e+00          2.022e+00          8.698e-01  
+##         1.179e+00          2.431e+00          6.666e-01  
 ##             order               mail            receive  
-##         7.393e-01          2.113e-01         -4.184e-01  
+##         7.425e-01          5.616e-02         -3.276e-01  
 ##              will             people             report  
-##        -8.815e-02         -4.638e-03          1.719e-01  
+##        -1.212e-01         -1.578e-01          1.473e-01  
 ##         addresses               free           business  
-##         2.527e+00          1.026e+00          1.227e+00  
+##         1.685e+00          1.009e+00          1.359e+00  
 ##             email                you             credit  
-##         5.152e-02          1.014e-01          9.239e-01  
+##         1.337e-01          8.112e-02          1.398e+00  
 ##              your               font             num000  
-##         2.226e-01          1.191e-01          1.847e+00  
+##         2.389e-01          1.856e-01          2.430e+00  
 ##             money                 hp                hpl  
-##         2.535e-01         -2.434e+00         -8.976e-01  
+##         3.488e-01         -2.008e+00         -1.076e+00  
 ##            george             num650                lab  
-##        -1.057e+01          5.142e-01         -2.213e+00  
+##        -5.556e+00          4.636e-01         -1.875e+00  
 ##              labs             telnet             num857  
-##        -2.521e+00         -1.027e-01          1.378e+01  
+##        -1.952e-01         -8.667e+00          4.251e-01  
 ##              data             num415              num85  
-##        -8.066e-01         -1.457e+01         -2.982e+00  
+##        -3.999e-01         -1.553e-01         -2.418e+00  
 ##        technology            num1999              parts  
-##         9.410e-01          1.861e-01         -6.352e-01  
+##         9.546e-01          2.603e-02         -5.898e-01  
 ##                pm             direct                 cs  
-##        -9.918e-01         -2.933e-01         -4.762e+01  
+##        -8.965e-01         -1.191e-01         -3.852e+02  
 ##           meeting           original            project  
-##        -2.256e+00         -1.475e+00         -1.916e+00  
+##        -1.801e+00         -9.525e-01         -2.064e+00  
 ##                re                edu              table  
-##        -8.683e-01         -1.514e+00         -2.910e+00  
+##        -5.821e-01         -1.636e+00         -1.659e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -4.231e+00         -1.070e+00         -1.337e-01  
+##        -3.270e+00         -1.231e+00         -5.615e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -6.816e-01          4.257e-01          5.929e+00  
+##        -2.555e+00          7.491e-01          4.866e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.461e+00          2.254e-02          6.791e-03  
+##         1.844e+00          1.183e-01          7.498e-03  
 ##      capitalTotal  
-##         9.987e-04  
+##         8.101e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1350 	AIC: 1466
+## Residual Deviance: 1278 	AIC: 1394
 ```
 
 ```r
@@ -238,27 +223,27 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     668   49
-##    spam         29  404
-##                                          
-##                Accuracy : 0.9322         
-##                  95% CI : (0.9161, 0.946)
-##     No Information Rate : 0.6061         
-##     P-Value [Acc > NIR] : < 2e-16        
-##                                          
-##                   Kappa : 0.8568         
-##  Mcnemar's Test P-Value : 0.03145        
-##                                          
-##             Sensitivity : 0.9584         
-##             Specificity : 0.8918         
-##          Pos Pred Value : 0.9317         
-##          Neg Pred Value : 0.9330         
-##              Prevalence : 0.6061         
-##          Detection Rate : 0.5809         
-##    Detection Prevalence : 0.6235         
-##       Balanced Accuracy : 0.9251         
-##                                          
-##        'Positive' Class : nonspam        
+##    nonspam     664   48
+##    spam         33  405
+##                                           
+##                Accuracy : 0.9296          
+##                  95% CI : (0.9132, 0.9437)
+##     No Information Rate : 0.6061          
+##     P-Value [Acc > NIR] : <2e-16          
+##                                           
+##                   Kappa : 0.8516          
+##  Mcnemar's Test P-Value : 0.1198          
+##                                           
+##             Sensitivity : 0.9527          
+##             Specificity : 0.8940          
+##          Pos Pred Value : 0.9326          
+##          Neg Pred Value : 0.9247          
+##              Prevalence : 0.6061          
+##          Detection Rate : 0.5774          
+##    Detection Prevalence : 0.6191          
+##       Balanced Accuracy : 0.9233          
+##                                           
+##        'Positive' Class : nonspam         
 ## 
 ```
   
@@ -294,31 +279,7 @@ Next, Len calls libraries for parallel processing and sets trainControl to allow
 ```r
 library(parallel)
 library(doParallel)
-```
 
-```
-## Warning: package 'doParallel' was built under R version 3.2.4
-```
-
-```
-## Loading required package: foreach
-```
-
-```
-## Warning: package 'foreach' was built under R version 3.2.4
-```
-
-```
-## foreach: simple, scalable parallel programming from Revolution Analytics
-## Use Revolution R for scalability, fault tolerance and more.
-## http://www.revolutionanalytics.com
-```
-
-```
-## Loading required package: iterators
-```
-
-```r
 cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
 registerDoParallel(cluster)
 
@@ -329,33 +290,6 @@ Then, Len runs train() function, calling fitControl to make sure it runs in para
 
 ```r
 fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
-```
-
-```
-## Loading required package: randomForest
-```
-
-```
-## Warning: package 'randomForest' was built under R version 3.2.4
-```
-
-```
-## randomForest 4.6-12
-```
-
-```
-## Type rfNews() to see new features/changes/bug fixes.
-```
-
-```
-## 
-## Attaching package: 'randomForest'
-```
-
-```
-## The following object is masked from 'package:ggplot2':
-## 
-##     margin
 ```
   
 Lastly, the cluster is explicitly shut down:  
@@ -1892,13 +1826,6 @@ qplot(Petal.Width, Sepal.Width, color=Species, data=training)
 ```r
 ## Tree-based modeling (rpart)
 modFit <- train(Species ~ ., method="rpart", data=training)
-```
-
-```
-## Loading required package: rpart
-```
-
-```r
 print(modFit$finalModel)
 ```
 
@@ -1926,19 +1853,6 @@ text(modFit$finalModel, use.n=TRUE, all=TRUE, cex=0.8)
 ```r
 ## Prettier plots
 library(rattle)
-```
-
-```
-## Warning: package 'rattle' was built under R version 3.2.4
-```
-
-```
-## Rattle: A free graphical interface for data mining with R.
-## Version 4.1.0 Copyright (c) 2006-2015 Togaware Pty Ltd.
-## Type 'rattle()' to shake, rattle, and roll your data.
-```
-
-```r
 fancyRpartPlot(modFit$finalModel)
 ```
 
@@ -1963,3 +1877,169 @@ predict(modFit, newdata=testing)
   
 Classification trees are non-linear models in which all monotonic transforms will produce the same outcome.  They are especially good for finding interactions among variables.  In addition to "rpart" within caret, R has libraries for "party" and "tree".  
   
+####_Bagging_  
+The phrase "bagging" is short for "bootstrap aggregating".  Blending models can often smooth out the biases and variances of the individual modeling fits.  
+  
+The basic idea of bagging is to follow a three-step process:  
+  
+1.  Resample cases and recalculate predictions  
+2.  Take the average or majority vote  
+3.  Expect similar biase but reduced variance; especially useful for non-linear models  
+  
+For an example, we can use the "ozone" dataset from the library ElemStatLearn:  
+
+```r
+library(ElemStatLearn); 
+data(ozone, package="ElemStatLearn")
+ozone <- ozone[order(ozone$ozone), ]
+head(ozone)
+```
+
+```
+##     ozone radiation temperature wind
+## 17      1         8          59  9.7
+## 19      4        25          61  9.7
+## 14      6        78          57 18.4
+## 45      7        48          80 14.3
+## 106     7        49          69 10.3
+## 7       8        19          61 20.1
+```
+
+```r
+## Example for bagged trees
+## Empty matrix for storing estimates for 1:155 on models run 10 times
+ll <- matrix(NA, nrow=10, ncol=155)	
+
+## Run the process 10 times
+for (intCtr in 1:10) {	
+	## Sample with replacement from the original dataset (bootstrap resampling)
+    ss <- sample(1:dim(ozone)[1], replace=TRUE)
+    ## Create and sort the dataset (there will be duplicates in it due to bootstrapping)
+	ozone0 <- ozone[ss, ] ; ozone0 <- ozone0[order(ozone0$ozone), ]
+	## smoothed curve, very similar to spline
+	loess0 <- loess(temperature ~ ozone, data=ozone0, span=0.2)
+	## Apply the loess to make predictions for 1:155, and store these in the ll matrix
+	ll[intCtr, ] <- predict(loess0, newdata=data.frame(ozone=1:155))
+}	
+```
+
+```
+## Warning in simpleLoess(y, x, w, span, degree = degree, parametric =
+## parametric, : pseudoinverse used at 21
+```
+
+```
+## Warning in simpleLoess(y, x, w, span, degree = degree, parametric =
+## parametric, : neighborhood radius 2
+```
+
+```
+## Warning in simpleLoess(y, x, w, span, degree = degree, parametric =
+## parametric, : reciprocal condition number 6.0433e-017
+```
+
+```r
+## Graph the actual relationship, the individual predictions, and the aggregated (mean) predictions
+plot(ozone$ozone, ozone$temperature, pch=19, cex=0.5)
+for (intCtr in 1:10) { lines(1:155, ll[intCtr, ], col="grey", lwd=2) }
+lines(1:155, apply(ll,2,FUN=mean), col="red", lwd=2)
+```
+
+![plot of chunk unnamed-chunk-40](figure/unnamed-chunk-40-1.png)
+  
+The red (mean) line still shows some structural artifacts, but it has lower variance and similar bias to any of the individual grey fits (which are all badly over-fit).  
+
+Alternately, the caret library can be used to perform bagging.  Using the method= you have access to bagEarth, treebag, and bagFDA.  Alternately, you can bag any model using the bag() function.  
+
+The example below is somewhat advanced, and care is suggested with any customization prior to further study.  After running the model, a few functions are printed for reference as well:  
+
+```r
+predictors <- data.frame(ozone=ozone$ozone)
+temperature <- ozone$temperature
+treeBag <- bag(predictors, temperature, B=10, 
+               bagControl=bagControl(fit=ctreeBag$fit, predict=ctreeBag$pred, 
+                                     aggregate=ctreeBag$aggregate
+                                     )
+               )
+
+## Plot the data, one of the individual fits, and the blended fit
+plot(ozone$ozone, temperature, col="lightgrey", pch=19)
+points(ozone$ozone, predict(treeBag$fits[[1]]$fit, predictors), pch=19, col="red")
+points(ozone$ozone, predict(treeBag, predictors), pch=19, col="blue")
+```
+
+![plot of chunk unnamed-chunk-41](figure/unnamed-chunk-41-1.png)
+
+```r
+## Print the key functions
+print(ctreeBag$fit)
+```
+
+```
+## function (x, y, ...) 
+## {
+##     loadNamespace("party")
+##     data <- as.data.frame(x)
+##     data$y <- y
+##     party::ctree(y ~ ., data = data)
+## }
+## <environment: namespace:caret>
+```
+
+```r
+print(ctreeBag$pred)
+```
+
+```
+## function (object, x) 
+## {
+##     if (!is.data.frame(x)) 
+##         x <- as.data.frame(x)
+##     obsLevels <- levels(object@data@get("response")[, 1])
+##     if (!is.null(obsLevels)) {
+##         rawProbs <- party::treeresponse(object, x)
+##         probMatrix <- matrix(unlist(rawProbs), ncol = length(obsLevels), 
+##             byrow = TRUE)
+##         out <- data.frame(probMatrix)
+##         colnames(out) <- obsLevels
+##         rownames(out) <- NULL
+##     }
+##     else out <- unlist(party::treeresponse(object, x))
+##     out
+## }
+## <environment: namespace:caret>
+```
+
+```r
+print(ctreeBag$aggregate)
+```
+
+```
+## function (x, type = "class") 
+## {
+##     if (is.matrix(x[[1]]) | is.data.frame(x[[1]])) {
+##         pooled <- x[[1]] & NA
+##         classes <- colnames(pooled)
+##         for (i in 1:ncol(pooled)) {
+##             tmp <- lapply(x, function(y, col) y[, col], col = i)
+##             tmp <- do.call("rbind", tmp)
+##             pooled[, i] <- apply(tmp, 2, median)
+##         }
+##         if (type == "class") {
+##             out <- factor(classes[apply(pooled, 1, which.max)], 
+##                 levels = classes)
+##         }
+##         else out <- as.data.frame(pooled)
+##     }
+##     else {
+##         x <- matrix(unlist(x), ncol = length(x))
+##         out <- apply(x, 1, median)
+##     }
+##     out
+## }
+## <environment: namespace:caret>
+```
+
+This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
+  
+####_Random Forests_  

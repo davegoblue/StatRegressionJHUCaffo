@@ -683,3 +683,71 @@ predict(modFit, newdata=testing)
   
 Classification trees are non-linear models in which all monotonic transforms will produce the same outcome.  They are especially good for finding interactions among variables.  In addition to "rpart" within caret, R has libraries for "party" and "tree".  
   
+####_Bagging_  
+The phrase "bagging" is short for "bootstrap aggregating".  Blending models can often smooth out the biases and variances of the individual modeling fits.  
+  
+The basic idea of bagging is to follow a three-step process:  
+  
+1.  Resample cases and recalculate predictions  
+2.  Take the average or majority vote  
+3.  Expect similar biase but reduced variance; especially useful for non-linear models  
+  
+For an example, we can use the "ozone" dataset from the library ElemStatLearn:  
+```{r}
+library(ElemStatLearn); 
+data(ozone, package="ElemStatLearn")
+ozone <- ozone[order(ozone$ozone), ]
+head(ozone)
+
+## Example for bagged trees
+## Empty matrix for storing estimates for 1:155 on models run 10 times
+ll <- matrix(NA, nrow=10, ncol=155)	
+
+## Run the process 10 times
+for (intCtr in 1:10) {	
+	## Sample with replacement from the original dataset (bootstrap resampling)
+    ss <- sample(1:dim(ozone)[1], replace=TRUE)
+    ## Create and sort the dataset (there will be duplicates in it due to bootstrapping)
+	ozone0 <- ozone[ss, ] ; ozone0 <- ozone0[order(ozone0$ozone), ]
+	## smoothed curve, very similar to spline
+	loess0 <- loess(temperature ~ ozone, data=ozone0, span=0.2)
+	## Apply the loess to make predictions for 1:155, and store these in the ll matrix
+	ll[intCtr, ] <- predict(loess0, newdata=data.frame(ozone=1:155))
+}	
+
+## Graph the actual relationship, the individual predictions, and the aggregated (mean) predictions
+plot(ozone$ozone, ozone$temperature, pch=19, cex=0.5)
+for (intCtr in 1:10) { lines(1:155, ll[intCtr, ], col="grey", lwd=2) }
+lines(1:155, apply(ll,2,FUN=mean), col="red", lwd=2)
+
+```
+  
+The red (mean) line still shows some structural artifacts, but it has lower variance and similar bias to any of the individual grey fits (which are all badly over-fit).  
+
+Alternately, the caret library can be used to perform bagging.  Using the method= you have access to bagEarth, treebag, and bagFDA.  Alternately, you can bag any model using the bag() function.  
+
+The example below is somewhat advanced, and care is suggested with any customization prior to further study.  After running the model, a few functions are printed for reference as well:  
+```{r}
+predictors <- data.frame(ozone=ozone$ozone)
+temperature <- ozone$temperature
+treeBag <- bag(predictors, temperature, B=10, 
+               bagControl=bagControl(fit=ctreeBag$fit, predict=ctreeBag$pred, 
+                                     aggregate=ctreeBag$aggregate
+                                     )
+               )
+
+## Plot the data, one of the individual fits, and the blended fit
+plot(ozone$ozone, temperature, col="lightgrey", pch=19)
+points(ozone$ozone, predict(treeBag$fits[[1]]$fit, predictors), pch=19, col="red")
+points(ozone$ozone, predict(treeBag, predictors), pch=19, col="blue")
+
+## Print the key functions
+print(ctreeBag$fit)
+print(ctreeBag$pred)
+print(ctreeBag$aggregate)
+
+```
+
+This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
+  
+####_Random Forests_  
