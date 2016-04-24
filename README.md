@@ -15,4 +15,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 21-APR-2016 - Using caret capabilities for multivariate regression    
 * 22-APR-2016 - Using caret capabilities for trees    
 * 23-APR-2016 - Bagging (bootstrap aggregating) and random forests summary    
+* 24-APR-2016 - Boosting summary    
   
