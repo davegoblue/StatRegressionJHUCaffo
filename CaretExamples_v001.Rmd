@@ -41,7 +41,9 @@ dim(training)
 
 Next, we use caret to run GLM on the training data.  The training syntax almost always looks just like this, although with changes to the ~ formula and/or method statement.  Depending on the method (e.g., bootstrap or resample), there is sometimes an RNG component and thus merit to setting the seed.  Note that caret and all of its sub-components are frequently being updated (sometimes with impact on RNG), so there is no real guarantee of reproducibility once any component(s) of the version originally used has been sunsetted.  
 
-```{r}
+```{r, cache=TRUE}
+
+## Set cache=TRUE for faster re-runs
 set.seed(32343)
 
 ## Runs the GLM and stores the outputs as modelFit
@@ -92,7 +94,8 @@ fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
 ```
   
 Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
-```{r}
+```{r, cache=TRUE}
+## Set cache=TRUE so that re-runs go faster
 fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
 ```
   
@@ -286,8 +289,9 @@ mean(testCapAveS); sd(testCapAveS)
 
 The preProcess commands can also be passed to the train() commands.  
   
-```{r}
+```{r, cache=TRUE}
 
+## Set cache=TRUE to speed up re-runs
 set.seed(32343)
 modelFit <- train(type ~ ., data=training, preProcess=c("center", "scale"), method="glm")
 print(modelFit)
@@ -322,7 +326,7 @@ capAve <- predict(preObj, training[,-58])$capAve
 
 The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.  
   
-####_Covariate creaion_  
+####_Covariate creation_  
 Covariates (aka features or predictors) are the variables to be used in the model.  There are two levels:  
   
 * Level 1 - from raw data to covariate (such as converting an e-mail to multiple descriptive statistics that could be used to predict whether it is spam)  
@@ -398,7 +402,7 @@ The basic idea is that many of the predictor variables may be highly correlated.
   
 The "spam" dataset can again be analyzed to explore the concept:  
 ```{r}
-library(caret); library(kernlab); data(spam)
+library(caret); library(kernlab); data(spam, package="kernlab")
 
 inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
 training <- spam[inTrain, ]
@@ -491,8 +495,9 @@ confusionMatrix(predict(modelFit, testPC), testing$type)
 This process alone, using just two principal components, is ~89% accurate in classifying e-mail as spam.  This significantly improves on the no-information rate of ~61%.  
   
 Lastly, the PCA approach can be passed directly to the train() function, which will create the same number of PCA as predictors in the initial data.  This drives accuracy up slightly more to ~92%:  
-```{r}
+```{r, cache=TRUE}
 
+## Set cache=TRUE to speed up the re-run
 modelFit <- train(training$type ~ ., method="glm", preProcess="pca", data=training)
 confusionMatrix(predict(modelFit, testing), testing$type)
 
@@ -747,7 +752,7 @@ print(ctreeBag$pred)
 print(ctreeBag$aggregate)
 
 ```
-
+  
 This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
   
 ####_Random Forests_  
@@ -794,4 +799,51 @@ qplot(Petal.Width, Petal.Length, color=predRight, data=testing, main="newdata Pr
 Random forests are often both very accurate and very difficult to interpret.  The goal is to push accuracy at the expense of parsimony.  There is some risk of overfitting - see rfcv().  
   
 ####_Boosting_  
+Boosting is often one of the top predictive techniques.  The basic ideas are to:  
+  
+1.  Take many (potentially weak) indicators  
+2.  Weight them and add them up  
+3.  Get a stronger predictor  
+  
+In slightly more detail, the approach is:  
+  
+1.  Start with a set of classifiers h1 . . . hk, often of the same class (e.g., many trees, many regressions, etc.)  
+2.  Create a combined classifier that is sum-over-i-of alpha(i) * h(i), where alpha(i) need not sum to 1  
+  * Goal is to minimize error on the training set  
+  * Iterative process, select one h(i) at each step  
+  * Calculate weights based on errors  
+  * Upweight for the missed classifications, and select the next h(i)  
+3.  The most famous algorithm is probably "adaboost"  
+  
+Boosting in R can be done with any subset of classifiers:  
+  
+* One large sub-class is "gradient boosting"  
+* R has multiple boosting libraries -- gbm (trees), mboost (model-based), ada (additive logistic), gamBoost (general additive), etc.  
+* Most of these are available in the caret package  
+  
+An example can be taken from the ISLR "wages" data:  
+```{r, cache=TRUE}
+## Set cache=TRUE, the gbm takes a while to run in the repeats
+library(ISLR); library(ggplot2); library(caret)
+data(Wage)
+Wage <- subset(Wage, select=-c(logwage)) ## too good of a predictor!
+Wage <- subset(Wage, select=-c(sex, region)) ## no variance, throws tons of warnings
+
+## Create the test and train data
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+
+## gbm is boosting with trees, gives a lot of info if not using verbose=FALSE
+modFit <- train(wage ~ ., method="gbm", data=training, verbose=FALSE) 
+print(modFit)
+
+## Plot the predictions
+qplot(predict(modFit, testing), wage, data=testing)
+
+```
+  
+Typically, boosting and random forests are the techniques that win prediction contests.  
+  
+####_Model Based Prediction_  
   

@@ -45,6 +45,7 @@ Next, we use caret to run GLM on the training data.  The training syntax almost 
 
 
 ```r
+## Set cache=TRUE for faster re-runs
 set.seed(32343)
 
 ## Runs the GLM and stores the outputs as modelFit
@@ -63,32 +64,6 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-
-## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ```
 
 ```
@@ -96,6 +71,32 @@ modelFit <- train(type ~ ., data=training, method="glm")
 ```
 
 ```
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -128,8 +129,8 @@ modelFit
 ## Summary of sample sizes: 3451, 3451, 3451, 3451, 3451, 3451, ... 
 ## Resampling results
 ## 
-##   Accuracy  Kappa      Accuracy SD  Kappa SD  
-##   0.916194  0.8242647  0.01566505   0.03004501
+##   Accuracy   Kappa      Accuracy SD  Kappa SD 
+##   0.9202768  0.8322282  0.005015408  0.0102727
 ## 
 ## 
 ```
@@ -145,49 +146,49 @@ modelFit$finalModel
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address  
-##        -1.577e+00         -4.337e-01         -1.407e-01  
+##        -1.556e+00         -3.540e-01         -1.710e-01  
 ##               all              num3d                our  
-##         1.116e-01          3.038e+00          6.409e-01  
+##         7.526e-02          8.568e+00          7.070e-01  
 ##              over             remove           internet  
-##         1.156e+00          2.388e+00          7.148e-01  
+##         1.067e+00          1.808e+00          4.061e-01  
 ##             order               mail            receive  
-##         1.546e+00          1.076e-01         -4.560e-01  
+##         1.273e+00          4.064e-01         -3.990e-01  
 ##              will             people             report  
-##        -1.858e-01         -6.315e-02          9.888e-02  
+##        -2.735e-01         -9.298e-02          1.166e-01  
 ##         addresses               free           business  
-##         9.238e-01          9.231e-01          8.279e-01  
+##         1.004e+00          1.364e+00          1.068e+00  
 ##             email                you             credit  
-##         1.423e-01          7.929e-02          8.660e-01  
+##         6.680e-02          8.792e-02          8.933e-01  
 ##              your               font             num000  
-##         2.832e-01          2.196e-01          1.903e+00  
+##         2.807e-01          2.266e-01          1.829e+00  
 ##             money                 hp                hpl  
-##         3.511e-01         -1.692e+00         -1.250e+00  
+##         3.043e-01         -1.608e+00         -1.135e+00  
 ##            george             num650                lab  
-##        -1.077e+01          4.627e-01         -5.797e+00  
+##        -9.534e+00          3.260e-01         -4.467e+00  
 ##              labs             telnet             num857  
-##        -4.006e-01         -1.513e-01          2.632e+00  
+##        -8.197e-01         -5.101e+00          1.181e+01  
 ##              data             num415              num85  
-##        -8.748e-01          8.329e-01         -2.002e+00  
+##        -8.300e-01         -1.339e+01         -2.253e+00  
 ##        technology            num1999              parts  
-##         9.402e-01          9.377e-02         -5.590e-01  
+##         8.836e-01          1.900e-02         -7.587e-01  
 ##                pm             direct                 cs  
-##        -1.077e+00         -2.021e-01         -3.813e+02  
+##        -9.040e-01         -3.875e-01         -5.430e+02  
 ##           meeting           original            project  
-##        -2.913e+00         -9.854e-01         -1.447e+00  
+##        -2.522e+00         -1.389e+00         -1.792e+00  
 ##                re                edu              table  
-##        -7.633e-01         -1.754e+00         -3.128e+00  
+##        -9.784e-01         -1.775e+00         -2.998e+00  
 ##        conference      charSemicolon   charRoundbracket  
-##        -4.217e+00         -1.394e+00         -1.466e-01  
+##        -3.504e+00         -1.571e+00         -1.345e-01  
 ## charSquarebracket    charExclamation         charDollar  
-##        -3.214e-01          2.577e-01          4.927e+00  
+##        -5.029e-01          2.635e-01          5.530e+00  
 ##          charHash         capitalAve        capitalLong  
-##         2.514e+00          1.858e-02          6.881e-03  
+##         2.656e+00          8.916e-03          7.669e-03  
 ##      capitalTotal  
-##         9.027e-04  
+##         8.950e-04  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:	    4628 
-## Residual Deviance: 1359 	AIC: 1475
+## Residual Deviance: 1327 	AIC: 1443
 ```
 
 ```r
@@ -203,27 +204,27 @@ confusionMatrix(predictions, testing$type)
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     667   57
-##    spam         30  396
-##                                          
-##                Accuracy : 0.9243         
-##                  95% CI : (0.9075, 0.939)
-##     No Information Rate : 0.6061         
-##     P-Value [Acc > NIR] : < 2.2e-16      
-##                                          
-##                   Kappa : 0.8399         
-##  Mcnemar's Test P-Value : 0.005312       
-##                                          
-##             Sensitivity : 0.9570         
-##             Specificity : 0.8742         
-##          Pos Pred Value : 0.9213         
-##          Neg Pred Value : 0.9296         
-##              Prevalence : 0.6061         
-##          Detection Rate : 0.5800         
-##    Detection Prevalence : 0.6296         
-##       Balanced Accuracy : 0.9156         
-##                                          
-##        'Positive' Class : nonspam        
+##    nonspam     658   50
+##    spam         39  403
+##                                           
+##                Accuracy : 0.9226          
+##                  95% CI : (0.9056, 0.9374)
+##     No Information Rate : 0.6061          
+##     P-Value [Acc > NIR] : <2e-16          
+##                                           
+##                   Kappa : 0.8372          
+##  Mcnemar's Test P-Value : 0.2891          
+##                                           
+##             Sensitivity : 0.9440          
+##             Specificity : 0.8896          
+##          Pos Pred Value : 0.9294          
+##          Neg Pred Value : 0.9118          
+##              Prevalence : 0.6061          
+##          Detection Rate : 0.5722          
+##    Detection Prevalence : 0.6157          
+##       Balanced Accuracy : 0.9168          
+##                                           
+##        'Positive' Class : nonspam         
 ## 
 ```
   
@@ -236,6 +237,13 @@ The below is cut/pasted from Len's blog so that I can easily access it even when
 
 ```r
 library(mlbench)
+```
+
+```
+## Warning: package 'mlbench' was built under R version 3.2.4
+```
+
+```r
 data(Sonar)
 
 inTraining <- createDataPartition(Sonar$Class, p = .75, list=FALSE)
@@ -252,7 +260,31 @@ Next, Len calls libraries for parallel processing and sets trainControl to allow
 ```r
 library(parallel)
 library(doParallel)
+```
 
+```
+## Warning: package 'doParallel' was built under R version 3.2.4
+```
+
+```
+## Loading required package: foreach
+```
+
+```
+## Warning: package 'foreach' was built under R version 3.2.4
+```
+
+```
+## foreach: simple, scalable parallel programming from Revolution Analytics
+## Use Revolution R for scalability, fault tolerance and more.
+## http://www.revolutionanalytics.com
+```
+
+```
+## Loading required package: iterators
+```
+
+```r
 cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
 registerDoParallel(cluster)
 
@@ -262,6 +294,7 @@ fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
 Then, Len runs train() function, calling fitControl to make sure it runs in parallel:  
 
 ```r
+## Set cache=TRUE so that re-runs go faster
 fit <- train(x, y, method="rf", data=Sonar, trControl = fitControl)
 ```
   
@@ -696,6 +729,7 @@ The preProcess commands can also be passed to the train() commands.
   
 
 ```r
+## Set cache=TRUE to speed up re-runs
 set.seed(32343)
 modelFit <- train(type ~ ., data=training, preProcess=c("center", "scale"), method="glm")
 ```
@@ -816,7 +850,7 @@ capAve <- predict(preObj, training[,-58])$capAve
 
 The preProcess() command is especially useful since it can be repeatedly applied to data as needed - train, test, validate, etc.  
   
-####_Covariate creaion_  
+####_Covariate creation_  
 Covariates (aka features or predictors) are the variables to be used in the model.  There are two levels:  
   
 * Level 1 - from raw data to covariate (such as converting an e-mail to multiple descriptive statistics that could be used to predict whether it is spam)  
@@ -955,7 +989,7 @@ The basic idea is that many of the predictor variables may be highly correlated.
 The "spam" dataset can again be analyzed to explore the concept:  
 
 ```r
-library(caret); library(kernlab); data(spam)
+library(caret); library(kernlab); data(spam, package="kernlab")
 
 inTrain <- createDataPartition(y=spam$type, p=0.75, list=FALSE)
 training <- spam[inTrain, ]
@@ -1171,6 +1205,7 @@ This process alone, using just two principal components, is ~89% accurate in cla
 Lastly, the PCA approach can be passed directly to the train() function, which will create the same number of PCA as predictors in the initial data.  This drives accuracy up slightly more to ~92%:  
 
 ```r
+## Set cache=TRUE to speed up the re-run
 modelFit <- train(training$type ~ ., method="glm", preProcess="pca", data=training)
 ```
 
@@ -1966,7 +2001,7 @@ print(ctreeBag$aggregate)
 ## }
 ## <environment: namespace:caret>
 ```
-
+  
 This is most useful for non-linear models, and particularly useful with trees (see below for random forest).  
   
 ####_Random Forests_  
@@ -2073,4 +2108,85 @@ qplot(Petal.Width, Petal.Length, color=predRight, data=testing, main="newdata Pr
 Random forests are often both very accurate and very difficult to interpret.  The goal is to push accuracy at the expense of parsimony.  There is some risk of overfitting - see rfcv().  
   
 ####_Boosting_  
+Boosting is often one of the top predictive techniques.  The basic ideas are to:  
+  
+1.  Take many (potentially weak) indicators  
+2.  Weight them and add them up  
+3.  Get a stronger predictor  
+  
+In slightly more detail, the approach is:  
+  
+1.  Start with a set of classifiers h1 . . . hk, often of the same class (e.g., many trees, many regressions, etc.)  
+2.  Create a combined classifier that is sum-over-i-of alpha(i) * h(i), where alpha(i) need not sum to 1  
+  * Goal is to minimize error on the training set  
+  * Iterative process, select one h(i) at each step  
+  * Calculate weights based on errors  
+  * Upweight for the missed classifications, and select the next h(i)  
+3.  The most famous algorithm is probably "adaboost"  
+  
+Boosting in R can be done with any subset of classifiers:  
+  
+* One large sub-class is "gradient boosting"  
+* R has multiple boosting libraries -- gbm (trees), mboost (model-based), ada (additive logistic), gamBoost (general additive), etc.  
+* Most of these are available in the caret package  
+  
+An example can be taken from the ISLR "wages" data:  
+
+```r
+## Set cache=TRUE, the gbm takes a while to run in the repeats
+library(ISLR); library(ggplot2); library(caret)
+data(Wage)
+Wage <- subset(Wage, select=-c(logwage)) ## too good of a predictor!
+Wage <- subset(Wage, select=-c(sex, region)) ## no variance, throws tons of warnings
+
+## Create the test and train data
+inTrain <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+
+## gbm is boosting with trees, gives a lot of info if not using verbose=FALSE
+modFit <- train(wage ~ ., method="gbm", data=training, verbose=FALSE) 
+print(modFit)
+```
+
+```
+## Stochastic Gradient Boosting 
+## 
+## 2102 samples
+##    8 predictor
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 2102, 2102, 2102, 2102, 2102, 2102, ... 
+## Resampling results across tuning parameters:
+## 
+##   interaction.depth  n.trees  RMSE      Rsquared   RMSE SD   Rsquared SD
+##   1                   50      34.58021  0.3259865  1.592040  0.03198376 
+##   1                  100      33.98008  0.3368677  1.540315  0.02959407 
+##   1                  150      33.86285  0.3399412  1.502692  0.02841693 
+##   2                   50      33.88045  0.3419619  1.528687  0.03077495 
+##   2                  100      33.76036  0.3439467  1.464264  0.03034194 
+##   2                  150      33.80097  0.3428189  1.420466  0.02947460 
+##   3                   50      33.72294  0.3462096  1.515120  0.03229576 
+##   3                  100      33.80460  0.3430305  1.453085  0.03018191 
+##   3                  150      33.98799  0.3375384  1.409067  0.03073674 
+## 
+## Tuning parameter 'shrinkage' was held constant at a value of 0.1
+## 
+## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
+## RMSE was used to select the optimal model using  the smallest value.
+## The final values used for the model were n.trees = 50, interaction.depth
+##  = 3, shrinkage = 0.1 and n.minobsinnode = 10.
+```
+
+```r
+## Plot the predictions
+qplot(predict(modFit, testing), wage, data=testing)
+```
+
+![plot of chunk unnamed-chunk-43](figure/unnamed-chunk-43-1.png)
+  
+Typically, boosting and random forests are the techniques that win prediction contests.  
+  
+####_Model Based Prediction_  
   
