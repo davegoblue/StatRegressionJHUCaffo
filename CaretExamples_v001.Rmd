@@ -846,4 +846,57 @@ qplot(predict(modFit, testing), wage, data=testing)
 Typically, boosting and random forests are the techniques that win prediction contests.  
   
 ####_Model Based Prediction_  
+The basic idea of model-based prediction is to assume the data follow a probabilistic model and to use Bayes' theorem to identify optimal classifiers.  
+  
+* PROS: Takes advantage of data structures, computationally convenient, reasonably accurate on real-world problems  
+* CONS: Requires additional assumptions about the data, reduced accuracy if assuming an inaccurate model  
+  
+The expansion on the general idea is as follows:  
+  
+1.  Build a parametric model for the conitional distribution P(Y=k | X=x)  
+2.  Typical approach goes back to Bayes' theorem -- leverage priors vs. likelihood of observed outcomes  
+3.  Typically, the prior probabilities are set in advance  
+4.  A common choice is the Gaussian  
+5.  Classification is made based on the highest value of P(Y=k | X=x)  
+  
+Many linear models take advantage of this - see "Elements of Statistical Learning" for example:  
+  
+* Linear discriminant analysis (LDA) assumes f(k)(x) is multivariate Gaussian with the same covariances  
+* Quadratic discriminant analysis assumes f(k)(x) is multivariate Gaussian with different covariances  
+* Model-based prediction assumes more complicated versions of the covariance matrix  
+* Naive Bayes assumes independence between features for model-building  
+  
+The basic idea behind LDA is that probabilities become more likely one way or the other on either side of a given line (there can be multiple lines carving out multiple spaces of "greatest probability").  The discriminant function is associated with "maximum likelihood".  
+  
+Naive Bayes is an attempt to simplify the problem a bit.  If the goal is to estimate P(Y=k | X1, X2, . . . , Xm) then we assume this probability is proportional to P(X1, X2, . . . ,Xm | Y=k).  This is especially good in binary or categorical situations, for example test classification.  
+  
+While this module was not very well explained, below is an example from the iris data:  
+```{r}
+data(iris); library(ggplot2); names(iris)
+table(iris$Species)
+
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+
+## Plot the locations
+qplot(Petal.Width, Sepal.Width, color=Species, data=training)
+
+## Run (and then predict) an LDA and a Naive Bayes
+modlda <- train(Species ~ ., data=training, method="lda")
+modnb <- train(Species ~ ., data=training, method="nb")
+plda <- predict(modlda, testing)
+pnb <- predict(modnb, testing)
+
+## Note how Naïve Bayes (nb) gives an almost identical result here
+table(plda, pnb) 
+
+## Plot them out, with different colors depending on where the predictions agree
+qplot(Petal.Width, Sepal.Width, color=(plda==pnb), data=testing)
+```
+  
+Supposedly, there is a much more detailed explanation available in "Elements of Statistical Learning".  
+  
+####_Regularized Regression_  
   

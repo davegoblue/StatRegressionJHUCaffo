@@ -237,13 +237,6 @@ The below is cut/pasted from Len's blog so that I can easily access it even when
 
 ```r
 library(mlbench)
-```
-
-```
-## Warning: package 'mlbench' was built under R version 3.2.4
-```
-
-```r
 data(Sonar)
 
 inTraining <- createDataPartition(Sonar$Class, p = .75, list=FALSE)
@@ -260,31 +253,7 @@ Next, Len calls libraries for parallel processing and sets trainControl to allow
 ```r
 library(parallel)
 library(doParallel)
-```
 
-```
-## Warning: package 'doParallel' was built under R version 3.2.4
-```
-
-```
-## Loading required package: foreach
-```
-
-```
-## Warning: package 'foreach' was built under R version 3.2.4
-```
-
-```
-## foreach: simple, scalable parallel programming from Revolution Analytics
-## Use Revolution R for scalability, fault tolerance and more.
-## http://www.revolutionanalytics.com
-```
-
-```
-## Loading required package: iterators
-```
-
-```r
 cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
 registerDoParallel(cluster)
 
@@ -2189,4 +2158,379 @@ qplot(predict(modFit, testing), wage, data=testing)
 Typically, boosting and random forests are the techniques that win prediction contests.  
   
 ####_Model Based Prediction_  
+The basic idea of model-based prediction is to assume the data follow a probabilistic model and to use Bayes' theorem to identify optimal classifiers.  
+  
+* PROS: Takes advantage of data structures, computationally convenient, reasonably accurate on real-world problems  
+* CONS: Requires additional assumptions about the data, reduced accuracy if assuming an inaccurate model  
+  
+The expansion on the general idea is as follows:  
+  
+1.  Build a parametric model for the conitional distribution P(Y=k | X=x)  
+2.  Typical approach goes back to Bayes' theorem -- leverage priors vs. likelihood of observed outcomes  
+3.  Typically, the prior probabilities are set in advance  
+4.  A common choice is the Gaussian  
+5.  Classification is made based on the highest value of P(Y=k | X=x)  
+  
+Many linear models take advantage of this - see "Elements of Statistical Learning" for example:  
+  
+* Linear discriminant analysis (LDA) assumes f(k)(x) is multivariate Gaussian with the same covariances  
+* Quadratic discriminant analysis assumes f(k)(x) is multivariate Gaussian with different covariances  
+* Model-based prediction assumes more complicated versions of the covariance matrix  
+* Naive Bayes assumes independence between features for model-building  
+  
+The basic idea behind LDA is that probabilities become more likely one way or the other on either side of a given line (there can be multiple lines carving out multiple spaces of "greatest probability").  The discriminant function is associated with "maximum likelihood".  
+  
+Naive Bayes is an attempt to simplify the problem a bit.  If the goal is to estimate P(Y=k | X1, X2, . . . , Xm) then we assume this probability is proportional to P(X1, X2, . . . ,Xm | Y=k).  This is especially good in binary or categorical situations, for example test classification.  
+  
+While this module was not very well explained, below is an example from the iris data:  
+
+```r
+data(iris); library(ggplot2); names(iris)
+```
+
+```
+## [1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width" 
+## [5] "Species"
+```
+
+```r
+table(iris$Species)
+```
+
+```
+## 
+##     setosa versicolor  virginica 
+##         50         50         50
+```
+
+```r
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+```
+
+```
+## [1] 105   5
+```
+
+```
+## [1] 45  5
+```
+
+```r
+## Plot the locations
+qplot(Petal.Width, Sepal.Width, color=Species, data=training)
+```
+
+![plot of chunk unnamed-chunk-44](figure/unnamed-chunk-44-1.png)
+
+```r
+## Run (and then predict) an LDA and a Naive Bayes
+modlda <- train(Species ~ ., data=training, method="lda")
+```
+
+```
+## Loading required package: MASS
+```
+
+```r
+modnb <- train(Species ~ ., data=training, method="nb")
+```
+
+```
+## Loading required package: klaR
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,7,11,12,14,15,17,19,20,21,24,25,29,33,35,36,37,42,46,51,52,53,55,63,65,68,70,72,76,81,86,88,90,96,99,102,103,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,7,11,12,14,15,17,19,20,21,24,25,29,33,35,36,37,42,46,51,52,53,55,63,65,68,70,72,76,81,86,88,90,96,99,102,103,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,6,7,9,13,14,19,22,23,32,39,40,42,43,46,50,51,53,59,60,64,66,69,70,74,76,77,83,88,90,92,94,96,99,100,103
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,6,7,9,13,14,19,22,23,32,39,40,42,43,46,50,51,53,59,60,64,66,69,70,74,76,77,83,88,90,92,94,96,99,100,103
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,6,14,17,18,19,25,26,30,31,34,36,37,38,39,41,44,45,46,48,50,51,55,57,59,61,62,64,67,74,79,82,86,87,91,94,95,97,99,100,101,103
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,6,14,17,18,19,25,26,30,31,34,36,37,38,39,41,44,45,46,48,50,51,55,57,59,61,62,64,67,74,79,82,86,87,91,94,95,97,99,100,101,103
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,5,7,8,11,15,23,26,27,29,31,32,34,38,39,41,45,47,48,53,56,57,58,64,68,71,74,75,76,77,78,81,86,87,89,90,94,95,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,5,7,8,11,15,23,26,27,29,31,32,34,38,39,41,45,47,48,53,56,57,58,64,68,71,74,75,76,77,78,81,86,87,89,90,94,95,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,4,6,8,9,11,15,17,21,22,23,27,28,30,33,35,39,41,42,43,46,47,55,57,58,59,60,65,68,70,75,80,82,84,87,90,94,97,100,101,103,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,4,6,8,9,11,15,17,21,22,23,27,28,30,33,35,39,41,42,43,46,47,55,57,58,59,60,65,68,70,75,80,82,84,87,90,94,97,100,101,103,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,7,12,15,27,31,32,33,35,36,37,40,44,46,49,50,52,55,58,61,63,67,69,72,73,74,77,78,79,80,82,83,85,88,89,90,93,95,96,97,103,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,7,12,15,27,31,32,33,35,36,37,40,44,46,49,50,52,55,58,61,63,67,69,72,73,74,77,78,79,80,82,83,85,88,89,90,93,95,96,97,103,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,4,5,7,8,10,11,15,19,22,27,31,33,35,41,42,44,47,49,54,56,61,63,65,66,68,70,74,75,77,78,79,80,81,86,88,91,93,95,100
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,4,5,7,8,10,11,15,19,22,27,31,33,35,41,42,44,47,49,54,56,61,63,65,66,68,70,74,75,77,78,79,80,81,86,88,91,93,95,100
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,6,7,8,9,11,18,19,26,29,31,32,35,39,41,44,51,52,53,58,60,62,67,68,70,71,76,78,79,80,81,92,95,96,101,104,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,6,7,8,9,11,18,19,26,29,31,32,35,39,41,44,51,52,53,58,60,62,67,68,70,71,76,78,79,80,81,92,95,96,101,104,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,10,13,20,22,24,26,29,31,32,33,35,36,38,41,42,45,46,48,55,58,59,61,63,64,67,68,71,73,76,77,80,82,86,87,89,93,96,98,102,103
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,10,13,20,22,24,26,29,31,32,33,35,36,38,41,42,45,46,48,55,58,59,61,63,64,67,68,71,73,76,77,80,82,86,87,89,93,96,98,102,103
+## --> row.names NOT used
+```
+
+```
+## Warning in FUN(X[[i]], ...): Numerical 0 probability for all classes with
+## observation 14
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,9,10,12,15,19,21,24,27,28,32,33,37,39,40,41,44,47,50,52,55,56,57,58,60,67,69,71,76,78,80,82,83,84,87,89,91,94,95,100,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,9,10,12,15,19,21,24,27,28,32,33,37,39,40,41,44,47,50,52,55,56,57,58,60,67,69,71,76,78,80,82,83,84,87,89,91,94,95,100,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,9,10,13,17,19,23,25,27,28,29,31,33,38,40,42,48,49,55,59,64,67,72,73,78,80,84,85,87,90,93,96,98,99,100,102
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,9,10,13,17,19,23,25,27,28,29,31,33,38,40,42,48,49,55,59,64,67,72,73,78,80,84,85,87,90,93,96,98,99,100,102
+## --> row.names NOT used
+```
+
+```
+## Warning in FUN(X[[i]], ...): Numerical 0 probability for all classes with
+## observation 13
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,5,6,7,9,10,11,13,14,15,17,18,20,25,29,33,35,37,38,40,41,45,46,49,53,55,58,59,68,69,71,76,79,81,83,85,92,94,98,101,103
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,5,6,7,9,10,11,13,14,15,17,18,20,25,29,33,35,37,38,40,41,45,46,49,53,55,58,59,68,69,71,76,79,81,83,85,92,94,98,101,103
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,5,7,8,15,17,19,22,29,31,34,35,40,42,43,45,46,50,52,54,56,57,59,67,69,81,82,85,87,88,89,91,93,94,96,100,102,103,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,5,7,8,15,17,19,22,29,31,34,35,40,42,43,45,46,50,52,54,56,57,59,67,69,81,82,85,87,88,89,91,93,94,96,100,102,103,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,6,8,9,10,11,13,15,24,25,30,32,34,35,37,39,41,46,48,51,55,57,59,61,62,65,67,70,72,74,75,76,77,80,81,82,84,89,90,92,97,98,102,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,6,8,9,10,11,13,15,24,25,30,32,34,35,37,39,41,46,48,51,55,57,59,61,62,65,67,70,72,74,75,76,77,80,81,82,84,89,90,92,97,98,102,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 4,6,12,14,16,19,22,23,27,29,32,35,38,45,46,48,53,56,63,67,71,73,77,80,82,83,86,88,93,95,102
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 4,6,12,14,16,19,22,23,27,29,32,35,38,45,46,48,53,56,63,67,71,73,77,80,82,83,86,88,93,95,102
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,5,12,13,15,16,18,20,26,29,33,37,40,43,47,48,52,53,55,56,57,59,60,63,65,67,70,73,75,83,84,85,89,96,97,100,101,103,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,5,12,13,15,16,18,20,26,29,33,37,40,43,47,48,52,53,55,56,57,59,60,63,65,67,70,73,75,83,84,85,89,96,97,100,101,103,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 8,11,13,15,19,22,23,24,25,29,30,32,36,40,47,54,56,57,59,62,64,74,77,78,82,85,86,87,89,93,94,95,96,99,101,102,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 8,11,13,15,19,22,23,24,25,29,30,32,36,40,47,54,56,57,59,62,64,74,77,78,82,85,86,87,89,93,94,95,96,99,101,102,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,6,7,9,12,14,15,17,22,23,25,26,31,34,36,37,39,46,51,52,53,55,56,58,61,66,70,72,74,79,80,83,87,89,91,94,97,100,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,6,7,9,12,14,15,17,22,23,25,26,31,34,36,37,39,46,51,52,53,55,56,58,61,66,70,72,74,79,80,83,87,89,91,94,97,100,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,6,7,9,11,13,22,25,27,28,37,38,40,42,43,47,50,51,53,57,58,59,61,72,74,75,76,81,83,87,89,90,92,94,95,97,103
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,6,7,9,11,13,22,25,27,28,37,38,40,42,43,47,50,51,53,57,58,59,61,72,74,75,76,81,83,87,89,90,92,94,95,97,103
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,6,8,9,10,13,14,17,18,21,22,23,25,28,29,33,42,47,49,52,55,57,60,62,64,67,68,69,71,72,73,74,76,82,84,86,93,96,99,101,103,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,4,6,8,9,10,13,14,17,18,21,22,23,25,28,29,33,42,47,49,52,55,57,60,62,64,67,68,69,71,72,73,74,76,82,84,86,93,96,99,101,103,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 6,8,10,11,12,15,16,22,23,25,27,29,32,33,34,38,43,45,50,51,54,57,58,62,63,64,68,77,80,86,87,91,93,96,102,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 6,8,10,11,12,15,16,22,23,25,27,29,32,33,34,38,43,45,50,51,54,57,58,62,63,64,68,77,80,86,87,91,93,96,102,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,8,9,12,15,19,22,29,33,36,37,39,46,47,52,54,55,57,58,60,61,63,66,68,71,73,79,82,89,92,96,99,101,103,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,4,8,9,12,15,19,22,29,33,36,37,39,46,47,52,54,55,57,58,60,61,63,66,68,71,73,79,82,89,92,96,99,101,103,104
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,7,10,12,13,19,20,27,28,31,32,33,34,36,38,41,42,43,51,52,55,64,66,68,72,78,79,80,82,83,84,87,95,98,99,101,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 3,7,10,12,13,19,20,27,28,31,32,33,34,36,38,41,42,43,51,52,55,64,66,68,72,78,79,80,82,83,84,87,95,98,99,101,105
+## --> row.names NOT used
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 8,11,13,14,16,19,20,22,28,32,33,34,36,37,39,41,44,45,48,50,51,52,53,54,58,61,64,66,68,73,75,77,83,85,86,89,91,95,100,101,102,105
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 8,11,13,14,16,19,20,22,28,32,33,34,36,37,39,41,44,45,48,50,51,52,53,54,58,61,64,66,68,73,75,77,83,85,86,89,91,95,100,101,102,105
+## --> row.names NOT used
+```
+
+```
+## Warning in FUN(X[[i]], ...): Numerical 0 probability for all classes with
+## observation 10
+```
+
+```
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,7,11,12,14,15,17,18,20,23,25,27,38,40,43,48,51,57,60,61,62,64,65,73,76,80,82,84,85,89,94,97,100,103,104
+## --> row.names NOT used
+
+## Warning in data.row.names(row.names, rowsi, i): some row.names duplicated:
+## 2,3,7,11,12,14,15,17,18,20,23,25,27,38,40,43,48,51,57,60,61,62,64,65,73,76,80,82,84,85,89,94,97,100,103,104
+## --> row.names NOT used
+```
+
+```r
+plda <- predict(modlda, testing)
+pnb <- predict(modnb, testing)
+
+## Note how Naïve Bayes (nb) gives an almost identical result here
+table(plda, pnb) 
+```
+
+```
+##             pnb
+## plda         setosa versicolor virginica
+##   setosa         14          1         0
+##   versicolor      0         16         0
+##   virginica       0          1        13
+```
+
+```r
+## Plot them out, with different colors depending on where the predictions agree
+qplot(Petal.Width, Sepal.Width, color=(plda==pnb), data=testing)
+```
+
+![plot of chunk unnamed-chunk-44](figure/unnamed-chunk-44-2.png)
+  
+Supposedly, there is a much more detailed explanation available in "Elements of Statistical Learning".  
+  
+####_Regularized Regression_  
   
