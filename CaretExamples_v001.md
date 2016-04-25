@@ -2228,18 +2228,7 @@ qplot(Petal.Width, Sepal.Width, color=Species, data=training)
 ```r
 ## Run (and then predict) an LDA and a Naive Bayes
 modlda <- train(Species ~ ., data=training, method="lda")
-```
-
-```
-## Loading required package: MASS
-```
-
-```r
 modnb <- train(Species ~ ., data=training, method="nb")
-```
-
-```
-## Loading required package: klaR
 ```
 
 ```
@@ -2533,4 +2522,180 @@ qplot(Petal.Width, Sepal.Width, color=(plda==pnb), data=testing)
 Supposedly, there is a much more detailed explanation available in "Elements of Statistical Learning".  
   
 ####_Regularized Regression_  
+The basic idea of regularized regression is to fit a regression and then penalize large coefficients.  
   
+PROS: Helps with bias/variance (prediction error), helps with model selection  
+CONS: Computationally demanding, does not perform as well as random forests and boosting  
+  
+Suppose you have Y = Beta0 + Beta1 * X1 + Beta2 * X2 + epsilon:  
+  
+* Suppose that X1 and X2 are nearly collinear  
+* The model could instead be approximated by Y = Beta0 + (Beta1 + Beta2) * X2 + epsilon.  This will (slightly) increase the bias in estimating Y (a predictor is left out), but with the benefit of greatly reduced variance (since you no longer have jumbo Beta1 and Beta2 with opposite signs).  The result can actually be improved estimates and/or predictions for Y, since Overall Error is Irreducible Error (natural random spread of Y) + Bias^2 (not having the perfect mean) + Variance (having a large prediction spread around the perfect mean).  
+  
+An example can be drawn from the prostate cancer dataset:  
+  
+
+```r
+library(ElemStatLearn); data(prostate); str(prostate)
+```
+
+```
+## 'data.frame':	97 obs. of  10 variables:
+##  $ lcavol : num  -0.58 -0.994 -0.511 -1.204 0.751 ...
+##  $ lweight: num  2.77 3.32 2.69 3.28 3.43 ...
+##  $ age    : int  50 58 74 58 62 50 64 58 47 63 ...
+##  $ lbph   : num  -1.39 -1.39 -1.39 -1.39 -1.39 ...
+##  $ svi    : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ lcp    : num  -1.39 -1.39 -1.39 -1.39 -1.39 ...
+##  $ gleason: int  6 6 7 6 6 6 6 6 6 6 ...
+##  $ pgg45  : int  0 0 20 0 0 0 0 0 0 0 ...
+##  $ lpsa   : num  -0.431 -0.163 -0.163 -0.163 0.372 ...
+##  $ train  : logi  TRUE TRUE TRUE TRUE TRUE TRUE ...
+```
+
+```r
+round(cor(prostate),2)
+```
+
+```
+##         lcavol lweight  age  lbph   svi   lcp gleason pgg45  lpsa train
+## lcavol    1.00    0.28 0.22  0.03  0.54  0.68    0.43  0.43  0.73 -0.05
+## lweight   0.28    1.00 0.35  0.44  0.16  0.16    0.06  0.11  0.43 -0.01
+## age       0.22    0.35 1.00  0.35  0.12  0.13    0.27  0.28  0.17  0.18
+## lbph      0.03    0.44 0.35  1.00 -0.09 -0.01    0.08  0.08  0.18 -0.03
+## svi       0.54    0.16 0.12 -0.09  1.00  0.67    0.32  0.46  0.57  0.03
+## lcp       0.68    0.16 0.13 -0.01  0.67  1.00    0.51  0.63  0.55 -0.04
+## gleason   0.43    0.06 0.27  0.08  0.32  0.51    1.00  0.75  0.37 -0.04
+## pgg45     0.43    0.11 0.28  0.08  0.46  0.63    0.75  1.00  0.42  0.10
+## lpsa      0.73    0.43 0.17  0.18  0.57  0.55    0.37  0.42  1.00 -0.03
+## train    -0.05   -0.01 0.18 -0.03  0.03 -0.04   -0.04  0.10 -0.03  1.00
+```
+
+```r
+inTrain <- createDataPartition(y=prostate$train, p=0.75, list=FALSE)
+testProstate <- prostate[-inTrain, ]
+trainProstate <- prostate[inTrain, ]
+
+## Run a straight-up GLM
+glmProstate <- train(as.factor(train) ~ ., data=trainProstate, method="glm")
+print(glmProstate)
+```
+
+```
+## Generalized Linear Model 
+## 
+## 74 samples
+##  9 predictor
+##  2 classes: 'FALSE', 'TRUE' 
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 74, 74, 74, 74, 74, 74, ... 
+## Resampling results
+## 
+##   Accuracy   Kappa       Accuracy SD  Kappa SD 
+##   0.6001038  0.04436143  0.09143222   0.1748828
+## 
+## 
+```
+
+```r
+glmProstate$finalModel
+```
+
+```
+## 
+## Call:  NULL
+## 
+## Coefficients:
+## (Intercept)       lcavol      lweight          age         lbph  
+##     1.29403      0.03709     -0.87116      0.11738     -0.10135  
+##         svi          lcp      gleason        pgg45         lpsa  
+##    -0.26216     -0.12349     -0.71520      0.02233     -0.21188  
+## 
+## Degrees of Freedom: 73 Total (i.e. Null);  64 Residual
+## Null Deviance:	    91.72 
+## Residual Deviance: 81.33 	AIC: 101.3
+```
+
+```r
+## Use it to make predictions (they are horrible!)
+predTest <- predict(glmProstate, testProstate)
+confusionMatrix(predTest, testProstate$train)
+```
+
+```
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction FALSE TRUE
+##      FALSE     2    4
+##      TRUE      5   12
+##                                           
+##                Accuracy : 0.6087          
+##                  95% CI : (0.3854, 0.8029)
+##     No Information Rate : 0.6957          
+##     P-Value [Acc > NIR] : 0.8702          
+##                                           
+##                   Kappa : 0.0372          
+##  Mcnemar's Test P-Value : 1.0000          
+##                                           
+##             Sensitivity : 0.28571         
+##             Specificity : 0.75000         
+##          Pos Pred Value : 0.33333         
+##          Neg Pred Value : 0.70588         
+##              Prevalence : 0.30435         
+##          Detection Rate : 0.08696         
+##    Detection Prevalence : 0.26087         
+##       Balanced Accuracy : 0.51786         
+##                                           
+##        'Positive' Class : FALSE           
+## 
+```
+  
+A very common pattern for prediction errors is the following:  
+  
+* Error in the training set will always decrease with more predictors (can train on noise)  
+* Error in the test set will decrease with more predictors, then hit a global minimum, then increase with more predictors as it is besieged by overfitting of the training set  
+* The same general pattern holds for any model complexity -- there is a global minimum error at a certain complexity, with error increasing as the model becomes either less complex or more complex than that  
+  
+Splitting samples is typically the best approach - "there is no better method when data and computation time allow for it".  
+  
+* Divide data in to train, test, and validation  
+* Treat validation set as test data, train all competing models on train data, pick best on validation  
+* Can then still assess the error rate on the test data (validation data is compormised by having been used in the choice of training models)  
+* Option to re-split and repeat the steps described above for a better estimate of the error rate  
+* Common problems include 1) lack of data, and 2) lack of computational time  
+  
+As a reminder about overall error, suppose that you decompose the components:  
+  
+* Y(i) = f(X(i)) + eps(i)  
+* E[ { Y - f(h)(X) }^2 ] = sigma^2 + Bias^2 + Variance  
+* Total Error = Irreducible Error + Bias^2 + Variance (technically Error^2)  
+* The goal is to reduce Total Error - nothing you can do about Irreducible Error, but you have options for trading off Bias^2 and Variance  
+  
+Regularization for regression builds off the idea of Bias/Variance trade-off:  
+  
+* If every Beta is unconstrained, then they can explode (and thus be highly susceptible to huge variance)  
+* The main thrust is to add a "penalized" sum-square error  
+* Common objectives for the penalty are to 1) reduce complexity, 2) reduce variance, and 3) respect the structure of the problem  
+  
+One example is "ridge regression", which penalizes by lamba * sum-over-i-of Beta(i)^2
+  
+* RSS now becomes RSS + penalty, meaning that large Beta are disfavored  
+* The regression can be non-singular even if t(X) %*% X is singular  
+* As you increase lamba, all coefficients become closer to zero (Beta(i) -> 0 as lambda -> oo)  
+  
+Lambda can be thought of as the tuning parameter for the ridge regression:  
+  
+* Controls the size of the coefficients  
+* Controls the amount of "regularization"  
+* As lambda -> 0 you get regular least-squares  
+* As lambda -> oo you get all Beta=0  
+* Cross-validation can help pick the best lambda for trading off Bias and Variance  
+  
+Lasso is a similar ideas, though implemented instead with the hard constraint that sum(abs(Beta)) <= s.  Available methods in R include ridge, lasso, and relaxo.  
+  
+Hector Corrado Bravo writes in more detail about this topic in "Practical Machine Learning".  
+  
+####_Combining Predictors_  

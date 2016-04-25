@@ -899,4 +899,79 @@ qplot(Petal.Width, Sepal.Width, color=(plda==pnb), data=testing)
 Supposedly, there is a much more detailed explanation available in "Elements of Statistical Learning".  
   
 ####_Regularized Regression_  
+The basic idea of regularized regression is to fit a regression and then penalize large coefficients.  
   
+PROS: Helps with bias/variance (prediction error), helps with model selection  
+CONS: Computationally demanding, does not perform as well as random forests and boosting  
+  
+Suppose you have Y = Beta0 + Beta1 * X1 + Beta2 * X2 + epsilon:  
+  
+* Suppose that X1 and X2 are nearly collinear  
+* The model could instead be approximated by Y = Beta0 + (Beta1 + Beta2) * X2 + epsilon.  This will (slightly) increase the bias in estimating Y (a predictor is left out), but with the benefit of greatly reduced variance (since you no longer have jumbo Beta1 and Beta2 with opposite signs).  The result can actually be improved estimates and/or predictions for Y, since Overall Error is Irreducible Error (natural random spread of Y) + Bias^2 (not having the perfect mean) + Variance (having a large prediction spread around the perfect mean).  
+  
+An example can be drawn from the prostate cancer dataset:  
+  
+```{r}
+library(ElemStatLearn); data(prostate); str(prostate)
+round(cor(prostate),2)
+
+inTrain <- createDataPartition(y=prostate$train, p=0.75, list=FALSE)
+testProstate <- prostate[-inTrain, ]
+trainProstate <- prostate[inTrain, ]
+
+## Run a straight-up GLM
+glmProstate <- train(as.factor(train) ~ ., data=trainProstate, method="glm")
+print(glmProstate)
+glmProstate$finalModel
+
+## Use it to make predictions (they are horrible!)
+predTest <- predict(glmProstate, testProstate)
+confusionMatrix(predTest, testProstate$train)
+```
+  
+A very common pattern for prediction errors is the following:  
+  
+* Error in the training set will always decrease with more predictors (can train on noise)  
+* Error in the test set will decrease with more predictors, then hit a global minimum, then increase with more predictors as it is besieged by overfitting of the training set  
+* The same general pattern holds for any model complexity -- there is a global minimum error at a certain complexity, with error increasing as the model becomes either less complex or more complex than that  
+  
+Splitting samples is typically the best approach - "there is no better method when data and computation time allow for it".  
+  
+* Divide data in to train, test, and validation  
+* Treat validation set as test data, train all competing models on train data, pick best on validation  
+* Can then still assess the error rate on the test data (validation data is compormised by having been used in the choice of training models)  
+* Option to re-split and repeat the steps described above for a better estimate of the error rate  
+* Common problems include 1) lack of data, and 2) lack of computational time  
+  
+As a reminder about overall error, suppose that you decompose the components:  
+  
+* Y(i) = f(X(i)) + eps(i)  
+* E[ { Y - f(h)(X) }^2 ] = sigma^2 + Bias^2 + Variance  
+* Total Error = Irreducible Error + Bias^2 + Variance (technically Error^2)  
+* The goal is to reduce Total Error - nothing you can do about Irreducible Error, but you have options for trading off Bias^2 and Variance  
+  
+Regularization for regression builds off the idea of Bias/Variance trade-off:  
+  
+* If every Beta is unconstrained, then they can explode (and thus be highly susceptible to huge variance)  
+* The main thrust is to add a "penalized" sum-square error  
+* Common objectives for the penalty are to 1) reduce complexity, 2) reduce variance, and 3) respect the structure of the problem  
+  
+One example is "ridge regression", which penalizes by lamba * sum-over-i-of Beta(i)^2
+  
+* RSS now becomes RSS + penalty, meaning that large Beta are disfavored  
+* The regression can be non-singular even if t(X) %*% X is singular  
+* As you increase lamba, all coefficients become closer to zero (Beta(i) -> 0 as lambda -> oo)  
+  
+Lambda can be thought of as the tuning parameter for the ridge regression:  
+  
+* Controls the size of the coefficients  
+* Controls the amount of "regularization"  
+* As lambda -> 0 you get regular least-squares  
+* As lambda -> oo you get all Beta=0  
+* Cross-validation can help pick the best lambda for trading off Bias and Variance  
+  
+Lasso is a similar ideas, though implemented instead with the hard constraint that sum(abs(Beta)) <= s.  Available methods in R include ridge, lasso, and relaxo.  
+  
+Hector Corrado Bravo writes in more detail about this topic in "Practical Machine Learning".  
+  
+####_Combining Predictors_  
