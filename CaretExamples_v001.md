@@ -2699,3 +2699,232 @@ Lasso is a similar ideas, though implemented instead with the hard constraint th
 Hector Corrado Bravo writes in more detail about this topic in "Practical Machine Learning".  
   
 ####_Combining Predictors_  
+The key ideas behind combining predictors include:  
+  
+* Combine classifiers through averaging and/or voting and/or etc.  
+* PROS: Improves accuracy  
+* CONS: Reduces interpretablity  
+* Boosting, bagging, and random forests are variants on this theme  
+  
+One example is the winner of the Netflix prize - they combined 107 predictors, each of which was a machine learning algorithm.  
+  
+The basic intuition is in the power of the majority vote (multi-game series).  Suppose each of your independent predictors has a 70% probability of correctly classifying a 2-factor (e.g., TRUE/FALSE) decision:  
+  
+* If you have only 1 predictor, you will be 70% accurate  
+* If you majority vote on 5 predictors, you will be 84% accurate  
+* If you majority vote on 101 predictors, you will be 99.9% accurate  
+  
+There are two approaches for combining classifiers:  
+  
+* Similar Classifiers - bagging, boosting, random forests  
+* Different Classifiers - stacking, ensembling  
+  
+Another example using the ISLR wage data:  
+
+```r
+library(ISLR); data(Wage); library(ggplot2); library(caret)
+
+## Remove logWage as it is too good of a predictor for wage!
+Wage <- subset(Wage, select=-c(logwage))
+
+## Create an analysis (building) and validation dataset
+inBuild <- createDataPartition(y=Wage$wage, p=0.7, list=FALSE)
+validation <- Wage[-inBuild, ]
+building <- Wage[inBuild, ]
+
+## Split the analysis (building) dataset in to test and train
+inTrain <- createDataPartition(y=building$wage, p=0.7, list=FALSE)
+testing <- building[-inTrain, ]
+training <- building[inTrain, ]
+
+dim(training); dim(testing); dim(validation)
+```
+
+```
+## [1] 1474   11
+```
+
+```
+## [1] 628  11
+```
+
+```
+## [1] 898  11
+```
+
+```r
+## Run a GLM and a Random Forest, and use each to predict the testing data
+mod1 <- train(wage ~ ., method="glm", data=training)
+```
+
+```
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+```
+
+```r
+mod2 <- train(wage ~ ., method="rf", data=training, trControl=trainControl(method="cv"), number=3)
+pred1 <- predict(mod1, testing)
+```
+
+```
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+```
+
+```r
+pred2 <- predict(mod2, testing)
+qplot(pred1, pred2, color=wage, data=testing)
+```
+
+![plot of chunk unnamed-chunk-46](figure/unnamed-chunk-46-1.png)
+
+```r
+## Now, build a model that combines the predictors (GAM or general additive modelb)
+predDF <- data.frame(pred1, pred2, wage=testing$wage)
+combModFit <- train(wage ~ ., method="gam", data=predDF)
+combPred <- predict(combModFit, predDF)
+
+## Compare the errors - lowest for the combined model
+sqrt(mean((pred1 - testing$wage)^2))
+```
+
+```
+## [1] 37.1421
+```
+
+```r
+sqrt(mean((pred2 - testing$wage)^2))
+```
+
+```
+## [1] 38.13821
+```
+
+```r
+sqrt(mean((combPred - testing$wage)^2))
+```
+
+```
+## [1] 36.89698
+```
+
+```r
+## The test set is compromised by having been used to blend the models; check on validation data
+pred1V <- predict(mod1, validation)
+```
+
+```
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type =
+## ifelse(type == : prediction from a rank-deficient fit may be misleading
+```
+
+```r
+pred2V <- predict(mod2, validation)
+predVDF <- data.frame(pred1=pred1V, pred2=pred2V)
+combPredV <- predict(combModFit, predVDF)
+
+## Compare the errors
+sqrt(mean((pred1V - validation$wage)^2))
+```
+
+```
+## [1] 32.68822
+```
+
+```r
+sqrt(mean((pred2V - validation$wage)^2))
+```
+
+```
+## [1] 33.86581
+```
+
+```r
+sqrt(mean((combPredV - validation$wage)^2))
+```
+
+```
+## [1] 32.49542
+```
+  
+The above may not be the best example, but it makes the idea clear.  Even simple blending can be a valuable technique for improving accuracy:  
+  
+* For classification, build an odd number of models, use each to predict, and take the majority vote  
+* For continuous prediction, take the models and combine through GAM or averaging or the like  
+  
+As a caution, the winning model from the Netflix prize was never implemented!  It was too complicated and computationally expensive.  It is important to consider factors other than maximizing prediction.  
+  
+####_Forecasting_  
