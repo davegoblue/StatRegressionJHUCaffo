@@ -2928,3 +2928,146 @@ The above may not be the best example, but it makes the idea clear.  Even simple
 As a caution, the winning model from the Netflix prize was never implemented!  It was too complicated and computationally expensive.  It is important to consider factors other than maximizing prediction.  
   
 ####_Forecasting_  
+Time series data (e.g., GOOG from NASDAQ) intoduces some additional data dependencies (structures) which require different analysis techniques.  In short, Y(n+1) and Y(n) can no longer both be considered iid from the same population, and it is likely that Y(n+1) will be dependent on Y(n).  
+  
+Some common issues include:  
+  
+* Data are dependent over time  
+* Specific patterns may be observed - trends, seasonal, cyclical  
+* Sub-sampling in to test and train may be more challenging  
+* Spatial data can show similar challenges (near neighbors being dependent on each other)  
+* Typically, the objective is to predict one or more observations in to the future  
+* All standard predictive techniques can technically be used (but with caution!)  
+  
+Spurious correlations are very common:  
+  
+* Google stock price vs. Network Solitaire  
+* Population maps being used to make business decisions about correlations  
+* <http://xkcd.com> for additional examples  
+  
+Extrapolation can also cause big problems unless there is an asymptote.  Eventually, the mile will be run in negative time!  
+  
+The quantmod library is helpful for extracting stock prices and can be leveraged for this example:  
+
+```r
+library(quantmod)
+
+## Grab the Google stock prices from 2008-2013 from Yahoo
+from.dat <- as.Date("01/01/08", format="%m/%d/%y")
+to.dat <- as.Date("12/31/13", format="%m/%d/%y")
+getSymbols("GOOG", src="yahoo", from=from.dat, to=to.dat)
+```
+
+```
+## Warning in download.file(paste(yahoo.URL, "s=", Symbols.name, "&a=",
+## from.m, : downloaded length 111499 != reported length 200
+```
+
+```
+## [1] "GOOG"
+```
+
+```r
+head(GOOG)
+```
+
+```
+##            GOOG.Open GOOG.High GOOG.Low GOOG.Close GOOG.Volume
+## 2008-01-02  692.8712  697.3712 677.7311   685.1912     8646000
+## 2008-01-03  685.2612  686.8512 676.5212   685.3312     6529300
+## 2008-01-04  679.6912  680.9612 655.0011   657.0011    10759700
+## 2008-01-07  653.9411  662.2811 637.3511   649.2511    12854700
+## 2008-01-08  653.0011  659.9611 631.0011   631.6811    10718100
+## 2008-01-09  630.0411  653.3411 622.5110   653.2011    13529800
+##            GOOG.Adjusted
+## 2008-01-02      342.2533
+## 2008-01-03      342.3233
+## 2008-01-04      328.1724
+## 2008-01-07      324.3013
+## 2008-01-08      315.5250
+## 2008-01-09      326.2743
+```
+
+```r
+## Plot the monthly Google stock price
+mGoog <- to.monthly(GOOG)
+googOpen <- Op(mGoog)
+ts1 <- ts(googOpen, frequency=12)
+plot(ts1, xlab="Years + 1", ylab="GOOG")
+```
+
+![plot of chunk unnamed-chunk-47](figure/unnamed-chunk-47-1.png)
+
+```r
+## Plot the decomposition - overall, trend, seasonal, cyclical (random)
+plot(decompose(ts1), xlab="Years + 1")
+```
+
+![plot of chunk unnamed-chunk-47](figure/unnamed-chunk-47-2.png)
+  
+There are then several techniques that can be run to generate the forecasts:  
+
+```r
+ts1Train <- window(ts1, start=1, end=5)
+ts1Test <- window(ts1, start=5, end=(7-0.01))
+```
+
+```
+## Warning in window.default(x, ...): 'end' value not changed
+```
+
+```r
+ts1Train
+```
+
+```
+##        Jan      Feb      Mar      Apr      May      Jun      Jul      Aug
+## 1 692.8712 528.6709 471.5108 447.7408 578.3110 582.5010 519.5809 472.5108
+## 2 308.6005 334.2906 333.3306 343.7806 395.0307 418.7307 424.2007 448.7408
+## 3 626.9511 534.6009 529.2009 571.3510 526.5009 480.4308 445.2908 488.9909
+## 4 596.4811 604.4910 617.7811 588.7610 545.7009 528.0409 506.7409 611.2211
+## 5 652.9411                                                               
+##        Sep      Oct      Nov      Dec
+## 1 476.7708 411.1507 357.5806 286.6805
+## 2 459.6808 493.0009 537.0809 588.1310
+## 3 454.9808 530.0009 615.7311 563.0010
+## 4 540.7509 509.8509 580.1010 600.0010
+## 5
+```
+
+```r
+## Simple moving averages
+plot(ts1Train); library(forecast) ## The "forecast" package has the ma() function
+lines(ma(ts1Train, order=3), col="red")
+```
+
+![plot of chunk unnamed-chunk-48](figure/unnamed-chunk-48-1.png)
+
+```r
+## Exponential smoothing
+ets1 <- ets(ts1Train, model="MMM")
+fcast <- forecast(ets1)
+plot(fcast)
+lines(ts1Test, col="red")
+```
+
+![plot of chunk unnamed-chunk-48](figure/unnamed-chunk-48-2.png)
+
+```r
+## Accuracy tests
+accuracy(fcast, ts1Test)
+```
+
+```
+##                     ME      RMSE      MAE        MPE      MAPE      MASE
+## Training set -1.516636  50.21253 40.63963 -0.6531454  8.212129 0.3854737
+## Test set     87.072160 126.97975 98.63341  9.8515153 11.723472 0.9355545
+##                    ACF1 Theil's U
+## Training set 0.08019543        NA
+## Test set     0.68201170  2.299043
+```
+  
+There is an entire field devoted to this space.  A good resource is Rob Hyndman's "Forecasting: Principles and Practice".  The quantmod and quandl packages are especially useful as well.  
+  
+####_Unsupervised Prediction_  
+  

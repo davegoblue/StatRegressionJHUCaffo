@@ -1052,3 +1052,67 @@ The above may not be the best example, but it makes the idea clear.  Even simple
 As a caution, the winning model from the Netflix prize was never implemented!  It was too complicated and computationally expensive.  It is important to consider factors other than maximizing prediction.  
   
 ####_Forecasting_  
+Time series data (e.g., GOOG from NASDAQ) intoduces some additional data dependencies (structures) which require different analysis techniques.  In short, Y(n+1) and Y(n) can no longer both be considered iid from the same population, and it is likely that Y(n+1) will be dependent on Y(n).  
+  
+Some common issues include:  
+  
+* Data are dependent over time  
+* Specific patterns may be observed - trends, seasonal, cyclical  
+* Sub-sampling in to test and train may be more challenging  
+* Spatial data can show similar challenges (near neighbors being dependent on each other)  
+* Typically, the objective is to predict one or more observations in to the future  
+* All standard predictive techniques can technically be used (but with caution!)  
+  
+Spurious correlations are very common:  
+  
+* Google stock price vs. Network Solitaire  
+* Population maps being used to make business decisions about correlations  
+* <http://xkcd.com> for additional examples  
+  
+Extrapolation can also cause big problems unless there is an asymptote.  Eventually, the mile will be run in negative time!  
+  
+The quantmod library is helpful for extracting stock prices and can be leveraged for this example:  
+```{r}
+library(quantmod)
+
+## Grab the Google stock prices from 2008-2013 from Yahoo
+from.dat <- as.Date("01/01/08", format="%m/%d/%y")
+to.dat <- as.Date("12/31/13", format="%m/%d/%y")
+getSymbols("GOOG", src="yahoo", from=from.dat, to=to.dat)
+head(GOOG)
+
+## Plot the monthly Google stock price
+mGoog <- to.monthly(GOOG)
+googOpen <- Op(mGoog)
+ts1 <- ts(googOpen, frequency=12)
+plot(ts1, xlab="Years + 1", ylab="GOOG")
+
+## Plot the decomposition - overall, trend, seasonal, cyclical (random)
+plot(decompose(ts1), xlab="Years + 1")
+```
+  
+There are then several techniques that can be run to generate the forecasts:  
+```{r}
+ts1Train <- window(ts1, start=1, end=5)
+ts1Test <- window(ts1, start=5, end=(7-0.01))
+ts1Train
+
+## Simple moving averages
+plot(ts1Train); library(forecast) ## The "forecast" package has the ma() function
+lines(ma(ts1Train, order=3), col="red")
+
+## Exponential smoothing
+ets1 <- ets(ts1Train, model="MMM")
+fcast <- forecast(ets1)
+plot(fcast)
+lines(ts1Test, col="red")
+
+## Accuracy tests
+accuracy(fcast, ts1Test)
+
+```
+  
+There is an entire field devoted to this space.  A good resource is Rob Hyndman's "Forecasting: Principles and Practice".  The quantmod and quandl packages are especially useful as well.  
+  
+####_Unsupervised Prediction_  
+  
