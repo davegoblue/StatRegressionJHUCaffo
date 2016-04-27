@@ -18,4 +18,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 24-APR-2016 - Boosting and model-based prediction summary    
 * 25-APR-2016 - Regularized regression summary    
 * 26-APR-2016 - Combining predictors summary    
+* 27-APR-2016 - Forecasting summary    
   
