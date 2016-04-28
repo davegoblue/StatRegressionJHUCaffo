@@ -3070,4 +3070,88 @@ accuracy(fcast, ts1Test)
 There is an entire field devoted to this space.  A good resource is Rob Hyndman's "Forecasting: Principles and Practice".  The quantmod and quandl packages are especially useful as well.  
   
 ####_Unsupervised Prediction_  
+The key concept of unsupervised prediction is that you sometimes do not know the labels of what you are trying to predict:  
+  
+* To bulit a predictor, you create clusters, name clusters, and build predictors for clusters  
+* Then, you use the predictor in a new dataset to predict the clusters  
+  
+Suppose, for example, that you have the iris data but minus the Species field:  
+
+```r
+data(iris); 
+library(ggplot2)
+
+inTrain <- createDataPartition(y=iris$Species, p=0.7, list=FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+```
+
+```
+## [1] 105   5
+```
+
+```
+## [1] 45  5
+```
+
+```r
+## Create three clusters using k-means on the training data
+kMeans1 <- kmeans(subset(training, select=-c(Species)), centers=3)
+training$clusters <- as.factor(kMeans1$cluster)
+qplot(Petal.Width, Petal.Length, color=clusters, data=training)
+```
+
+![plot of chunk unnamed-chunk-49](figure/unnamed-chunk-49-1.png)
+
+```r
+## Just as an FYI, see how good they match to the "real" clusters (Species)
+table(kMeans1$cluster, training$Species) ## you would not actually know these
+```
+
+```
+##    
+##     setosa versicolor virginica
+##   1      0         33         7
+##   2     35          0         0
+##   3      0          2        28
+```
+
+```r
+## Model the training data against the clusters
+modFit <- train(clusters ~ ., data=subset(training, select=-c(Species)), method="rpart")
+table(predict(modFit, training), training$Species)
+```
+
+```
+##    
+##     setosa versicolor virginica
+##   1      0         35         9
+##   2     35          0         0
+##   3      0          0        26
+```
+
+```r
+## Apply it to the test data
+testClusterPred <- predict(modFit, testing)
+table(testClusterPred, testing$Species) ## Mix of errors as per above
+```
+
+```
+##                
+## testClusterPred setosa versicolor virginica
+##               1      0         15         7
+##               2     15          0         0
+##               3      0          0         8
+```
+  
+There are two causes of the test set error rate; first, uncertainty (error) in the rpart modelling, and second, uncertainty (error) in the k-means approximation to the actual species.  
+
+A few final notes include:  
+  
+1.  The cl_predict function in package "clue" has much of the same functionality, though it is frequently better to create your own  
+2.  Be wary of over-interpretation; this method at its core is just a form of Exploratory Data Analysis  
+3.  This is also the basic approach behind recommendation engines; cluster people, then see what interests they have in common  
+  
+## Wrap-Up and Next Steps  
   
