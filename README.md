@@ -19,4 +19,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 25-APR-2016 - Regularized regression summary    
 * 26-APR-2016 - Combining predictors summary    
 * 27-APR-2016 - Forecasting summary    
+* 28-APR-2016 - Unsupervised prediction summary    
   
