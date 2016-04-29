@@ -656,7 +656,7 @@ Measures of impurity include:
 * Wikipedia defines Gini as the probability that an element would be wrongly labeled if it were assigned at random in proportion to the group; so 60-40 would be 0.6 * 0.4 + 0.4 * 0.6 = .48  
   
 The iris data can be handy for an example:  
-```{r}
+```{r, cache=TRUE}
 data(iris); library(caret); library(ggplot2); names(iris)
 table(iris$Species)
 
