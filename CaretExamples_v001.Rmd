@@ -1157,4 +1157,15 @@ A few final notes include:
 3.  This is also the basic approach behind recommendation engines; cluster people, then see what interests they have in common  
   
 ## Wrap-Up and Next Steps  
+The caret capabilities are extremely useful and flexible.  Broadly, the key steps include:  
+  
+* Split the data in to test, train, and validate (if wanting to use test to help tune train) - basic function is createDataPartition()  
+* Run exploratory data analysis on the training data  
+* Modify any predictors as needed (PCA, normalize, combine, cluster, etc.) and be sure that the same commands can be run on the test/validation data - basic function is preProcess()  
+* Run one or more models, ideally including a method of cross-validation (k-fold, bootstrap, etc.) - basic function is train(), with trainControl() containing the tuning parameters  
+* Be careful that the default tuning grid is often not so good - mtry (randomForest) and cp/minsplit (rpart) in particular can often be significantly optimized with a smarter search  
+* Check how well the model built on training data performs on training data, using a mix of model outputs, predict(), confusionMatrix(), and RMSE by hand calculations  
+* Optionally, if you have created 3+ partitions, use one of the other partitions to help with model tuning and/or model blending and/or model selection  
+* Select a final model, then run it a single time on a hold-out dataset that has not been touched in the process - basic functions include predict() followed by confusionMatrix() or RMSE by hand  
+* This holdout prediction provides a decent estimate for out-of-sample error (though the prediction methodology will only be valid for data that is iid from the same population as created the original data set, so be cautious of artifacts that may solely be in the current dataset - timestamp, Index, etc.)  
   

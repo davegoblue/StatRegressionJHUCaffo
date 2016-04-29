@@ -3124,6 +3124,20 @@ table(testClusterPred, testing$Species) ## Mix of errors as per above
 
 <h2>Wrap-Up and Next Steps</h2>
 
+<p>The caret capabilities are extremely useful and flexible.  Broadly, the key steps include:  </p>
+
+<ul>
+<li>Split the data in to test, train, and validate (if wanting to use test to help tune train) - basic function is createDataPartition()<br/></li>
+<li>Run exploratory data analysis on the training data<br/></li>
+<li>Modify any predictors as needed (PCA, normalize, combine, cluster, etc.) and be sure that the same commands can be run on the test/validation data - basic function is preProcess()<br/></li>
+<li>Run one or more models, ideally including a method of cross-validation (k-fold, bootstrap, etc.) - basic function is train(), with trainControl() containing the tuning parameters<br/></li>
+<li>Be careful that the default tuning grid is often not so good - mtry (randomForest) and cp/minsplit (rpart) in particular can often be significantly optimized with a smarter search<br/></li>
+<li>Check how well the model built on training data performs on training data, using a mix of model outputs, predict(), confusionMatrix(), and RMSE by hand calculations<br/></li>
+<li>Optionally, if you have created 3+ partitions, use one of the other partitions to help with model tuning and/or model blending and/or model selection<br/></li>
+<li>Select a final model, then run it a single time on a hold-out dataset that has not been touched in the process - basic functions include predict() followed by confusionMatrix() or RMSE by hand<br/></li>
+<li>This holdout prediction provides a decent estimate for out-of-sample error (though the prediction methodology will only be valid for data that is iid from the same population as created the original data set, so be cautious of artifacts that may solely be in the current dataset - timestamp, Index, etc.)<br/></li>
+</ul>
+
 </body>
 
 </html>
