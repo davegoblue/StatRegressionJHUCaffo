@@ -23,5 +23,5 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 29-APR-2016 - Clean-up and next steps      
   
 ### Ng Machine Learning Summaries  
-* 17-MAY-2016 - R programming for gradient descent vs. matrix solving vs. LM for a small multivariate regression  
+* 17-MAY-2016 - R programming for gradient descent vs. matrix solving vs. LM for a small multivariate regression (cleaned up cost function and gradient descent)  
   
