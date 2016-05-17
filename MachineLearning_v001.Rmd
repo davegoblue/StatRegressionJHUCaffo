@@ -1,0 +1,148 @@
+---
+title: "Machine Learning Notes"
+author: "davegoblue"
+date: "May 17, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background and Overview  
+This document is to test a few ideas from the Machine Learning course by Ng (Stanford) on Coursera.  The course seems to dive deeper in to some of the algorithms and linear algebra underlying the techniques.  While the Ng course uses Octave (more or less GNU MATLAB), this document tries to capture a few key concepts in R.  
+
+## Key Concepts  
+###_Cost Functions and Linear Regression_  
+The course begins with a discussion of cost functions and moving all variables simultaneously in the direction of "greatest descent" in cost.  Generically, suppose you have the following:  
+  
+* Y - known results in training set (nx1 matrix, commonly known as n-dimensional vector)  
+* X1..m - known predictors in training set (nxm matrix, where there are m predictors)  
+* X - total predictors in training set (nx(m+1) matrix, where column 0 is all 1)  
+* Theta - potential fitting parameters ((m+1)x1 matrix, commonly known as (m+1)-dimensional vector)  
+  
+Then, for any given set of values, define the cost function J to be:  
+  
+* J = [ 1 / (2 * m) ] * sum[ (X * Theta - Y)^2 ]  
+  
+Now, consider just theta(i) which operates on the x(i) column of the X matrix, and how to find its partial derivative.  Expanding:  
+  
+* J = [ 1 / (2 * m) ] * sum[ (X * Theta)^2 - 2 * (X * Theta) * Y + Y^2 ]  
+* Temporarily, define d(X * Theta)/d(thetai) as Q  
+* dJ/d(thetai) = [ 1 / (2 * m) ] * sum[2 * (X * Theta) * Q - 2 * Y * Q]  
+* dJ/d(thetai) = 1/m * sum[(X * Theta - Y) * Q]  
+* And, d(X * Theta) / d(thetai) = x(i)  
+* So, dJ/d(thetai) = 1/m * sum[(X * Theta - Y) * x(i)]  
+  
+The cost function algorithm then includes a learning factor, alpha.  This factor determines how far to run in the "opposite direction, same magnitude"" of each partial derivative w.r.t theta.  
+  
+We begin with a very simple dataset, mtcars, looking only at the continuous variables (mpg, disp, hp, drat, wt, and qsec):  
+```{r}
+data(mtcars)
+str(mtcars)
+
+varPreds <- mtcars[,c("disp", "hp", "drat", "wt", "qsec")]
+vecMPG <- mtcars$mpg
+vecOnes <- rep(1, nrow(varPreds))
+
+mtxX <- as.matrix(cbind(vecOnes, varPreds))
+mtxY <- as.matrix(vecMPG)
+mtxTheta <- matrix(data=1, nrow=ncol(mtxX), ncol=1)
+
+str(mtxY)
+str(mtxX)
+str(mtxTheta)
+```
+  
+The dimensions all look OK, and we will have 6 theta (5 predictors plus the intercept) across 32 observations.  Next, we run the simple linear regression to see what the coefficients "should" be:  
+```{r}
+mpgLM <- lm(vecMPG ~ ., data=varPreds)  # Includes intercept by R default, only a -1 kills that off
+summary(mpgLM)
+```
+  
+While this is far from the world's best regression, it solves since all of the underlying matrices are non-singular.  We can test the coefficients using the relevant matrix math, specifically:  
+  
+* Optimal Theta = solve(X' * X) * X' * Y, where X' is the transponse of X and solve() is the matrix inverse  
+  
+We test this matrix math on the same data:  
+```{r}
+optTheta <- solve(t(mtxX) %*% mtxX) %*% t(mtxX) %*% mtxY
+print(round(t(optTheta),4))
+print(round(summary(mpgLM)$coef[,1],4))
+```
+  
+The coefficients are identical, as expected given that the matrix math underlies the lm algorithm in R.  
+  
+Lastly, we test the gradient descent method using the same dataset, trying several alpha:  
+```{r}
+gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=2000) {
+    nVar <- ncol(gdX)  # Count the column of 1 as a predictor, not that it really matters . . . 
+    mtxTheta <- matrix(0, nrow=ncol(gdX), ncol=1)  # Set up a theta matrix
+    
+    # Standardize the X variables to be roughly -1 to 1
+    meanX <- apply(gdX, 2, FUN=mean)
+    sdX <- apply(gdX, 2, FUN=sd)
+    
+    for (intCtr in 2:nVar) {
+        gdX[,intCtr] <- (gdX[,intCtr] - meanX[intCtr]) / sdX[intCtr]
+    }
+    
+    # Set up the cost function vectors, and initialize with preliminary data
+    vecCost <- rep(NA, nIter+1)
+    vecCost[1] <- (0.5 / nVar) * sum((gdX %*% mtxTheta - gdY)^2)
+    vecPartial <- rep(NA, nVar)
+    
+    for (intCtr in 1:nIter) {
+        # Find the relevant partial derivatives without doing anything to mtxTheta
+        for (varNum in 1:nVar) {
+            vecPartial[varNum] <- sum((gdX %*% mtxTheta - gdY) * gdX[,varNum])
+        }
+        # Use the relevant partial derivatives to update mtxTheta
+        for (varNum in 1:nVar) {
+            mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - alpha/(2 * nVar) * vecPartial[varNum]
+        }
+        # Update the cost vector, using slot intCtr + 1
+        vecCost[intCtr + 1] <- (0.5 / nVar) * sum((gdX %*% mtxTheta - gdY)^2)
+    }
+    
+    plot(vecCost, main=paste0("Cost Function vs. Iterations: ",alpha))
+    print(paste0("Intercept: ",round(mtxTheta[1,1],4)))
+    print(round(mtxTheta[-1,1] / sdX[-1],4))
+    
+    return(gdX %*% mtxTheta)
+}
+
+y0001 <- gdTest(alpha=0.0001)
+y0003 <- gdTest(alpha=0.0003)
+y0010 <- gdTest(alpha=0.001)
+y0030 <- gdTest(alpha=0.003)
+```
+  
+The gradient descents converge on many different answers, likely driven by the very high multi-collinearity known to exist in the mtcars data.  For a look at the goodness of fit, we assess the actual predictions:  
+```{r}
+graphFrame <- cbind(y0001[,1], y0003[,1], y0010[,1], y0030[,1], mtcars$mpg)
+graphFrame <- graphFrame[order(graphFrame[,ncol(graphFrame)]),]
+plot(x=1:nrow(graphFrame), y=graphFrame[,ncol(graphFrame)], type="l", 
+     col="dark green", lwd=3, ylim=c(0,50)
+     )
+lines(x=1:nrow(graphFrame), y=graphFrame[,1], col="red", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,2], col="blue", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,3], col="purple", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,4], col="orange", lty=2)
+```
+
+As expected, the smaller alpha have not yet had enough time to converge, and so they have worse predictions (their gradients are still declining).  On the other hand, for the larger alpha, they have had enough time to converge without inducing oscillations, suggesting that the are a reasonable solution to the problem.  To assess how good, we examine:  
+```{r}
+rmseLM <- sqrt(mean((summary(mpgLM)$residuals)^2))
+rmseMod <- rep(0, ncol(graphFrame)-1)
+for (intCtr in 1:(ncol(graphFrame)-1)) {
+    rmseMod[intCtr] <- sqrt(mean((graphFrame[,ncol(graphFrame)] - graphFrame[,intCtr])^2))
+}
+
+print(paste0("RMSE from LM: ",round(rmseLM,3)))
+print(paste0("RMSE from Gradient Descent: "))
+print(round(rmseMod,3))
+```
+  
+So, gradient descent is finding coefficients that are close to optimal for RMSE.  This exploration is helpful for seeing some of the advantnges of gradient descent (no matrix inverting means it can be fast for many predictors, no per se requirement that the cost function be linear), as well as some advantages of the closed form (converges immediately to the optimal answer with no iterations, easier to program).  This will be a good topic for continued exploration.  
+  
