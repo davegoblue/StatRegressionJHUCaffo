@@ -76,33 +76,33 @@ The coefficients are identical, as expected given that the matrix math underlies
 Lastly, we test the gradient descent method using the same dataset, trying several alpha:  
 ```{r}
 gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=2000) {
-    nVar <- ncol(gdX)  # Count the column of 1 as a predictor, not that it really matters . . . 
+    nObs <- nrow(gdX)  # Total number of observations . . .  
     mtxTheta <- matrix(0, nrow=ncol(gdX), ncol=1)  # Set up a theta matrix
     
     # Standardize the X variables to be roughly -1 to 1
     meanX <- apply(gdX, 2, FUN=mean)
     sdX <- apply(gdX, 2, FUN=sd)
     
-    for (intCtr in 2:nVar) {
+    for (intCtr in 2:ncol(gdX)) {
         gdX[,intCtr] <- (gdX[,intCtr] - meanX[intCtr]) / sdX[intCtr]
     }
     
     # Set up the cost function vectors, and initialize with preliminary data
     vecCost <- rep(NA, nIter+1)
-    vecCost[1] <- (0.5 / nVar) * sum((gdX %*% mtxTheta - gdY)^2)
-    vecPartial <- rep(NA, nVar)
+    vecCost[1] <- (0.5 / nObs) * sum((gdX %*% mtxTheta - gdY)^2)
+    vecPartial <- rep(NA, ncol(gdX))
     
     for (intCtr in 1:nIter) {
         # Find the relevant partial derivatives without doing anything to mtxTheta
-        for (varNum in 1:nVar) {
+        for (varNum in 1:ncol(gdX)) {
             vecPartial[varNum] <- sum((gdX %*% mtxTheta - gdY) * gdX[,varNum])
         }
         # Use the relevant partial derivatives to update mtxTheta
-        for (varNum in 1:nVar) {
-            mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - alpha/(2 * nVar) * vecPartial[varNum]
+        for (varNum in 1:ncol(gdX)) {
+            mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - (alpha/ nObs) * vecPartial[varNum]
         }
         # Update the cost vector, using slot intCtr + 1
-        vecCost[intCtr + 1] <- (0.5 / nVar) * sum((gdX %*% mtxTheta - gdY)^2)
+        vecCost[intCtr + 1] <- (0.5 / nObs) * sum((gdX %*% mtxTheta - gdY)^2)
     }
     
     plot(vecCost, main=paste0("Cost Function vs. Iterations: ",alpha))
@@ -116,19 +116,26 @@ y0001 <- gdTest(alpha=0.0001)
 y0003 <- gdTest(alpha=0.0003)
 y0010 <- gdTest(alpha=0.001)
 y0030 <- gdTest(alpha=0.003)
+y0100 <- gdTest(alpha=0.01)
+y0300 <- gdTest(alpha=0.03)
+y1000 <- gdTest(alpha=0.1)
+y3000 <- gdTest(alpha=0.3)
 ```
   
 The gradient descents converge on many different answers, likely driven by the very high multi-collinearity known to exist in the mtcars data.  For a look at the goodness of fit, we assess the actual predictions:  
 ```{r}
-graphFrame <- cbind(y0001[,1], y0003[,1], y0010[,1], y0030[,1], mtcars$mpg)
+graphFrame <- cbind(y0001[,1], y0003[,1], y0010[,1], y0030[,1], 
+                    y0100[,1], y0300[,1], y1000[,1], y3000[,1], 
+                    mtcars$mpg
+                    )
 graphFrame <- graphFrame[order(graphFrame[,ncol(graphFrame)]),]
 plot(x=1:nrow(graphFrame), y=graphFrame[,ncol(graphFrame)], type="l", 
      col="dark green", lwd=3, ylim=c(0,50)
      )
 lines(x=1:nrow(graphFrame), y=graphFrame[,1], col="red", lty=2)
-lines(x=1:nrow(graphFrame), y=graphFrame[,2], col="blue", lty=2)
-lines(x=1:nrow(graphFrame), y=graphFrame[,3], col="purple", lty=2)
-lines(x=1:nrow(graphFrame), y=graphFrame[,4], col="orange", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,4], col="blue", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,6], col="purple", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,8], col="orange", lty=2)
 ```
 
 As expected, the smaller alpha have not yet had enough time to converge, and so they have worse predictions (their gradients are still declining).  On the other hand, for the larger alpha, they have had enough time to converge without inducing oscillations, suggesting that the are a reasonable solution to the problem.  To assess how good, we examine:  
