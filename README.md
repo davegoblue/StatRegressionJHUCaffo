@@ -1,5 +1,5 @@
 ## StatRegressionJHUCaffo  
-This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are on the topics of inferential statistics and regression, primarily using R.  Additionally, the rep covers the Practical Machine Learning Module (specifically the caret library) from the JHU Coursera series.  
+This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are on the topics of inferential statistics and regression, primarily using R.  Additionally, the rep covers the Practical Machine Learning Module (specifically the caret library) from the JHU Coursera series.  And, the repo contains some explorations of Machine Learning, the Ng Coursera Stanford course:  
   
 * 06-APR-2016 - Repo created and cloned  
 * 06-APR-2016 - Chapter 1 of "Statistical Inference for Data Science"  
@@ -21,4 +21,7 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 27-APR-2016 - Forecasting summary    
 * 28-APR-2016 - Unsupervised prediction summary    
 * 29-APR-2016 - Clean-up and next steps      
+  
+### Ng Machine Learning Summaries  
+* 17-MAY-2016 - R programming for gradient descent vs. matrix solving vs. LM for a small multivariate regression  
   
