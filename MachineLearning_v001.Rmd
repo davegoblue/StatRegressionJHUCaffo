@@ -16,14 +16,16 @@ This document is to test a few ideas from the Machine Learning course by Ng (Sta
 ###_Cost Functions and Linear Regression_  
 The course begins with a discussion of cost functions and moving all variables simultaneously in the direction of "greatest descent" in cost.  Generically, suppose you have the following:  
   
-* Y - known results in training set (nx1 matrix, commonly known as n-dimensional vector)  
-* X1..m - known predictors in training set (nxm matrix, where there are m predictors)  
-* X - total predictors in training set (nx(m+1) matrix, where column 0 is all 1)  
-* Theta - potential fitting parameters ((m+1)x1 matrix, commonly known as (m+1)-dimensional vector)  
+* There are m observations each consisting of n predictors and 1 outcome  
+* Y - known results in training set (mx1 matrix, commonly known as m-dimensional vector)  
+* x1..n - known predictors in training set (mxn matrix, created from the n m-dimensional predictor vectors)  
+* X - total predictors in training set (mx(n+1) matrix, where "column 0"" is added as all 1)  
+* Theta - potential fitting parameters ((n+1)-dimensional vector matching to the n+1 columns in X)  
   
-Then, for any given set of values, define the cost function J to be:  
+Then, for any given set of values, define the cost function J for linear regression to be:  
   
 * J = [ 1 / (2 * m) ] * sum[ (X * Theta - Y)^2 ]  
+* Note that X is the mx(n+1) matrix, so Theta needs to be treated (by transpose or other means) as an (n+1)x1 matrix so that X * Theta becomes an mx1 matrix (or m-dimensional vector) that is comparable to Y  
   
 Now, consider just theta(i) which operates on the x(i) column of the X matrix, and how to find its partial derivative.  Expanding:  
   
@@ -71,21 +73,25 @@ print(round(t(optTheta),4))
 print(round(summary(mpgLM)$coef[,1],4))
 ```
   
-The coefficients are identical, as expected given that the matrix math underlies the lm algorithm in R.  
+The coefficients are identical, as expected given that matrix math underlies the lm algorithm in R.  
   
 Lastly, we test the gradient descent method using the same dataset, trying several alpha:  
 ```{r}
-gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=2000) {
+gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=20000, mtxCalc=TRUE) {
     nObs <- nrow(gdX)  # Total number of observations . . .  
     mtxTheta <- matrix(0, nrow=ncol(gdX), ncol=1)  # Set up a theta matrix
     
     # Standardize the X variables to be roughly -1 to 1
+    # Calculate the mean and SD for each column
     meanX <- apply(gdX, 2, FUN=mean)
     sdX <- apply(gdX, 2, FUN=sd)
     
-    for (intCtr in 2:ncol(gdX)) {
-        gdX[,intCtr] <- (gdX[,intCtr] - meanX[intCtr]) / sdX[intCtr]
-    }
+    # Set the mean/sd for column 1 (all ones) to be 0/1 so we do not change it
+    meanX[1] <- 0  # Use 0 as the mean conversion factor for column 1
+    sdX[1] <- 1  # Use 1 as the sd scaling factor for column 1
+    
+    # Use vector operations to update gdX (probably a better way, but I do not yet know it)
+    gdX <- (gdX - mapply(rep, meanX, nObs)) / mapply(rep, sdX, nObs)
     
     # Set up the cost function vectors, and initialize with preliminary data
     vecCost <- rep(NA, nIter+1)
@@ -93,14 +99,25 @@ gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=2000) {
     vecPartial <- rep(NA, ncol(gdX))
     
     for (intCtr in 1:nIter) {
-        # Find the relevant partial derivatives without doing anything to mtxTheta
-        for (varNum in 1:ncol(gdX)) {
-            vecPartial[varNum] <- sum((gdX %*% mtxTheta - gdY) * gdX[,varNum])
+        # Simultaneously update thetas for the next iteration
+        if (mtxCalc) {
+            # Use matrix operations to simultaneously update theta
+            # theta = theta - (alpha/nObs) * Q
+            # Q should be the vector of partial derivatives
+            mtxPartial <- t(gdX) %*% (gdX %*% mtxTheta - gdY)  # Matrix of (# theta)x1
+            mtxTheta <- mtxTheta - (alpha/nObs) * mtxPartial  # Matrix of (# theta)x1
+        } else {
+            # Run using a for loop instead - same answers, but much slower
+            # Added as an example for benchmarking purposes
+            # Need to create all the partial derivatives (loop 1) then apply them (loop 2)
+            for (varNum in 1:ncol(gdX)) {
+                vecPartial[varNum] <- sum((gdX %*% mtxTheta - gdY) * gdX[,varNum])
+            }
+            for (varNum in 1:ncol(gdX)) {
+                mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - (alpha/ nObs) * vecPartial[varNum]
+            }
         }
-        # Use the relevant partial derivatives to update mtxTheta
-        for (varNum in 1:ncol(gdX)) {
-            mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - (alpha/ nObs) * vecPartial[varNum]
-        }
+        
         # Update the cost vector, using slot intCtr + 1
         vecCost[intCtr + 1] <- (0.5 / nObs) * sum((gdX %*% mtxTheta - gdY)^2)
     }
@@ -112,6 +129,8 @@ gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=2000) {
     return(gdX %*% mtxTheta)
 }
 
+baseTime <- proc.time()
+
 y0001 <- gdTest(alpha=0.0001)
 y0003 <- gdTest(alpha=0.0003)
 y0010 <- gdTest(alpha=0.001)
@@ -120,9 +139,26 @@ y0100 <- gdTest(alpha=0.01)
 y0300 <- gdTest(alpha=0.03)
 y1000 <- gdTest(alpha=0.1)
 y3000 <- gdTest(alpha=0.3)
+
+print("Total run time for function gdTest: ")
+print(proc.time() - baseTime)
+
+# Benchmarking based on subset of mtcars dataset
+# mtxX is 32x6 (32 observations, each with an intercept plus 5 predictors)
+# mtxY is 32x1 (32 results)
+# nIter is 20,000
+# 8 combinations of alpha are run, all that converge so there are no NaN or related timing issues
+# 
+# Run using matrix maths to simultaneosuly update theta:  4.3 user 2.1 system 6.9 elapsed
+# RMSE from different alpha [lm() RMSE is 2.306]: 3.675 2.398 2.320 2.306 2.306 2.306 2.306 2.306
+# 
+# Run using for loops to simultaneously update theta:  14.1 user 2.1 system 17.7 elapsed
+# RMSE from different alpha [lm() RMSE is 2.306]: 3.675 2.398 2.320 2.306 2.306 2.306 2.306 2.306
+# 
+# So, even with these very small datasets, matrix maths reduce user time by ~70% and elapsed time by ~60%
 ```
   
-The gradient descents converge on many different answers, likely driven by the very high multi-collinearity known to exist in the mtcars data.  For a look at the goodness of fit, we assess the actual predictions:  
+The gradient descents converge at different paces depending on the learning parameter (alpha).  For a look at the goodness of fit, we assess the actual predictions:  
 ```{r}
 graphFrame <- cbind(y0001[,1], y0003[,1], y0010[,1], y0030[,1], 
                     y0100[,1], y0300[,1], y1000[,1], y3000[,1], 
@@ -151,5 +187,5 @@ print(paste0("RMSE from Gradient Descent: "))
 print(round(rmseMod,3))
 ```
   
-So, gradient descent is finding coefficients that are close to optimal for RMSE.  This exploration is helpful for seeing some of the advantnges of gradient descent (no matrix inverting means it can be fast for many predictors, no per se requirement that the cost function be linear), as well as some advantages of the closed form (converges immediately to the optimal answer with no iterations, easier to program).  This will be a good topic for continued exploration.  
+Gradient descent eventually finds coefficients that are close to optimal for RMSE.  This exploration is helpful for seeing some advantnges of gradient descent (no matrix inverting means it can be fast for many predictors, no per se requirement that the cost function be linear), as well as some advantages of the closed form (converges immediately to the optimal answer with no iterations, easier to program).  This will be a good topic for continued exploration.  
   
