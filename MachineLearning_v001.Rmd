@@ -40,6 +40,7 @@ The cost function algorithm then includes a learning factor, alpha.  This factor
   
 We begin with a very simple dataset, mtcars, looking only at the continuous variables (mpg, disp, hp, drat, wt, and qsec):  
 ```{r}
+library(caret, quietly=TRUE)  # May be useful for confusionMatrix and the like
 data(mtcars)
 str(mtcars)
 
@@ -202,34 +203,122 @@ An example of this phenomenon is shown below, based on entirely made up data:
 ```{r}
 set.seed(1605181831)
 
-par(mfrow=c(1,2))
+par(mfrow=c(1, 2))
 
 ## Create some fake tumor data
 tumorSize <- runif(100, min=0, max=0.1)
 tumorType <- rbinom(length(tumorSize), 1, 1 - ((0.1 - tumorSize)^2 * 100))
 fakeTumorLMOrig <- lm(tumorType ~ tumorSize)
 keyCutOrig <- (0.5-coef(fakeTumorLMOrig)[[1]])/coef(fakeTumorLMOrig)[[2]]
+predOrig <- pmax(0, pmin(1, round(predict(fakeTumorLMOrig, data.frame(tumorSize)), 0) 
+                         ) 
+                 )
 
-plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)",
+plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predOrig, pch=19,
      main=paste0("50% Probability at Tumor Size: ",round(keyCutOrig,4)), cex.main=0.85
      )
-abline(fakeTumorLMOrig, col="red")
+abline(fakeTumorLMOrig, col="blue", lwd=2)
 abline(h=0.5, v=keyCutOrig, lty=2, lwd=2)
+
+confOrig <- confusionMatrix(predOrig, tumorType, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confOrig$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confOrig$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confOrig$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Val: ",round(confOrig$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Val: ",round(confOrig$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
 
 ## Add some larger tumors that are all malignant
 tumorSizeMod <- c(tumorSize, runif(50, min=0.1, max=0.2))
 tumorTypeMod <- c(tumorType, rep(1, 50))
 fakeTumorLMMod <- lm(tumorTypeMod ~ tumorSizeMod)
 keyCutMod <- (0.5-coef(fakeTumorLMMod)[[1]])/coef(fakeTumorLMMod)[[2]]
+predMod <- pmax(0, pmin(1, round(predict(fakeTumorLMMod, data.frame(tumorSizeMod)), 0) 
+                        ) 
+                )
 
-plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)",
+plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predMod, pch=19,
      main=paste0("50% Probability at Tumor Size: ",round(keyCutMod,4)), cex.main=0.85
      )
-abline(fakeTumorLMMod, col="red")
+abline(fakeTumorLMMod, col="blue", lwd=2)
 abline(h=0.5, v=keyCutMod, lty=2, lwd=2)
+
+confMod <- confusionMatrix(predMod, tumorTypeMod, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confMod$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confMod$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confMod$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Value: ",round(confMod$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Value: ",round(confMod$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
 
 par(mfrow=c(1,1))
 
 ```
   
-The LM is appropriately responding to the new data by driving up the intercept (more of the data are positive).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though we know from the closed form that the probability of malignancy at 0.011 should be ~20%.
+The LM appropriately responds to the new data by driving up the intercept (more of the data are positive, and making more positive predictions will drive up the overall accuracy).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though the closed has probability of malignancy at size 0.011 as ~20%.  
+  
+This can be seen from the very poor specificity of the modified test; we essentially declare everyone to have cancer, so a positive result from our test does not have much meaning (prior would not change by that much.
+  
+Logistic regression is an attempt to cure some of these deficiencies.  Broadly, differences in the logit include:  
+  
+* Predicted probability, h, in the logit is 1 / [ 1 + exp(-(X * theta)) ], as opposed to X * theta in linear regression.  The 1 / (1 + exp(-d)) is referred to as the sigmoid function, which has the desirable properties that it asymptotes to 0 for d of -Inf and to 1 for d of +Inf; it also is 0.5 for d=0, so making predictions can be as easy as just looking at each predicted d [-(X * theta) ] and using 0 as the cutoff  
+* The cost function is defined based on the "true y" to be -log(h) for "true y == 1" and -log(1-h) for "true y == 0".  Essentially, the more extreme (whether towards 0 or towards 1) the probability decalred by the model, the greater the penalty for a missed prediction.  
+* This cost function is asserted to be convex, while using sum((y-x)^2) as in linear regression is asserted to have many local minima.  Further, this cost function is asserted to be equivalent to a maximum likelihood estimate (MLE).  
+* The short version seems to be that a great deal of thought (and proof) went in to this cost function, making it a good modelling choice  
+  
+The logit model is now tested on the same fake malignancy data as used in the previous example.  The call for the logit in R is based on glm() using family="binomial".  The prediction method is broadly the same, with an added call to type="response":  
+```{r}
+par(mfrow=c(1, 2))
+
+## Run the GLM (logit) for the original tumor data
+fakeTumorGLMOrig <- glm(tumorType ~ tumorSize, family="binomial")
+
+## When response variables times coefficients equal intercept, h=0.5 (sigmoid(0))
+keyCutOrigGLM <- -coef(fakeTumorGLMOrig)[[1]]/coef(fakeTumorGLMOrig)[[2]]
+predOrigGLM <- pmax(0, pmin(1, round(predict(fakeTumorGLMOrig, data.frame(tumorSize), type="response"), 0) 
+                           ) 
+                    )
+
+plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predOrigGLM, pch=19,
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutOrigGLM,4)), cex.main=0.85
+     )
+points(x=tumorSize, y=predict(fakeTumorGLMOrig, data.frame(tumorSize), type="response"), col="blue", pch=19)
+abline(h=0.5, v=keyCutOrigGLM, lty=2, lwd=2)
+
+confOrigGLM <- confusionMatrix(predOrigGLM, tumorType, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confOrigGLM$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confOrigGLM$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confOrigGLM$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Val: ",round(confOrigGLM$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Val: ",round(confOrigGLM$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+## Run the logit on the dataset with the larger tumors that are all malignant
+fakeTumorGLMMod <- glm(tumorTypeMod ~ tumorSizeMod, family="binomial")
+
+## When response variables times coefficients equal intercept, h=0.5 (sigmoid(0))
+keyCutModGLM <- -coef(fakeTumorGLMMod)[[1]]/coef(fakeTumorGLMMod)[[2]]
+predModGLM <- pmax(0, pmin(1, round(predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 0) 
+                        ) 
+                )
+
+plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predModGLM, pch=19,
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutModGLM,4)), cex.main=0.85
+     )
+points(x=tumorSizeMod, y=predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 
+       col="blue", pch=19
+       )
+abline(h=0.5, v=keyCutModGLM, lty=2, lwd=2)
+
+confModGLM <- confusionMatrix(predModGLM, tumorTypeMod, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confModGLM$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confModGLM$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confModGLM$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Value: ",round(confModGLM$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Value: ",round(confModGLM$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+par(mfrow=c(1,1))
+
+```
+  
+While the overall accuracy of the logit is actually slightly lower (with the added malignancy data), the model is in aggregate substantially better.  Specifically, the model on the original data already tuned to predict 99%+ probabilities at sizes of 0.10 and above.  So, when the model gets a whack of new data that is all 100% malignant at sizes of 0.10 - 0.20, it does not learn anything new (it is, for practical purposes, unchanged).  As such, the model remains just as good at predicting negatives while getting better (technically, just seeing even more obvious cases of) at predicting positives.  It retains its specificity.  
+  
+It is notable that for "ideal" faked data (the original 100 data points), the LM slightly outperformed the logit.  The underlying data has structure that is neither precisely p ~ x nor precisely p ~ 1/(1+exp(-x))) so neither of these formulations precisely matches the data.  As always, the question during analysis is which model better reflects realtiy and better predicts unseen cases.  There is nothing magical about the logit that makes it certain to outperform simply because the outcomes are all 0/1.  But, it is a decent default with some very attractive properties.  
+  
