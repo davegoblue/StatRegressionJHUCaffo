@@ -189,3 +189,47 @@ print(round(rmseMod,3))
   
 Gradient descent eventually finds coefficients that are close to optimal for RMSE.  This exploration is helpful for seeing some advantnges of gradient descent (no matrix inverting means it can be fast for many predictors, no per se requirement that the cost function be linear), as well as some advantages of the closed form (converges immediately to the optimal answer with no iterations, easier to program).  This will be a good topic for continued exploration.  
   
+
+###_Logistic Regression_  
+Logistic regression ("logit") is used to make binary classifications.  By convention, 1 often expresses the presence of something (malignnancy, school acceptance, fraudulent transaction, etc.) while 0 is set to express the absence of that something.  The models work the same regardless of which state is called 1, of course.  
+  
+There are many drivers behind using logit rather than linear regression for a classification problem.  Among the drivers:  
+  
+* New data can play a large role even when they obviously do not matter.  For example, if we model tumor size vs. mailgnancy, we may find 2.5 cm is roughly where most tumors start to be malignant.  We might even get an OK linear regression line that passes through a prediction of 0.5 at ~2.5 cm.  But, if we add malignancies with 10 cm, the regression line will pass through 0.5 at a larger tumor size.  This makes little sense as our model had already learned that 2.5 cm is the cutoff; it became stupider when exposed to additional data that agreed with it!  
+* The linear regression will also classify some points as being below 0 probability and above 1 probability.  While this is not the end of the world (we will predict <0 as 0 and >1 as 1), neither is it sensible.  
+
+An example of this phenomenon is shown below, based on entirely made up data:  
+```{r}
+set.seed(1605181831)
+
+par(mfrow=c(1,2))
+
+## Create some fake tumor data
+tumorSize <- runif(100, min=0, max=0.1)
+tumorType <- rbinom(length(tumorSize), 1, 1 - ((0.1 - tumorSize)^2 * 100))
+fakeTumorLMOrig <- lm(tumorType ~ tumorSize)
+keyCutOrig <- (0.5-coef(fakeTumorLMOrig)[[1]])/coef(fakeTumorLMOrig)[[2]]
+
+plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)",
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutOrig,4)), cex.main=0.85
+     )
+abline(fakeTumorLMOrig, col="red")
+abline(h=0.5, v=keyCutOrig, lty=2, lwd=2)
+
+## Add some larger tumors that are all malignant
+tumorSizeMod <- c(tumorSize, runif(50, min=0.1, max=0.2))
+tumorTypeMod <- c(tumorType, rep(1, 50))
+fakeTumorLMMod <- lm(tumorTypeMod ~ tumorSizeMod)
+keyCutMod <- (0.5-coef(fakeTumorLMMod)[[1]])/coef(fakeTumorLMMod)[[2]]
+
+plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)",
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutMod,4)), cex.main=0.85
+     )
+abline(fakeTumorLMMod, col="red")
+abline(h=0.5, v=keyCutMod, lty=2, lwd=2)
+
+par(mfrow=c(1,1))
+
+```
+  
+The LM is appropriately responding to the new data by driving up the intercept (more of the data are positive).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though we know from the closed form that the probability of malignancy at 0.011 should be ~20%.
