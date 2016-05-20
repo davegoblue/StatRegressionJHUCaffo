@@ -322,3 +322,70 @@ While the overall accuracy of the logit is actually slightly lower (with the add
   
 It is notable that for "ideal" faked data (the original 100 data points), the LM slightly outperformed the logit.  The underlying data has structure that is neither precisely p ~ x nor precisely p ~ 1/(1+exp(-x))) so neither of these formulations precisely matches the data.  As always, the question during analysis is which model better reflects realtiy and better predicts unseen cases.  There is nothing magical about the logit that makes it certain to outperform simply because the outcomes are all 0/1.  But, it is a decent default with some very attractive properties.  
   
+###_Regularization_  
+The concept of regularization is that it can be helpful to shrink the magnitudes of the coefficients, largely to avoid overfitting to the training data.  The specific implementation is that that sum-squared-error for the linear regression becomes sum((f(x) - y)^2) + lambda * sum(theta^2), where by convention the intercept term is not included in the theta^2 summation.  
+  
+In general, regularization means worse predictions on the training data, since the method preferences small increases in RMSE if achieved by holding down the magnitude of the parameters.  However, the method can increase test/validation accuracy materially by vastly reducing variance (overfitting of the training data).  
+
+A classic case for regularization is conofunding input vectors correlated to a relevant input vector.  While we "know" the correct model is Y = x1 + eps, if x2/x3 ~ x1 the regression can find something silly like Y = -2 * x1 + 4 * x2 - 1 * x3 + eps based on a small structure that happens to appear in the randomness in the training data.  The small gain in RMSE is completely artificial, and can fail in the validation stage.  For example:  
+```{r}
+set.seed(1605200803)
+nSim <- 40
+
+x1 <- rnorm(nSim)  #x1 = N(0, 1)
+x2 <- 0.5 * x1 + rnorm(nSim, 0, 0.01)  # x2 will be 0.5 * x1 + N(0, 0.01)
+x3 <- 2 * x1 + rnorm(nSim, 0, 0.4)  # x3 will be 2 * x1 + N(0, 0.4)
+y <- x1 + rnorm(nSim)  # y will be x1 + N(0, 1)
+
+# Test how well y = x1 fits the data - what is the R^2?
+rndTSS <- sum( (y - mean(y))^2 )
+rndSSE <- sum( (y - x1)^2 )
+rndR2 <- 1 - rndSSE / rndTSS
+print(paste0("R-squared for an assumed model of y = x1 is: ", round(rndR2,4)))
+
+# Run the actual regression using lm
+rndLM <- lm(y ~ x1 + x2 + x3)
+summary(rndLM)
+```
+
+The full linear regression improves R-squared (unadjsuted) from 0.5255 to 0.5866, but at the expense of wildly varying thetas (+13.6 vs. +1.0 and -22.3 vs. 0.0).  It is reasonable to doubt this model will perform as well on an independent validation set - let's see:  
+```{r}
+x1Test <- rnorm(nSim)  #x1Test = N(0, 1)
+x2Test <- 0.5 * x1Test + rnorm(nSim, 0, 0.01)  # x2Test will be 0.5 * x1Test + N(0, 0.01)
+x3Test <- 2 * x1Test + rnorm(nSim, 0, 0.4)  # x3Test will be 2 * x1Test + N(0, 0.4)
+yTest <- x1Test + rnorm(nSim)  # yTest will be x1Test + N(0, 1)
+
+# Test how well y = x1 fits the test data - what is the R^2?
+rndTestTSS <- sum( (yTest - mean(yTest))^2 )
+rndTestSSE <- sum( (yTest - x1Test)^2 )
+rndTestR2 <- 1 - rndTestSSE / rndTestTSS
+print(paste0("R-squared when applying y = x1 to test data is: ", round(rndTestR2,4)))
+
+# Test how well the lm fits the data
+rndPredLM <- predict(rndLM, data.frame(x1=x1Test, x2=x2Test, x3=x3Test))
+lmTestSSE <- sum( (yTest - rndPredLM)^2 )
+print(paste0("R-squared when applying lm(y ~ x1 + x2 + x3) to test data is: ", 
+             round(1-lmTestSSE/rndTestTSS, 4)
+             )
+      )
+```
+
+Absent regularization, the LM performs worse than the assumed y=x1.  While this is a contrived example, it provides an excellent illustration of how attempting to reduce bias with additional predictors can instead explode variance.  The "more accurate" training model then performs materially worse on validation data.  
+
+A further issue in this example is that there is very high VIF in all of the LM coefficients, meaning that the model is rather unstable to small perturbations.  So, the coefficients and predictions not only have higher variance, they are additionally much harder to interpret.  See plots:  
+```{r}
+par(mfrow=c(1, 2))
+
+plot(x=x1, y=y, pch=19, col="blue", main="Training data")
+abline(a=0, b=1, lwd=2, lty=2, col="orange")
+points(x=x1, y=predict(rndLM, data.frame(x1=x1, x2=x2, x3=x3)), pch=19, col="red", cex=0.75)
+
+plot(x=x1Test, y=yTest, pch=19, col="blue", main="Testing data")
+abline(a=0, b=1, lwd=2, lty=2, col="orange")
+points(x=x1Test, y=rndPredLM, pch=19, col="red", cex=0.75)
+
+par(mfrow=c(1, 1))
+```
+  
+The red points represent an overfit to the training data, as they are (essentially) tuning on some noise in x2 and x3 while trying to keep x1 + x2 + x3 = 1 in line with the actual trend of the data (x1=1, x2=x3=0).  When the overfit is applied to the testing data, it is not certain to perform well; in this example, it is actually performing worse.  
+  
