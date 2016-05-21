@@ -299,11 +299,12 @@ predModGLM <- pmax(0, pmin(1, round(predict(fakeTumorGLMMod, data.frame(tumorSiz
                         ) 
                 )
 
-plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predModGLM, pch=19,
-     main=paste0("50% Probability at Tumor Size: ",round(keyCutModGLM,4)), cex.main=0.85
+plot(tumorSizeMod, tumorTypeMod, ylab="Malignant (1=Yes, 0=No)", 
+     col=1+predModGLM, pch=19, cex.main=0.85, xlab="Tumor Size", 
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutModGLM,4))
      )
-points(x=tumorSizeMod, y=predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 
-       col="blue", pch=19
+points(y=predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 
+       x=tumorSizeMod, col="blue", pch=19
        )
 abline(h=0.5, v=keyCutModGLM, lty=2, lwd=2)
 
@@ -359,7 +360,10 @@ yTest <- x1Test + rnorm(nSim)  # yTest will be x1Test + N(0, 1)
 rndTestTSS <- sum( (yTest - mean(yTest))^2 )
 rndTestSSE <- sum( (yTest - x1Test)^2 )
 rndTestR2 <- 1 - rndTestSSE / rndTestTSS
-print(paste0("R-squared when applying y = x1 to test data is: ", round(rndTestR2,4)))
+print(paste0("R-squared when applying y = x1 to test data is: ", 
+             round(rndTestR2,4)
+             )
+      )
 
 # Test how well the lm fits the data
 rndPredLM <- predict(rndLM, data.frame(x1=x1Test, x2=x2Test, x3=x3Test))
@@ -378,7 +382,9 @@ par(mfrow=c(1, 2))
 
 plot(x=x1, y=y, pch=19, col="blue", main="Training data")
 abline(a=0, b=1, lwd=2, lty=2, col="orange")
-points(x=x1, y=predict(rndLM, data.frame(x1=x1, x2=x2, x3=x3)), pch=19, col="red", cex=0.75)
+points(x=x1, y=predict(rndLM, data.frame(x1=x1, x2=x2, x3=x3)), 
+       pch=19, col="red", cex=0.75
+       )
 
 plot(x=x1Test, y=yTest, pch=19, col="blue", main="Testing data")
 abline(a=0, b=1, lwd=2, lty=2, col="orange")
@@ -388,4 +394,52 @@ par(mfrow=c(1, 1))
 ```
   
 The red points represent an overfit to the training data, as they are (essentially) tuning on some noise in x2 and x3 while trying to keep x1 + x2 + x3 = 1 in line with the actual trend of the data (x1=1, x2=x3=0).  When the overfit is applied to the testing data, it is not certain to perform well; in this example, it is actually performing worse.  
+  
+The LM can instead be run using regularization, and there are many algorithms (ridge, lasso, elasticnet, etc.) coded in R.  For this demonstration, we use lm.ridge() from the MASS library:  
+```{r}
+library(MASS)
+
+# Reuse the same y, x1, x2, x3 from above (11 lambda runs)
+myLambda = seq(0, 0.4, by=0.04)
+rndLMRidge <- lm.ridge(y ~ x1 + x2 + x3, lambda=myLambda)
+
+par(mfrow=c(1, 2))
+
+# Plot the coefficients vs. Lambda
+plot(y=coef(rndLMRidge)[,2], x=myLambda, type="l", col="blue", lwd=2,
+     ylim=c(floor(min(coef(rndLMRidge))), ceiling(max(coef(rndLMRidge)))),
+     main="Ridge Coefficients", xlab="Lambda", ylab="Coefficients"
+     )
+lines(y=coef(rndLMRidge)[,3], x=myLambda, lwd=2, col="dark green")
+lines(y=coef(rndLMRidge)[,4], x=myLambda, lwd=2, col="purple")
+abline(h=0, lty=2)
+legend("bottomright", legend=c("x1", "x2", "x3"), col=c("blue", "dark green", "purple"), lwd=2)
+
+# Calculate and then plot the R^2 for Test and Training Data
+mtxOrig <- matrix(data=c(rep(1, nSim), x1, x2, x3), ncol=4, byrow=FALSE)
+mtxTest <- matrix(data=c(rep(1, nSim), x1Test, x2Test, x3Test), ncol=4, byrow=FALSE)
+mtxY <- matrix(data=rep(y, length(myLambda)), nrow=nSim, byrow=FALSE)
+mtxYTest <- matrix(data=rep(yTest, length(myLambda)), nrow=nSim, byrow=FALSE)
+mtxCoefRidge <- as.matrix(coef(rndLMRidge))
+
+predRidgeOrig <- mtxOrig %*% t(mtxCoefRidge)  # nSimx4 %*% 4x11 = nSimx11 (each y predicted 11 times)
+predRidgeTest <- mtxTest %*% t(mtxCoefRidge)  # nSimx4 %*% 4x11 = nSimx11 (each y predicted 11 times)
+
+r2OrigRidge <- 1 - (colSums((predRidgeOrig - mtxY)^2) / rndTSS)
+r2TestRidge <- 1 - (colSums((predRidgeTest - mtxYTest)^2) / rndTestTSS)
+
+plot(x=myLambda, y=r2OrigRidge, type="l", col="blue", lwd=2, ylim=c(0.3, 0.7),
+     main="R^2 LM.RIDGE", xlab="Lambda", ylab="R^2"
+     )
+lines(x=myLambda, y=r2TestRidge, col="dark green", lwd=2, ylim=c(0.3 ,0.7))
+legend("topright", legend=c("Train Data", "Test Data"), col=c("blue", "dark green"), lwd=2)
+
+par(mfrow=c(1, 1))
+```
+  
+* As lambda increases, the magnitude of the coefficients decreases and the accuracy on the training data decreases also (as expected)  
+* But, accuracy on the test (validation) data increases with lambda, showing that regularization is helping the model to avoid overfitting to the training data  
+* At some point, lambda could become so large that the model goes to intercept-only, so it is not the case that larger lambda is always better  
+* Calculating the best lambda would likely require k-fold and/or bootstrap to assess lambda with optimal predictive power, for example as implemented by caret::train  
+* This example was simply to illustrate the that penalizing large coefficients can, under some conditions, improve out-of-sample predictive power  
   
