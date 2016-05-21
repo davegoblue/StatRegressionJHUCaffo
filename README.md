@@ -26,4 +26,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 17-MAY-2016 - R programming for gradient descent vs. matrix solving vs. LM for a small multivariate regression (cleaned up cost function and gradient descent)  
 * 18-MAY-2016 - Improved vectorization (removed 2 for loops) and benchnmarked timing implications; initial summary of the logistic regression background  
 * 19-MAY-2016 - Logit example with comparison to LM  
-* 20-MAY-2016 - Regularization background example  
+* 20-MAY-2016 - Regularization background and example using lm.ridge()  
