@@ -399,8 +399,8 @@ The LM can instead be run using regularization, and there are many algorithms (r
 ```{r}
 library(MASS)
 
-# Reuse the same y, x1, x2, x3 from above (11 lambda runs)
-myLambda = seq(0, 0.4, by=0.04)
+# Reuse the same y, x1, x2, x3 from above (35 lambda runs)
+myLambda = c(seq(0, 0.1, by=0.01), seq(0.12, 0.30, by=.02), seq(0.35, 1.00, by=.05))
 rndLMRidge <- lm.ridge(y ~ x1 + x2 + x3, lambda=myLambda)
 
 par(mfrow=c(1, 2))
@@ -442,4 +442,56 @@ par(mfrow=c(1, 1))
 * At some point, lambda could become so large that the model goes to intercept-only, so it is not the case that larger lambda is always better  
 * Calculating the best lambda would likely require k-fold and/or bootstrap to assess lambda with optimal predictive power, for example as implemented by caret::train  
 * This example was simply to illustrate the that penalizing large coefficients can, under some conditions, improve out-of-sample predictive power  
+  
+###_Log Loss vs RMSE Example for Binomial Classification_  
+The loss function for the logistic regression is set to highly penalize wrong predictions made with high confidence.  Specifically:  
+  
+* Consider h(x) to be the predicted probability given vector x, associated to y which is the actual 0/1    
+* RMSE Cost (per estimate): (y - h(x))^2  
+* Log-Loss Cost (per estimate): [ -y * log(h(x)) ] - [ (1 - y) * log(1 - h(x)) ]  
+  
+We can graph these functions for y=0 and y=1:  
+```{r}
+
+pEst <- seq(0.01, 0.99, by=0.01)
+
+par(mfrow=c(1, 2))
+
+
+# Plot RMSE Loss Functions
+plot(x=pEst, y=(1-pEst)^2, type="l", col="blue", lwd=2, main="RMSE for 0/1 Class",
+     xlab="Estimated Probability", ylab="RMSE Cost"
+     )
+lines(x=pEst, y=(0-pEst)^2, type="l", col="dark green", lwd=2)
+abline(h=0, v=0.5, lty=2)
+legend("top", legend=c("True y=1", "True y=0"), col=c("blue", "dark green"), lwd=2)
+
+# Plot Log Loss Functions
+plot(x=pEst, y=-log(pEst), type="l", col="blue", lwd=2, main="Log-Loss for 0/1 Class",
+     xlab="Estimated Probability", ylab="Log-Loss Cost"
+     )
+lines(x=pEst, y=-log(1-pEst), type="l", col="dark green", lwd=2)
+abline(h=0, v=0.5, lty=2)
+legend("top", legend=c("True y=1", "True y=0"), col=c("blue", "dark green"), lwd=2)
+
+
+par(mfrow=c(1, 1))
+
+```
+  
+A related question is what prediction is optimal if you "know" the true probability to be p.  Under both RMSE and Log-Loss, any estimate other than p will incur higher errors (on average):  
+  
+* Suppose that true probability is p, and estimated probability is d  
+* Over n trials, this experiment should on average have p * n state "1"" and (1-p) * n state "0"  
+  
+* RMSE E[Cost]:  (p * n) * (1 - d)^2 + ((1 - p) * n) * (-d)^2  
+* RMSE E[Cost]:  (p * n) * (1 - 2 * d + d^2) + ((1 - p) * n) * d^2  
+* RMSE E[Cost]:  (p * n) - 2 * (p * n) * d + (p * n) * d^2 + n * d^2 - p * n * d^2  
+* d(RMSE E[Cost])/dd:  -2 * p * n + 2 * (p * n) * d + 2 * d * n - 2 * (p * n) * d  
+* d(RMSE E[Cost])/dd:  -2 * p * n + 2 * d * n, which equals 0 (hits minimum) when d=p  
+  
+* Log-Loss E[Cost]:  -(p * n) * ln(d) - (1 - p) * n * ln(1 - d)  
+* d(Log-Loss E[Cost])/dd:  -(p * n) / d + (1 - p) * n / (1 - d)  
+* d(Log-Loss E[Cost])/dd:  Need (1 - p) * n / (1 - d) = (p * n) / d -> (1 - p) * n * d = (1 - d) * (p * n)
+* d(Log-Loss E[Cost])/dd:  Need n * d  - (p * n) * d = (p * n) - (p * n) * d -> n * d = n * p -> d = p  
   
