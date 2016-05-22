@@ -573,3 +573,79 @@ confusionMatrix(predY, mtxY[,1])
 
 In this case, the simple model (with guessed lambda, no cross-validation, and no out-of-sample prediction) classifies ~90% of the images correctly.  This code will later work through better methods for fitting matrices () since a simple Octave routine drives 95% accuracy without too much added time.  The idea was merely to show that the concept of logit classification can be extended to mutliple classes as needed.  
   
+###_Neural Networks - Representation and Forward Propagation_  
+Neural networks are a fairly old idea that experienced a resurgence as computing power became cheaper and more readily available.  The general idea is to find non-linear features in the input data that combine to be useful predictors.  While creating thousands (or even millions) of new covariates using combinations of polynomials on the original predictors is also a possibility, the neural network can drive strong accuracy without needing to make so many guesses (and then process/filter them down) at the covariate creation stage.  
+  
+Broadly, the idea of the neural network is to function like the brain.  Input signals excite various combinations of neurons, which then pass messages to other neurons, which eventually reach a conclusion.  The idea is to try to make the computer behave like the brain.  
+  
+A small bit of the science is that neurons are cells in the brain.  Broadly, neurons get information by way of dendrites, make some calculations, and pass results on to other neurons by way of axons.  The neurons sometimes work as a group, and scientists have showed that they can be re-wired.  For example, people can "see" by way of their tongue or use reflected sounds (sonar) to navigate if they have enough training and repetition.  
+  
+For the computer, the process works by taking input data, processing it through one or more hidden layers, and then creating a final hypothesis.  In general for classification, the sigmoid (1 / (1 + exp(-x)) ) function is applied to the result at each stage.  As well, a bias term (all 1s) is introduced for the next step of the process.  Suppose we have input matrix X (n observatons of m covariates) and reponse vector y (n observations of factors):  
+  
+* Step 1:  Create a column of all ones at the front of X, and call this X1  
+* Step 2a:  Create a2 = g(X1 * Theta1)  
+* Step 2b:  Add a column of all ones at the front of a2, and call this X2  
+* Step 3a:  Create a3 = g(X2 * Theta2)  
+* Step 3b:  Add a column of all ones at the front, and call this X3  
+* . . . 
+* Step Final:  Create aFinal = g(Xfinal-1 * Thetafinal-1), and call this the prediction  
+  
+The intermediate nodes are referred to as "hidden layers".  While it is common to have only a single "hidden layer", sometimes it is helpful to have more.  
+  
+As a somewhat simplified example, a small hidden layer can perform any of the common logical functions, as well as XOR (exclusive OR) and XNOR (negation of exclusive XOR):  
+  
+* AND: Suppose you have x0 (bias term) of 1 with binary inputs x1 and x2.  Then, if you have theta = c(-30, 20, 20) you will get g(-30) ~ 0 for x1=x2=0, g(-10) ~ 0 for x1+x2=1, and g(10) ~ 1 for x1=x2=1  
+* OR:  Same concept, but with theta = c(-10, 20, 20), providing g(-10) ~ 0 for x1=x2=0 and g(10) ~ 1 or g(30) ~ 1 for x1+x2=1 or x1=x2=1  
+* NEGATION: Same idea but with just x1 and theta = c(10, -20)  
+* XOR:  Create hidden node1 as NOT AND using theta = c(30, -20, -20) and hidden node2 as OR using theta = c(-10, 20, 20).  Then add the bias unit, and use final theta = c(-30, 20, 20) which will come back TRUE provided that both OR and NOT AND are true  
+  
+As you continue to add nodes/layers, you can continue to add logic and interactions and the like.  The output vector can also be a multi-class rather than just a single 0/1.  
+  
+For an example, we expand on the number recognition problem from the previous section.  The instructor calculated a theta matrix that can be loaded from the MATLAB format:  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week04/"  # Using relative path
+wgtData <- "ex3weights.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $Theta1 and $Theta2
+
+mtxTheta1 <- listWgtData$Theta1  # First item in the list should be 25x401
+mtxTheta2 <- listWgtData$Theta2  # Second item in the list (y) should be 10x26
+
+str(mtxTheta1)  # Check that 25x401 and matricized
+str(mtxTheta2)  # Check that 10x26 and matricized
+
+```
+  
+These data can then be used to run the forward propagation, ending with a 5000x10 matrix containing probabilities for each of the 10 potential states.  
+  
+```{r}
+XOnes <- cbind(rep(1, nrow(mtxX)), mtxX)  # Will now be 5000x401
+
+mtxA2 <- XOnes %*% t(mtxTheta1)  # 5000x401 %*% 401x25 will be 5000x25
+mtxA2 <- 1 / (1 + exp(-mtxA2))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+
+a2Ones <- cbind(rep(1, nrow(mtxA2)), mtxA2)  # Will now be 5000x26
+
+mtxResults <- a2Ones %*% t(mtxTheta2)  # 5000x26 %*% 26x10 will be 5000x10 (as desired)
+mtxResults <- 1 / (1 + exp(-mtxResults))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+
+```
+
+Further, the above code for finding the best prediction (maximum probability) and plotting the outcomes is slightly adapted:  
+```{r}
+predYnn <- apply(mtxResults, 1, FUN=which.max)
+
+plot(x=1:length(predYnn), y=predYnn, col = 1 + (mtxY[,1] != predYnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+
+confusionMatrix(predYnn, mtxY[,1])
+
+```
+  
+With these well-optimized theta (more on that later), the neural network achieves ~97.5% accuracy on the in-sample data.  We have not yet run any out-of-sample testing.  
+  
