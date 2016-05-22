@@ -495,3 +495,81 @@ A related question is what prediction is optimal if you "know" the true probabil
 * d(Log-Loss E[Cost])/dd:  Need (1 - p) * n / (1 - d) = (p * n) / d -> (1 - p) * n * d = (1 - d) * (p * n)
 * d(Log-Loss E[Cost])/dd:  Need n * d  - (p * n) * d = (p * n) - (p * n) * d -> n * d = n * p -> d = p  
   
+###_One vs. All Classification_  
+Sometimes the feature for a classification problem has more than two potential states.  For example, a patient could be healthy, sick with sore throat, or sick with flu.  Provided that the states are MECE, then the typical logit approach can be run once for each state, with the feature being state="yes" vs. state="no".  
+  
+In many ways, the pre-processing of features is analogous to what would be required for a chi-squared test of association:  
+  
+* If some observations do not fall in to any of the states, create an additional state called "None"  
+* If some observations fall in to 2+ of the states, either create additional states (A only, B only, A and B, None) or declare that each of the observations has a primary state (e.g., perhaps sore throat and flu should be flagged as flu and not sore throat).  The choice of feature creation/aggregation may materially influence the model's performance.  
+  
+The data for this example is from an assignment downloaded for the Coursera Ng Machine Learning class.  The Ng course uses Octave (free version of MATLAB), and the data are on my machine in MATLAB format.  The function readMat() from library R.matlab is used to read this data for processing in R.  This code is cached so that the data need only be converted to R format once.
+  
+```{r, cache=TRUE}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week04/"  # Using relative path
+matData <- "ex3data1.mat"
+
+listMatData <- readMat(paste0(matPath, matData))
+str(listMatData)  # Check that as expected - list with two items, $X and $y
+
+mtxX <- listMatData$X  # First item in the list should be 5000x400
+mtxY <- listMatData$y  # Second item in the list (y) should be 5000x1
+
+str(mtxX)  # Check that 5000x400 and matricized
+str(mtxY)  # Check that 5000x1 and matricized
+
+hist(mtxY[,1], col="blue", breaks=0:10)  # Equal distributions of items in each of y==1:10
+```
+
+The MATLAB data have loaded successfully, and mtxY has 500 observations in each class 1:10.  There are 400 potential predictors for each of the 5000 observations, so there is some risk of over-fitting.  There are some clever matrix maths that can be run (see later), but for now we run through 10 trials using glmnet().  The glmnet() function will test mutliple ambda using elasticnet regularization.  
+
+Many default parameters are used, with the exception that we ask not to standaridze the input variables (they are already pixel activations 0-1 so there is no major outlier concern).  Further, we request alpha=0 (ridge penbalty) rather than the default alpha=1 (lasso penalty).  This is a logit (family="binomial") regression call.  Further, a for loop is used (clunkily) to go through each of the 10 cases, with the results cached since this is not an overwhelmingly fast procedure:  
+```{r, cache=TRUE}
+library(glmnet, quietly=TRUE)
+
+glmList <- vector("list", 10)
+
+for (intCtr in 1:10) {
+    modelY=factor(mtxY[,1]==intCtr, levels=c(FALSE, TRUE))
+    
+    # Run ridge (alpha=0) regressions using logit (family="binomial") using defaults for lambda search
+    glmList[[intCtr]] <- glmnet(x=mtxX, y=modelY, family="binomial", standardize=FALSE, alpha=0)
+}
+
+```
+
+Just as an example, we inspect the predictions made by this routine, thinking specifically about how well it does at predicting 5 vs. not 5:  
+```{r}
+# If this is cached, then RStudio has no access to glmnet -- duplicate call here
+library(glmnet, quietly=TRUE)
+
+# Request the ridge penalty (alpha=0), same as modeled
+# Request s=0.01 (nearest result to lambda=0.01)
+myTest <- predict(glmList[[5]], mtxX, type="response", s=0.01, alpha=0)
+
+plot(myTest, col= 1 + (mtxY[,1] == 5),
+     main="Prediction for y=5", ylab="Probability", xlab="Index"
+     )
+```
+  
+Then, run the predictions for each of 1-10, pick the maximum, and report/graph the accuracies:  
+```{r}
+probY <- matrix(data=-1, nrow=nrow(mtxY), ncol=10)
+
+for (intCtr in 1:10) {
+    probY[,intCtr] <- predict(glmList[[intCtr]], mtxX, type="response", s=0.01, alpha=0)
+}
+
+predY <- apply(probY, 1, FUN=which.max)
+
+plot(x=1:length(predY), y=predY, col = 1 + (mtxY[,1] != predY), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+
+confusionMatrix(predY, mtxY[,1])
+```
+
+In this case, the simple model (with guessed lambda, no cross-validation, and no out-of-sample prediction) classifies ~90% of the images correctly.  This code will later work through better methods for fitting matrices () since a simple Octave routine drives 95% accuracy without too much added time.  The idea was merely to show that the concept of logit classification can be extended to mutliple classes as needed.  
+  
