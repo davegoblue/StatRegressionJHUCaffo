@@ -547,7 +547,7 @@ library(glmnet, quietly=TRUE)
 
 # Request the ridge penalty (alpha=0), same as modeled
 # Request s=0.01 (nearest result to lambda=0.01)
-myTest <- predict(glmList[[5]], mtxX, type="response", s=0.01, alpha=0)
+myTest <- predict(glmList[[5]], mtxX, type="response", s=0.00595, alpha=0)
 
 plot(myTest, col= 1 + (mtxY[,1] == 5),
      main="Prediction for y=5", ylab="Probability", xlab="Index"
@@ -649,3 +649,38 @@ confusionMatrix(predYnn, mtxY[,1])
   
 With these well-optimized theta (more on that later), the neural network achieves ~97.5% accuracy on the in-sample data.  We have not yet run any out-of-sample testing.  
   
+###_Neural Networks - Logic Gates_  
+Below is an example of using neural networks to create logic gates for two input nodes.  We create the data such that there is a bias unit (1) and then each of the four binary combinations of a1/a2:  
+```{r}
+nnLogicInput <- matrix(data=c(1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0), nrow=4, byrow=FALSE)
+nnLogicInput
+
+nnThetaAnd <- c(-30, 20, 20)
+nnThetaOr <- c(-10, 20, 20)
+nnThetaNotA <- c(10, -20, 0)
+
+nnThetaOne <- matrix(data=c(nnThetaAnd, nnThetaOr, nnThetaNotA), nrow=3, byrow=FALSE)
+
+nnHiddenOne <- cbind(rep(1, 4), 1 / (1 + exp(-(nnLogicInput %*% nnThetaOne))))
+round(nnHiddenOne, 3)
+
+nnThetaXOR <- c(-10, -20, 20, 0)
+nnThetaXNOR <- c(10, 20, -20, 0)
+nnThetaA <- c(10, 0, 0, -20)
+nnThetaB <- c(-30, 20, 20, 20)
+nnKeepAnd <- c(-10, 20, 0, 0)
+nnKeepOr <- c(-10, 0, 20, 0)
+
+nnThetaTwo <- matrix(data=c(nnThetaXOR, nnThetaXNOR, nnKeepAnd, nnKeepOr, nnThetaA, nnThetaB), 
+                     nrow=4, byrow=FALSE
+                     )
+
+nnHiddenTwo <- 1 / (1 + exp(-(nnHiddenOne %*% nnThetaTwo)))
+prtHidden <- cbind(nnLogicInput[,-1], nnHiddenTwo)
+dimnames(prtHidden)[[2]] <- c("Raw A", "Raw B", "XOR", "XNOR", "AND", "OR", "Proc A", "Proc B")
+round(prtHidden, 3)
+```
+  
+So while this is a highly simplified example, it illustrated the power of the neural network to tease out interactions among the inputs.  
+  
+
