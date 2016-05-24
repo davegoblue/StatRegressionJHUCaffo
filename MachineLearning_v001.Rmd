@@ -683,4 +683,115 @@ round(prtHidden, 3)
   
 So while this is a highly simplified example, it illustrated the power of the neural network to tease out interactions among the inputs.  
   
+###_Neural Networks - Back Propagation_  
+Back propagation is a technique for optimizing Thetas in a neural network.  The process broadly runs as follows:  
+  
+* Start with randomized Theta matrices (there is a singularity issue if there are any initial symmetries)  
+* Forward propagate the train X data by way of the Theta matrices to make predictions  
+* Adjudge the predictions for delta (desired change), and back-propagate the deltas from end to start  
+* Adjust all Theta matrices accordingly, and then repeat  
+  
+Like many things, it is less complicated to write than to implement.  But, the image-recognition from above can be leveraged for this analysis to see if we can come up with "good" theta choices on our own.  First, we double-check that the X and Y data are still available:  
+```{r}
+str(mtxX)  # Check that 5000x400 and matricized
+str(mtxY)  # Check that 5000x1 and matricized
+
+hist(mtxY[,1], col="blue", breaks=0:10)  # Check equal distributions of items in each of y==1:10
+```
+  
+Next, we create images of a random sample of digits and initialize theta matrices assuming a 25-unit hidden layer with 10 possible outcomes:  
+```{r}
+nInputLayer <- ncol(mtxX)
+nHiddenNodes <- 25
+nFinalLabels <- 10
+epsInit <- 0.12  # Selection for randomization of initial data
+
+# First matrix needs [1 + nInputLayer] columns and nHiddenNodes rows
+bpThetaOne <- matrix(data=runif(nHiddenNodes * (1 + nInputLayer), min=0, max=epsInit), 
+                     nrow=nHiddenNodes, ncol=(1 + nInputLayer), byrow=FALSE
+                     )
+
+# Second matrix needs [1 + nHiddenNodes] columns and nFinalLables rows
+bpThetaTwo <- matrix(data=runif(nFinalLabels * (1 + nHiddenNodes), min=0, max=epsInit), 
+                     nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE
+                     )
+
+# Set up margins and mfrow for image printing
+defMargin <- par()$mar
+par(mar=c(0, 0, 0, 0))
+par(mfrow=c(8, 12))
+
+# Grab 96 random images to show
+myVal <- sample(5000, 96, replace=FALSE)
+
+# Draw the images (need to manipulate a lot of up vs. down due to how image() works)
+for (picNum in myVal) { 
+    image( matrix(data=rev(mtxX[picNum,]), nrow=20, byrow=TRUE)[20:1,], axes=FALSE) 
+}
+
+# Print the associated mtxY for comparison
+print(matrix(data=mtxY[myVal,1], nrow=8, byrow=TRUE))
+
+# Put graphing back to defaults
+par(mfrow=c(1,1))
+par(mar=defMargin)
+```
+
+Next, we need to convert matrices to vectors for passing back/forth to various cost and gradient functions.  Essentially, the idea is that minimization functions want to work on vectors while we actually have matrices.  So, we will convert matrices to vectors, use functions to convert back to matrices to calculate cost and gradients, then pass back the results as numbers and vectors.  The first phase of this is to create a cost function that takes a single vector of ThetaOne/ThetaTwo plus descriptors and calculates the cost.  We then unroll the matrices to vectors and run the cost calculation (forward propagation) function:  
+```{r}
+nnCost <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y, lambda) {
+    
+    # Roll vecMatrix back to theta matrices (assume Theta One by rows then Theta Two by rows)
+    keyCut <- (nInputLayer + 1) * nHiddenNodes
+    mtxOneData <- vecMatrix[1:keyCut]
+    mtxTwoData <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useThetaOne <- matrix(data=mtxOneData, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    useThetaTwo <- matrix(data=mtxTwoData, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Forward propagate using X, y, and thetas
+    m = nrow(X)
+    Xones <- cbind(rep(1, m), X)
+    layerOne <- cbind(rep(1, m), (1 / (1 + exp(-(Xones %*% t(useThetaOne))) ) ) )
+    layerTwo <- 1 / (1 + exp(-(layerOne %*% t(useThetaTwo))) ) 
+    
+    # Calculate costs using log-loss, assuming the match should be to column number
+    yPreds <- (y[,1] == matrix(data=rep(1:nFinalLabels, m), nrow=m, ncol=nFinalLabels, byrow=TRUE))
+    nnJ <- (-1/m) * ( sum(yPreds * log(layerTwo)) + sum((1-yPreds) * log(1 - layerTwo) ) )
+    
+    # Add the lambda costing also
+    nnJ <- nnJ + (lambda / (2 * m)) * (sum(useThetaOne[,-1]^2) + sum(useThetaTwo[,-1]^2) )
+    
+    return(nnJ)
+}
+
+```
+  
+The function is then tested on the instructor inputs as provided in exercise 4 from Ng Machine Learning on Coursera:  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week05/"  # Using relative path
+wgtData <- "ex4weights.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $Theta1 and $Theta2
+
+testTheta1 <- listWgtData$Theta1  # First item in the list should be 25x401
+testTheta2 <- listWgtData$Theta2  # Second item in the list (y) should be 10x26
+
+str(testTheta1)  # Check that 25x401 and matricized
+str(testTheta2)  # Check that 10x26 and matricized
+
+# Calculate cost for lambda=0 (should be 0.287629)
+nnCost(vecMatrix=c(as.vector(testTheta1), as.vector(testTheta2)), nInputLayer=nInputLayer, 
+       nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=0
+       )
+
+# Calculate cost for lambda=1 (should be 0.383770)
+nnCost(vecMatrix=c(as.vector(testTheta1), as.vector(testTheta2)), nInputLayer=nInputLayer, 
+       nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
+       )
+
+```
 
