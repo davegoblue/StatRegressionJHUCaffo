@@ -683,7 +683,8 @@ round(prtHidden, 3)
   
 So while this is a highly simplified example, it illustrated the power of the neural network to tease out interactions among the inputs.  
   
-###_Neural Networks - Back Propagation_  
+###_Neural Networks - Back Propagation_
+####_Back Propagation (Setup and Costs)_  
 Back propagation is a technique for optimizing Thetas in a neural network.  The process broadly runs as follows:  
   
 * Start with randomized Theta matrices (there is a singularity issue if there are any initial symmetries)  
@@ -704,15 +705,15 @@ Next, we create images of a random sample of digits and initialize theta matrice
 nInputLayer <- ncol(mtxX)
 nHiddenNodes <- 25
 nFinalLabels <- 10
-epsInit <- 0.12  # Selection for randomization of initial data
+epsInit <- 0.12  # Initial thetas will be randomized as epsInit * runif(min=-1, max=1)
 
 # First matrix needs [1 + nInputLayer] columns and nHiddenNodes rows
-bpThetaOne <- matrix(data=runif(nHiddenNodes * (1 + nInputLayer), min=0, max=epsInit), 
+bpThetaOne <- matrix(data=runif(nHiddenNodes * (1 + nInputLayer), min=-epsInit, max=epsInit), 
                      nrow=nHiddenNodes, ncol=(1 + nInputLayer), byrow=FALSE
                      )
 
 # Second matrix needs [1 + nHiddenNodes] columns and nFinalLables rows
-bpThetaTwo <- matrix(data=runif(nFinalLabels * (1 + nHiddenNodes), min=0, max=epsInit), 
+bpThetaTwo <- matrix(data=runif(nFinalLabels * (1 + nHiddenNodes), min=-epsInit, max=epsInit), 
                      nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE
                      )
 
@@ -794,4 +795,97 @@ nnCost(vecMatrix=c(as.vector(testTheta1), as.vector(testTheta2)), nInputLayer=nI
        )
 
 ```
+  
+Further, a very short function is written to calculate the sigmoid gradient for any object (number, vector, matrix, etc.) that is passed to it.  The maths are:  
+  
+* Sigmoid = 1 / (1 + exp(-z))  
+* dSigmoid/dz = exp(-z) / (1 + exp(-z))^2 = (1 - Sigmoid) * Sigmoid  
+* Desire is to perform this calculation for each element, assuming that z has been passed to the function    
+  
+As well, an even shorter function is written to calculate the Sigmoid, g(z), given an input z:  
+```{r}
+sigmoidGradient <- function(zSig) {
+    tempSig <- 1 / (1 + exp(-zSig))
+    return(tempSig * (1 - tempSig))
+}
 
+sigmoidPlain <- function(zSig) {
+    return(1 / (1 + exp(-zSig)))
+}
+
+sigmoidPlain(0)
+sigmoidPlain(c(1, -0.5, 0, 0.5, 1))
+sigmoidPlain(matrix(data=0.5*(0:14-7), nrow=5, byrow=FALSE))
+
+sigmoidGradient(0)
+sigmoidGradient(c(1, -0.5, 0, 0.5, 1))
+sigmoidGradient(matrix(data=0.5*(0:14-7), nrow=5, byrow=FALSE))
+```
+  
+####_Back Propagation (Gradients)_  
+The back-propagation algorithm is at the heart of the neural network setup.  The intent is to find the gradients for every entry in the theta matrices by back-propagating the error in each training example.  Specifically, given this example with a single hidden layer, we attempt:  
+  
+For each set of inputs x(i) spanning x(1)-x(m), run the following:  
+  
+1.  Treat x(i) as the sole input to the neural network (the a1 vector).  Use this to forward propagate to z2, a2=g(z2), z3, a3=g(z3); recalling that g() is the sigmoid function  
+2.  Calculate the deltas for each of the k final nodes, definining delta(3)(k) as (a(3)(k) - y(k)) or basically how much different is my node than I wish it were  
+3.  Calculate the deltas for each of the hidden layer nodes, defined as delta2 = t(ThetaTwo) %*% delta(3) * g'(z(2)), where g' means the sigmoid gradient and z(2) is the hidden layer PRIOR to running sigmoid  
+4.  Accumulate deltas as D(L) = D(L) + 1/m * delta(L+1) % * % t(a(L)), where a(L) is the activation of the nodes in layer L while delta(L+1) is the delta from the layer one ahead  
+  
+Note that by convention, delta and gradient and etc. for the bias unit is always considered to be 0 since the bias unit will always be 1.  This can be accounted for in many ways, but the gist is that it should never be fed to an optimizer function.  
+
+A gradient function is created to manage this.  In theory, it would be nice to add this as a component of the cost function.  For now, it is maintained as a separate function taking the same inputs:  
+```{r}
+nnGradient <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y, lambda) {
+
+    # Copied directly from nnCost for unrolling the Theta vectors
+    # Roll vecMatrix back to theta matrices (assume Theta One by rows then Theta Two by rows)
+    keyCut <- (nInputLayer + 1) * nHiddenNodes
+    mtxOneData <- vecMatrix[1:keyCut]
+    mtxTwoData <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useThetaOne <- matrix(data=mtxOneData, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    useThetaTwo <- matrix(data=mtxTwoData, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Set up empty Theta Gradients
+    gradThetaOne <- matrix(data=0, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    gradThetaTwo <- matrix(data=0, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Calculate the number of observations to process
+    m = nrow(X)
+    
+    # Convert y (mx1) to yPreds (mx10) with each column being "is it this digit (1/0"
+    yPreds <- (y[,1] == matrix(data=rep(1:nFinalLabels, m), nrow=m, ncol=nFinalLabels, byrow=TRUE))
+    
+    # Calculate the gradients using a for loop from 1-m
+    for (intCtr in 1:m) {
+        
+        # Step 1 - Forward propagate this observation
+        a1 = cbind(1, X[intCtr,])  # Take the intCtr row and add 1 in front (1x401)
+        z2 = a1 %*% t(useThetaOne)  # 1x401 %*% 401x25 = 1x25
+        a2 = cbind(1, sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (1x26)
+        z3 = a2 %*% t(useThetaTwo)  # 1x26 %*% 26x10 = 1x10
+        a3 = sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
+        
+        # Step 2 - Calculate delta03
+        delta_03 <- a3 - yPreds[intCtr,]  # This will be 1x10, same as a3
+        
+        # Step 3 - Calculate delta02
+        delta_02 <- (delta_03 %*% useThetaTwo[,-1]) * sigmoidGradient(z2)  # (1x10 %*% 10x25) * 1x25 = 1x25
+        
+        # Step 4a - Accumulate Theta Gradeints
+        gradThetaTwo <- gradThetaTwo + t(delta_03) %*% a2  # 10x26 + 10x1 %*% 1x26 = 10x26 (as desired)
+        gradThetaOne <- gradThetaOne + t(delta_02) %*% a1  # 25x401 + 25x1 %*% 1x401 = 25x401 (as desired)
+    }
+    
+    # Step 4b - Regularize accumulated gradients by 1/m
+    gradThetaTwo <- (1/m) * gradThetaTwo
+    gradThetaOne <- (1/m) * gradThetaOne
+    
+    # Roll thetas together in to a long vector for return
+    return(c(as.vector(gradThetaOne), as.vector(gradThetaTwo)))    
+}
+```
+  
+The next step will be to tie this together through an optimization machine.  
+  
+####_Back Propagation (Optimize Thetas)_  
