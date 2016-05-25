@@ -31,4 +31,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 22-MAY-2016 - One vs. All (multi-class) classification, and neural network representation  
 * 23-MAY-2016 - Neural network logic gates  
 * 24-MAY-2016 - Initial neural network back propagation code    
-* 25-MAY-2016 - Neural network gradeints    
+* 25-MAY-2016 - Neural network gradients    
