@@ -860,11 +860,11 @@ nnGradient <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y,
     for (intCtr in 1:m) {
         
         # Step 1 - Forward propagate this observation
-        a1 = cbind(1, X[intCtr,])  # Take the intCtr row and add 1 in front (1x401)
-        z2 = a1 %*% t(useThetaOne)  # 1x401 %*% 401x25 = 1x25
-        a2 = cbind(1, sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (1x26)
-        z3 = a2 %*% t(useThetaTwo)  # 1x26 %*% 26x10 = 1x10
-        a3 = sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
+        a1 <- matrix(data=c(1, X[intCtr,]), nrow=1)  # Take the intCtr row and add 1 in front (1x401)
+        z2 <- a1 %*% t(useThetaOne)  # 1x401 %*% 401x25 = 1x25
+        a2 <- cbind(1, sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (1x26)
+        z3 <- a2 %*% t(useThetaTwo)  # 1x26 %*% 26x10 = 1x10
+        a3 <- sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
         
         # Step 2 - Calculate delta03
         delta_03 <- a3 - yPreds[intCtr,]  # This will be 1x10, same as a3
@@ -889,3 +889,57 @@ nnGradient <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y,
 The next step will be to tie this together through an optimization machine.  
   
 ####_Back Propagation (Optimize Thetas)_  
+At any given point, we have a core set of data, including:  
+  
+* mtxX - the feature matrix (5000x400) 
+* mtxY - the response vector (5000x1)  
+* bpThetaOne - the most recent Theta1, starting as uniform -eps to eps (25x401)  
+* bpThetaTwo - the most recent Theta2, starting as uniform -eps to eps (10x26)  
+* nInputLayer - the number of features (400)  
+* nHiddenLayer - the number of hidden layer nodes (25)  
+* nFinalLabels - the number of final categories (10)  
+* lambda - regularization parameter (can start with 1)  
+* vecPass - rolls bpThetaOne and bpThetaTwo in to a single vector (length 10,285) by first going by columns along bpThetaOne and then going by columns along bpThetaTwo  
+* nnCost - function that will pass back the current cost  
+* nnGradient - function that will pass back the current gradient, in an order that matched up to vecMatrix  
+  
+In theory, this is enough to optimize the theta matrices.  We begin by writing a short function for the forward propagation (should clean this up in a later version - redundant with code above):  
+```{r}
+forwardPredY <- function(mtxX, mtxTheta1, mtxTheta2) {
+    XOnes <- cbind(rep(1, nrow(mtxX)), mtxX)  # Will now be 5000x401
+    
+    mtxA2 <- XOnes %*% t(mtxTheta1)  # 5000x401 %*% 401x25 will be 5000x25
+    mtxA2 <- 1 / (1 + exp(-mtxA2))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+    
+    a2Ones <- cbind(rep(1, nrow(mtxA2)), mtxA2)  # Will now be 5000x26
+    
+    mtxResults <- a2Ones %*% t(mtxTheta2)  # 5000x26 %*% 26x10 will be 5000x10 (as desired)
+    mtxResults <- 1 / (1 + exp(-mtxResults))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+    
+    predYnn <- apply(mtxResults, 1, FUN=which.max)
+    
+    return(predYnn)
+}
+```
+  
+We begin by studying the baseline data, and its associated costs and accuracies:  
+```{r}
+lambda=1  # Run scenario with lambda=1
+
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+# Assess the current accuracies
+predYnn <- forwardPredY(mtxX, bpThetaOne, bpThetaTwo)
+plot(x=1:length(predYnn), y=predYnn, col = 1 + (mtxY[,1] != predYnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYnn, mtxY[,1])
+
+# Print the current cost
+nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the current gradients
+plot(nnGradient(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda))
+```
+  
+Apparently, the initial predictions using random theta are not good!  Next, we try to optimize theta (by way of associated vecPass) using some of the R built-in functionality:  
