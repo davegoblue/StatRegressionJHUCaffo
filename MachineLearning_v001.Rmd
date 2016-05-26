@@ -985,3 +985,101 @@ plot(nnGradient(vecMatrix=myList$par, nInputLayer, nHiddenNodes, nFinalLabels, X
   
 The model is ~98% accurate with identifying images (n.b., there was no out-of-sample test run, so this is an inflated accuracy) based on this simple neural network.  A very interesting exercise!  
   
+###_Model Selection (Bias vs. Varaince)_  
+A primary goal with prediction is to correctly classify out-of-sample observations, meaning data that was not used to train the model.  When applyin a model to make out-of-sample predictions, there are three common sources of error:  
+  
+* Intrinsic - there is some degree of randomness in the real-world, and no model can ever avoid the impact of that intrinsic randomness on model predictions  
+* Bias (under-fitting) - there is some structure in the data that is not captured in the model, thus the model makes worse predictions than it would if it tuned on that structure  
+* Variance (over-fitting) - the model has tuned on some noise in the training sample, and will make poor real-world predictions when it no longer can leverage the training noise  
+  
+To assess and minimize error, data are frequently split in to 2-3 groups prior to modeling:  
+  
+* Training data (frequently 60%-80% of the total data) - this is the primary data that is used in creating and tuning the model  
+* Validation / CV data (optional; if present, frequently 10%-20% of the total data) - this data is used for checking the goodness of various models coming from the training dataset, and then using those findings to further refine the models with the training data.  Some techniques use resampling techniques (k-fold, bootstrap, etc.) that automatically run the CV process with the training data, and in those cases this split might be eliminated  
+* Test data (frequently 20%-30% of the data) - this data is used a single time for assessing the quality of the final model.  It should not be used at all for model tuning.  
+  
+A simple example of bias/variance comes from y = x^2 + eps, where eps ~ N(0, sigma^2).  The predictions are certain to have error-squared of at least sigma-squared, since this is an intrinsic error.  However, suppose that we model:  
+  
+* y=theta0 + theta1 * x : This model will not find the curvature that is in the data, so it will tend to be a poor fit to the training dataset and will also perform poorly on the CV data and Test data  
+* y=theta0 + theta1 * x^1 + theta2 * x^2 + . . . theta50 * x^50 : This model will tune on a lot of the noise in the training data and may make good training predictions; however, these predictions will crater when applied to the CV data and Test data  
+  
+See for example:  
+```{r}
+set.seed(2016052618)
+x <- runif(150, 0, 4)
+y <- x^2 + rnorm(150, 0, 2)  # Add some noise to y = x^2
+
+# Split in to Train and Test (without using caret::createDataPartition())
+inTrain <- sample(length(x), round(.7*length(x)), replace=FALSE)
+
+xTrain <- x[inTrain]
+xTest <- x[-inTrain]
+yTrain <- y[inTrain]
+yTest <- y[-inTrain]
+
+# Create all polynomials 1-50
+mtxXTrain <- matrix(data=0, nrow=length(xTrain), ncol=50)
+mtxXTest <- matrix(data=0, nrow=length(xTest), ncol=50)
+for (intCtr in 1:50) {
+    mtxXTrain[, intCtr] <- xTrain^intCtr
+    mtxXTest[, intCtr] <- xTest^intCtr
+}
+
+# Run the biased model
+biasLM <- lm(yTrain ~ mtxXTrain[,1])
+plot(xTrain, yTrain, type="p", pch=19, col="red", 
+     xlab="X (training)", ylab="Y (training)", main="Training Data: Fits for Bias, Proper, Variance"
+     )
+abline(biasLM, lty=2, lwd=2, col="blue")
+
+
+# Run the "correct" model
+properLM <- lm(yTrain ~ mtxXTrain[,2])
+lines(xTrain[order(xTrain)], properLM$fitted.values[order(xTrain)], lty=1, lwd=4, col="dark green")
+
+
+# Run the variance model
+varianceLM <- lm(yTrain ~ mtxXTrain[,])
+lines(xTrain[order(xTrain)], varianceLM$fitted.values[order(xTrain)], lty=1, lwd=4, col="purple")
+
+legend("topleft", legend=c("Bias (y=x)", "Proper (y=x^2)", "Variance (y=x^(1:50))"), 
+       col=c("blue", "dark green", "purple"), lty=c(2, 1, 1), lwd=c(2, 4, 4)
+       )
+
+
+# Apply to the test data
+plot(xTest, yTest, type="p", pch=19, col="red", 
+     xlab="X (test)", ylab="Y (test)", main="Testing Data: Fits for Bias, Proper, Variance"
+     )
+
+yBiasTest <- coef(biasLM)[[1]] + coef(biasLM)[[2]] * mtxXTest[,1]
+lines(xTest[order(xTest)], yBiasTest[order(xTest)], lty=2, lwd=2, col="blue")
+
+yProperTest <- coef(properLM)[[1]] + coef(properLM)[[2]] * mtxXTest[,2]
+lines(xTest[order(xTest)], yProperTest[order(xTest)], lty=1, lwd=4, col="dark green")
+
+coefVar <- coef(varianceLM)
+coefVar[is.na(coefVar)] <- 0
+yVarianceTest <- mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+lines(xTest[order(xTest)], yVarianceTest[order(xTest)], lty=1, lwd=4, col="purple")
+
+legend("topleft", legend=c("Bias (y=x)", "Proper (y=x^2)", "Variance (y=x^(1:50))"), 
+       col=c("blue", "dark green", "purple"), lty=c(2, 1, 1), lwd=c(2, 4, 4)
+       )
+
+print(paste0("RMSE Training (Bias): ", round(sqrt(mean((yTrain - biasLM$fitted.values)^2)),2)))
+print(paste0("RMSE Training (Proper): ", round(sqrt(mean((yTrain - properLM$fitted.values)^2)),2)))
+print(paste0("RMSE Training (Variance): ", round(sqrt(mean((yTrain - varianceLM$fitted.values)^2)),2)))
+
+print(paste0("RMSE Testing (Bias): ", round(sqrt(mean((yTest - yBiasTest)^2)),2)))
+print(paste0("RMSE Testing (Proper): ", round(sqrt(mean((yTest - yProperTest)^2)),2)))
+print(paste0("RMSE Testing (Variance): ", round(sqrt(mean((yTest - yVarianceTest)^2)),2)))
+
+```
+
+The bias model struggles in both the training data and the testing data since it cannot tune on the curvature in the underlying data.  The best solution would be to add a covariate to help it match the real-world structure.  
+  
+The proper model performs reasonably in both the training data and the testing data.  There is not much to be done about the intrinsic noisiness of y.  
+  
+The variance model performs the best in the training data and the worst in the testing data.  This is common with severe overfits which have been learning about noise in addition to structure.  The best solutions would be to either 1) reduce the number of covariates, 2) add regularization to damp down the coefficients, or 3) get a larger dataset (in which case it is much harder to over-fit).  CV/Test error much worse than Train error is a common symptom of variance.  
+  
