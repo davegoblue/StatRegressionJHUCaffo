@@ -856,26 +856,30 @@ nnGradient <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y,
     # Convert y (mx1) to yPreds (mx10) with each column being "is it this digit (1/0"
     yPreds <- (y[,1] == matrix(data=rep(1:nFinalLabels, m), nrow=m, ncol=nFinalLabels, byrow=TRUE))
     
-    # Calculate the gradients using a for loop from 1-m
-    for (intCtr in 1:m) {
-        
-        # Step 1 - Forward propagate this observation
-        a1 <- matrix(data=c(1, X[intCtr,]), nrow=1)  # Take the intCtr row and add 1 in front (1x401)
-        z2 <- a1 %*% t(useThetaOne)  # 1x401 %*% 401x25 = 1x25
-        a2 <- cbind(1, sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (1x26)
-        z3 <- a2 %*% t(useThetaTwo)  # 1x26 %*% 26x10 = 1x10
-        a3 <- sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
-        
-        # Step 2 - Calculate delta03
-        delta_03 <- a3 - yPreds[intCtr,]  # This will be 1x10, same as a3
-        
-        # Step 3 - Calculate delta02
-        delta_02 <- (delta_03 %*% useThetaTwo[,-1]) * sigmoidGradient(z2)  # (1x10 %*% 10x25) * 1x25 = 1x25
-        
-        # Step 4a - Accumulate Theta Gradeints
-        gradThetaTwo <- gradThetaTwo + t(delta_03) %*% a2  # 10x26 + 10x1 %*% 1x26 = 10x26 (as desired)
-        gradThetaOne <- gradThetaOne + t(delta_02) %*% a1  # 25x401 + 25x1 %*% 1x401 = 25x401 (as desired)
-    }
+    # Run the forward propagation outside the loop
+    # Step 1 - Forward propagate this observation
+    a1 <- cbind(rep(1, m), X)  # Take X and add 1 in front (mx401)
+    z2 <- a1 %*% t(useThetaOne)  # mx401 %*% 401x25 = mx25
+    a2 <- cbind(rep(1, m), sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (mx26)
+    z3 <- a2 %*% t(useThetaTwo)  # mx26 %*% 26x10 = mx10
+    a3 <- sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
+    
+    # Calculate delta03 outside the loop
+    # Step 2 - Calculate delta03
+    delta_03 <- a3 - yPreds  # This will be mx10, same as a3
+    
+    # Calculate delta02 outside the loop
+    # Step 3 - Calculate delta02
+    delta_02 <- (delta_03 %*% useThetaTwo[,-1]) * sigmoidGradient(z2)  # (mx10 %*% 10x25) * mx25 = mx25
+    
+    # Calculate the gradients outside the for loop
+    # Step 4a - Accumulate Theta Gradeints
+
+    # 10x26 + 10x5000 %*% 5000x26 = 10x26 (as desired)
+    gradThetaTwo <- gradThetaTwo + t(delta_03) %*% a2
+
+    # 25x401 + 25x5000 %*% 5000x401 = 25x401 (as desired)
+    gradThetaOne <- gradThetaOne + t(delta_02) %*% a1    
     
     # Step 4b - Regularize accumulated gradients by 1/m
     gradThetaTwo <- (1/m) * gradThetaTwo
@@ -943,3 +947,41 @@ plot(nnGradient(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mt
 ```
   
 Apparently, the initial predictions using random theta are not good!  Next, we try to optimize theta (by way of associated vecPass) using some of the R built-in functionality:  
+```{r, cache=TRUE}
+# Run the optimization process
+startTime <- proc.time()
+myList <- optim(vecPass, nnCost, nnGradient, nInputLayer=nInputLayer,
+                nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                X=mtxX, y=mtxY, lambda=lambda, control=list(maxit=150), method="BFGS"
+                )
+proc.time() - startTime
+```
+  
+The optim() function is seemingly not as fast as the equivalent function fmingc() in Octave, although it is driving better accuracy with more iterations so there may be a chicken and egg issue.  This may be because optim() is not yet tuned, and packages like "trust" and/or further tweaking of control parameters may help.  
+
+Still, it provides a good starting solution to a neural network with ~10,000 parameters for ~50,000 predictions in ~5 minutes.  So, while it can likely be significantly further optimized, it is pretty cool to be able to do simple image identification (on a cleaned dataset consisting of numbers only) in not too much time.  
+  
+Below, we assess the accuracy of the optimized neural network:  
+```{r}
+# Convert the result back to Theta matrices
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=myList$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=myList$par[(keyCut+1):length(myList$par)], nrow=nFinalLabels, byrow=FALSE)
+
+# Assess the optimized accuracies
+predYPostnn <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYPostnn), y=predYPostnn, col = 1 + (mtxY[,1] != predYPostnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYPostnn, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=myList$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=myList$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda))
+
+```
+  
+The model is ~98% accurate with identifying images (n.b., there was no out-of-sample test run, so this is an inflated accuracy) based on this simple neural network.  A very interesting exercise!  
+  
