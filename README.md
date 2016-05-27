@@ -33,3 +33,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 24-MAY-2016 - Initial neural network back propagation code    
 * 25-MAY-2016 - Neural network gradients and back-propagation setup    
 * 26-MAY-2016 - Neural network back-propagation completed and initial bias/variance example    
+* 27-MAY-2016 - Expanded bias/variance example    
