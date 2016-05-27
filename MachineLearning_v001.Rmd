@@ -1006,8 +1006,8 @@ A simple example of bias/variance comes from y = x^2 + eps, where eps ~ N(0, sig
 See for example:  
 ```{r}
 set.seed(2016052618)
-x <- runif(150, 0, 4)
-y <- x^2 + rnorm(150, 0, 2)  # Add some noise to y = x^2
+x <- runif(250, 0, 6)
+y <- x^2 + rnorm(250, 0, 2)  # Add some noise to y = x^2
 
 # Split in to Train and Test (without using caret::createDataPartition())
 inTrain <- sample(length(x), round(.7*length(x)), replace=FALSE)
@@ -1082,4 +1082,117 @@ The bias model struggles in both the training data and the testing data since it
 The proper model performs reasonably in both the training data and the testing data.  There is not much to be done about the intrinsic noisiness of y.  
   
 The variance model performs the best in the training data and the worst in the testing data.  This is common with severe overfits which have been learning about noise in addition to structure.  The best solutions would be to either 1) reduce the number of covariates, 2) add regularization to damp down the coefficients, or 3) get a larger dataset (in which case it is much harder to over-fit).  CV/Test error much worse than Train error is a common symptom of variance.  
+  
+Suppose we build on the sample above and explore the behavior of the models as the training set gets bigger.  In this case, we will create 250 points for training and 250 points for testing.  Then, we will explore the behavior of the models as they take larger slices of the training data:  
+```{r}
+# Code copied from above, except training size now 2000 and testing size now 500
+set.seed(2016052618)
+x <- runif(500, 0, 6)
+y <- x^2 + rnorm(500, 0, 2)  # Add some noise to y = x^2
+
+# Split in to Train and Test (without using caret::createDataPartition())
+inTrain <- sample(length(x), round(.5*length(x)), replace=FALSE)
+
+xTrain <- x[inTrain]
+xTest <- x[-inTrain]
+yTrain <- y[inTrain]
+yTest <- y[-inTrain]
+
+# Create all polynomials 1-50
+mtxXTrain <- matrix(data=0, nrow=length(xTrain), ncol=50)
+mtxXTest <- matrix(data=0, nrow=length(xTest), ncol=50)
+for (intCtr in 1:50) {
+    mtxXTrain[, intCtr] <- xTrain^intCtr
+    mtxXTest[, intCtr] <- xTest^intCtr
+}
+
+# Pick some sizes for the training dataset
+trainSizes <- c(25, 50, 75, 100, 125, 150, 175, 200, 250)
+
+# Create a location to store each of the models
+biasLMList <- vector("list", length(trainSizes))
+properLMList <- vector("list", length(trainSizes))
+varianceLMList <- vector("list", length(trainSizes))
+
+# Create a location to store each of the yTest projections
+biasYTestList <- vector("list", length(trainSizes))
+properYTestList <- vector("list", length(trainSizes))
+varianceYTestList <- vector("list", length(trainSizes))
+
+# Create a location to store each of the RMSE ([[1]] for train and [[2]] for test)
+biasRMSE <- vector("list", 2)
+properRMSE <- vector("list", 2)
+varianceRMSE <- vector("list", 2)
+
+# Run each model once per training size - store in list
+for (intCtr in 1:length(trainSizes)) {
+    curSize <- trainSizes[intCtr]
+    
+    # Run the training on the first curSize samples
+    biasModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, 1])
+    properModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, 2])
+    varianceModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, ])
+    
+    biasLMList[[intCtr]] <- biasModel
+    properLMList[[intCtr]] <- properModel
+    varianceLMList[[intCtr]] <- varianceModel
+    
+    # Project the model on to the full test dataset
+    biasYTestList[[intCtr]] <- coef(biasModel)[[1]] + coef(biasModel)[[2]] * mtxXTest[,1]
+    properYTestList[[intCtr]] <- coef(properModel)[[1]] + coef(properModel)[[2]] * mtxXTest[,2]
+    
+    coefVar <- coef(varianceModel)
+    coefVar[is.na(coefVar)] <- 0
+    varianceYTestList[[intCtr]] <- 
+        mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+    
+    # Store RMSE for the training and test data
+    biasRMSE[[1]] <- c(biasRMSE[[1]], sqrt(mean( (biasModel$residuals)^2 ) ) )
+    properRMSE[[1]] <- c(properRMSE[[1]], sqrt(mean( (properModel$residuals)^2 ) ) )
+    varianceRMSE[[1]] <- c(varianceRMSE[[1]], sqrt(mean( (varianceModel$residuals)^2 ) ) )
+    
+    biasRMSE[[2]] <- c(biasRMSE[[2]], sqrt(mean( (biasYTestList[[intCtr]] - yTest)^2 ) ) )
+    properRMSE[[2]] <- c(properRMSE[[2]], sqrt(mean( (properYTestList[[intCtr]] - yTest)^2 ) ) )
+    varianceRMSE[[2]] <- c(varianceRMSE[[2]], sqrt(mean( (varianceYTestList[[intCtr]] - yTest)^2 ) ) )
+}
+
+# Plot RMSE findings for each of the models - how good is train fit vs. test fit?
+par(mfrow=c(1, 2))
+
+# Plot #1 is Bias vs. Proper
+plot(trainSizes, log2(biasRMSE[[1]]), ylim=c(-1,10), type="l", col="blue", lty=2,
+     xlab="Training Size", ylab="Log2(RMSE)", main="Bias vs. Proper Model"
+     )
+lines(trainSizes, log2(biasRMSE[[2]]), col="blue", lty=1, lwd=2)
+lines(trainSizes, log2(properRMSE[[1]]), col="dark green", lty=2)
+lines(trainSizes, log2(properRMSE[[2]]), col="dark green", lty=1, lwd=2)
+legend("top", legend=c("Bias Train", "Bias Test", "Proper Train", "Proper Test"), lty=c(2, 1, 2, 1), 
+       lwd=c(1, 2, 1, 2), col=c("blue", "blue", "dark green", "dark green")
+       )
+abline(h=1, lty=2)
+
+# Plot #2 is Variance vs. Proper
+plot(trainSizes, log2(varianceRMSE[[1]]), ylim=c(-1,10), type="l", col="red", lty=2,
+     xlab="Training Size", ylab="Log2(RMSE)", main="Variance vs. Proper Model"
+     )
+lines(trainSizes, log2(varianceRMSE[[2]]), col="red", lty=1, lwd=2)
+lines(trainSizes, log2(properRMSE[[1]]), col="dark green", lty=2)
+lines(trainSizes, log2(properRMSE[[2]]), col="dark green", lty=1, lwd=2)
+legend("topright", legend=c("Variance Train", "Variance Test", "Proper Train", "Proper Test"), 
+       lty=c(2, 1, 2, 1), lwd=c(1, 2, 1, 2), col=c("red", "red", "dark green", "dark green")
+       )
+abline(h=1, lty=2)
+
+par(mfrow=c(1, 1))
+```
+    
+The intrinsic RMSE in this simulated data is 2 (the epsilon is set as N(0, 2^2)).  
+  
+* The proper model tracks closely with intrinsic RMSE at every training size.  This model is neither biased nor variant, and requires only a single covariate (x^2) for a best-fit.  Since there is neither bias nor variance, the test set error and the training error are materially the same  
+* The bias model tracks above instrinsic RMSE at every training size.  This model is unable to tune to the curvature that is truly in the y dataset.  Since there is no overfit, the training error and test errors are materially the same, and they do not improve with a large sample size.  The problem is the missing covariate (x^2), and more training data does not address that  
+* The variance model shows high divergence between test set error and training error at small training sample sizes.  Because of the over-fit to the training data, the projections on to the test data are very poor.  However, as the training set becomes larger, there is much less opportunity for the model to train on noise.  As such, while training error increases with N, testing error decreases with N.  This is the hallmark of a high variance problem - more training data is a viable solution  
+  
+Diagnostics like this can be handy in deciding what to do next.  If the model is not improving with more training data, then getting even more observations is unlikely to help.  Instead, there may be value in thinking through other covariates (polynomials, products, new features, etc.) that might help explain the structure that is currently not being modeled.  
+  
+On the other hand, a model with high variance (testing error >> training error) needs to stop training on the noise.  This can be addressed through more observations, fewer covariates, or punishing the magnitude of the coefficients (regularization).  If more observations are not available, clever use of the CV data to tune the number of covariates and/or magnitude of the coefficients could be very helpful.  
   
