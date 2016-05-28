@@ -1196,3 +1196,65 @@ Diagnostics like this can be handy in deciding what to do next.  If the model is
   
 On the other hand, a model with high variance (testing error >> training error) needs to stop training on the noise.  This can be addressed through more observations, fewer covariates, or punishing the magnitude of the coefficients (regularization).  If more observations are not available, clever use of the CV data to tune the number of covariates and/or magnitude of the coefficients could be very helpful.  
   
+Suppose we have only the 50 training examples and want to run the high-variance model.  Note that the bias model and the proper model have both already stabilized by this point, while the variance model is creating high errors by overfitting the data.  
+  
+One idea is to regularize the coefficients and to re-run the variance model.  Regularization helps avoid over-fitting, and we explore the implications of different lambda for nTrain=50:  
+```{r}
+lambdaSizes <- c(0, 0.00001, 0.00002, 0.00005, 0.0001, 0.00025, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1)
+useSize <- 50
+
+varRidgeRMSE <- vector("list", 2)
+varRidgeYTrainList <- vector("list", length(lambdaSizes))
+varRidgeYTestList <- vector("list", length(lambdaSizes))
+
+# Run the training on useSize samples for curLambda
+varRidgeModel <- lm.ridge(yTrain[1:useSize] ~ mtxXTrain[1:useSize, ], lambda=lambdaSizes)
+    
+
+for (intCtr in 1:length(lambdaSizes)) {
+    coefVar <- coef(varRidgeModel)[intCtr,]
+    coefVar[is.na(coefVar)] <- 0
+
+    # Project the model on to the full train and test dataset    
+    varRidgeYTrainList[[intCtr]] <- 
+        mtxXTrain[1:useSize,] %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+    varRidgeYTestList[[intCtr]] <- 
+        mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+        
+    # Store RMSE for the training and test data
+    varRidgeRMSE[[1]] <- c(varRidgeRMSE[[1]], 
+                           sqrt(mean( (varRidgeYTrainList[[intCtr]] - yTrain[1:useSize])^2 ) ) 
+                           )
+    varRidgeRMSE[[2]] <- c(varRidgeRMSE[[2]], 
+                           sqrt(mean( (varRidgeYTestList[[intCtr]] - yTest)^2 ) ) 
+                           )
+}
+
+# Plot RMSE findings for each of the models - how good is train fit vs. test fit?
+par(mfrow=c(1, 2))
+
+# Plot #1 is Test vs. Train by Lambda
+plot(log10(lambdaSizes+0.0001), varRidgeRMSE[[1]], ylim=c(1,4), type="l", col="blue", lty=2,
+     xlab="log10(Lambda+0.0001)", ylab="RMSE", main="Variance Model vs. Lambda"
+     )
+lines(log10(lambdaSizes+0.0001), varRidgeRMSE[[2]], col="blue", lty=1, lwd=2)
+legend("top", legend=c("Training", "Testing"), lty=c(2, 1), lwd=c(1, 2), col=c("blue", "blue"))
+abline(h=2, lty=2)
+
+# Plot #2 is Fit for lambda=0 vs. lambda=0.1
+plot(xTest, yTest, type="p", col="red", pch=19,
+     xlab="Test X", ylab="Test Y", main="Model Fits"
+     )
+lines(xTest[order(xTest)], varRidgeYTestList[[1]][order(xTest)], col="purple", lty=1, lwd=2)
+lines(xTest[order(xTest)], varRidgeYTestList[[length(varRidgeYTestList)]][order(xTest)], 
+      col="dark green", lty=1, lwd=4
+      )
+legend("top", legend=c("Lambda=0", "Lambda=0.1"), 
+       lty=c(1, 1), lwd=c(2, 4), col=c("purple", "dark green"), cex=0.8
+       )
+
+par(mfrow=c(1, 1))
+```
+  
+With even modest lambda, the high-polynomail model no longer games the training set.  The penalty on the coefficients means that it can still change theta to drive substantially better RMSE, but can no longer wildly swing theta in pursuit of small gains in RMSE (in essence, what an overfit is).  While this is a highly artificial example, it is also illustrative of the variance issue and use of regularization to address it.  
+  
