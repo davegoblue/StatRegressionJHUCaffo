@@ -1258,3 +1258,23 @@ par(mfrow=c(1, 1))
   
 With even modest lambda, the high-polynomail model no longer games the training set.  The penalty on the coefficients means that it can still change theta to drive substantially better RMSE, but can no longer wildly swing theta in pursuit of small gains in RMSE (in essence, what an overfit is).  While this is a highly artificial example, it is also illustrative of the variance issue and use of regularization to address it.  
   
+###_Skewed Data_  
+When looking for a rare outcome, accuracy becomes a very poor measure.  For example, if 1% of a population being tested has cancer, you could drive 99% accuracy just by returning a "no cancer" diagnosis.  In reality, achieving the "no information rate" accuracy is no achievement at all.  While caret::confusionMatrix() helps by displaying the NIR and p > NIR statistics, there are some other ways to calculate goodness of fit when there are skewed outcomes.  Suppose we look at three outcomes:  
+  
+* True Positive (TP) - we predict y=1 when the correct answer is y=1  
+* False Positive (FP) - we predict y=1 when the correct answer is y=0  
+* False Negative (FN) - we predict y=0 when the correct answer is y=1  
+  
+We can then base a few ratios off these:  
+  
+* Precision (aka Positive Predictive Value): TP / (TP + FP), or "of all our y=1 predictions, how many are truly y=1?"  
+* Recall (aka Sensitivity): TP / (TP + FN), or "of all real-world y=1, how many do we predict to be y=1?"  
+* F1 score = (2 * P * R) / (P + R), which will tend towards 100% when P=R=1 and will tend torward 0% as either P=0 or R=0  
+  
+###_Large Data Notes_  
+Banko and Brill (2001) studied various algorithms for making predictions about language usage given context in a sentence (e.g., "to" or "too" or "two").  They found that their algorithms all had similar accuracies and that their algorithms all become better with a larger training dataset.  This finding has been replicated in many other settings, driving the expression "Who has the best data is who wins, not who has the best algorithm".  
+  
+A general test for whether more training data would be useful is "could a human expert solve this problem if I gave them the input features x".  If yes, then the more training data we gave the machine, the closer the machine will come to matching human-expert predictions.  
+  
+While discussed previously, this is largely based on the bias-variance trade-off.  A model with bias (too few features and/or the wrong features) will have high training error and high testing error.  The typical approach is to create additional features to drive down the bias.  While more features increases the risk of variance (over-fitting), a very large training set highly mitigates these overfitting risks.  Basically, a large training set lets you minimize bias (add a lot of features) while keeping variance low.  
+  
