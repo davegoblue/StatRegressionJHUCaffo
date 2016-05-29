@@ -35,3 +35,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 26-MAY-2016 - Neural network back-propagation completed and initial bias/variance example    
 * 27-MAY-2016 - Expanded bias/variance example    
 * 28-MAY-2016 - Regularization for variance example    
+* 29-MAY-2016 - Precision/Recall/F1; Large Data Advantages      
