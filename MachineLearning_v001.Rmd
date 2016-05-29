@@ -1278,3 +1278,74 @@ A general test for whether more training data would be useful is "could a human 
   
 While discussed previously, this is largely based on the bias-variance trade-off.  A model with bias (too few features and/or the wrong features) will have high training error and high testing error.  The typical approach is to create additional features to drive down the bias.  While more features increases the risk of variance (over-fitting), a very large training set highly mitigates these overfitting risks.  Basically, a large training set lets you minimize bias (add a lot of features) while keeping variance low.  
   
+###_Large Margin Classification (Support Vector Machines aka SVM)_  
+The Support Vector Machine (SVM) is a clever play on logistic regression that drives the largest possible margins between positive and negative classes of data.  Of particular note, the SVM need not draw linear boundaries, so it can be a powerful method for teasing out non-linear connections in the training set.  
+  
+As a recall, the logistic regression has the following:  
+  
+* z = t(theta) * X
+* g(z) = 1 / ( 1 + exp(-z) )  is called the gaussian of z  
+* h(x) = g(z), so when y=1 we want t(theta) * X >> 0 and when y=0 we want t(theta) * X << 0  
+  
+The trick of SVM is to use a linear cost function, with cutoffs at +1 (for y=1) and -1 (for y=0).  This means that if the SVM can find z >= 1 for all true positives and z <= -1 for all true negatives, then it will have a zero cost.  As it happens, the maths behind this cost calculation are computationally cheap also.
+  
+* LOGIT:  min J = (1/m) * sum-over-each-observation [ y * (-log(h(x))) + (1 - y) * (-log(1 - h(x))) ] + (lambda/(2 * m)) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM: min J = (1/m) * sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + (lambda/(2 * m)) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM MOD (kill 1/m by convention): min J = sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + (lambda/2) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM MOD (use c*Error + theta^2): min J = c * sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + 0.5 * sum-over-all-but-theta0-of ( theta^2 )  
+  
+Notably, the SVM does not return any probabilities.  Instead it returns 1 if t(theta) * X >= 0 and 0 if t(theta) * X < 0.  
+  
+The SVM is referred to as a "large margin" classifier since it has a strong preference for abs(t(thata) * X) >= 1, the region where all correct predictions have zero cost.  More specifically:  
+  
+* min 0.5 * sum( theta^2 ) s.t. t(theta) * X >= 1 (where y=1)  
+* min 0.5 * sum( theta^2 ) s.t. t(theta) * X <= -1 (where y=0)  
+  
+The larger the value of c (which behaves a lot like 1/lambda), the wider the margin the SVM will try to create between the positive and negative data.  One watchout is that this can be very sensitive to outliers, so cross-validation and careful setting of c can be important.  
+  
+A simple example of the SVM can be based on a small Octave dataset available from the Ng Machine Learning (Coursera) Week 7 problem set:  
+  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week07/"  # Using relative path
+wgtData <- "ex6data1.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $x and $y
+
+svmX <- listWgtData$X  # First item in the list should be 51x2
+svmY <- listWgtData$y  # Second item in the list (y) should be 51x1
+
+str(svmX)  # Check that 51x2 and matricized
+str(svmY)  # Check that 51x1 and matricized
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+```
+  
+Basic SVM uses a "linear kernel" (more about kernels in the next section).  These are available in R through the "kernlab" library.  We run kernlab::ksvm() using type "C-svc" (C classification) and kernel "vanilladot" (linear kernel):  
+```{r}
+library(kernlab)
+
+
+# Run with C=1
+svmLinear001 <- ksvm(svmX, svmY, type="C-svc", kernel="vanilladot", C=1)
+plot(svmLinear001, data=svmX, main="SVM for C=1 (scaled inputs")
+w001 <- colSums(coef(svmLinear001)[[1]] * svmX[alphaindex(svmLinear001)[[1]],])
+b001 <- b(svmLinear001)
+
+# Run with C=100
+svmLinear100 <- ksvm(svmX, svmY, type="C-svc", kernel="vanilladot", C=100)
+plot(svmLinear100, data=svmX, main="SVM for C=100 (scaled inputs")
+w100 <- colSums(coef(svmLinear100)[[1]] * svmX[alphaindex(svmLinear100)[[1]],])
+b100 <- b(svmLinear100)
+
+
+plot(scale(svmX), col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+abline(b001/w001[1], -w001[2]/w001[1], lty=1, lwd=2, col="blue")
+abline(b100/w100[1], -w100[2]/w100[1], lty=1, lwd=2, col="purple")
+
+```
+  
+This will need further research and exploration!  The concept is clear, but the implementation not so much.
