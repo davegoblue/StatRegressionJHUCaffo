@@ -1324,28 +1324,31 @@ str(svmY)  # Check that 51x1 and matricized
 plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
 ```
   
-Basic SVM uses a "linear kernel" (more about kernels in the next section).  These are available in R through the "kernlab" library.  We run kernlab::ksvm() using type "C-svc" (C classification) and kernel "vanilladot" (linear kernel):  
+Basic SVM uses a "linear kernel" (more about kernels in the next section).  These are available in R through the "e1071" and "kernlab" libraries.  In this example, we run e1071::svm() using type "C-classification" and kernel "linear", while exploring how results change with "cost" (Lagrange forumulation C) parameter:  
 ```{r}
-library(kernlab)
+library(e1071)
 
 
 # Run with C=1
-svmLinear001 <- ksvm(svmX, svmY, type="C-svc", kernel="vanilladot", C=1)
-plot(svmLinear001, data=svmX, main="SVM for C=1 (scaled inputs")
-w001 <- colSums(coef(svmLinear001)[[1]] * svmX[alphaindex(svmLinear001)[[1]],])
-b001 <- b(svmLinear001)
+svmLinear001 <- svm(svmX, svmY, type="C-classification", kernel="linear", cost=1, scale=FALSE)
+w001 <- t(svmLinear001$coefs) %*% svmX[svmLinear001$index,]
+b001 <- -svmLinear001$rho
 
 # Run with C=100
-svmLinear100 <- ksvm(svmX, svmY, type="C-svc", kernel="vanilladot", C=100)
-plot(svmLinear100, data=svmX, main="SVM for C=100 (scaled inputs")
-w100 <- colSums(coef(svmLinear100)[[1]] * svmX[alphaindex(svmLinear100)[[1]],])
-b100 <- b(svmLinear100)
+svmLinear100 <- svm(svmX, svmY, type="C-classification", kernel="linear", cost=100, scale=FALSE)
+w100 <- t(svmLinear100$coefs) %*% svmX[svmLinear100$index,]
+b100 <- -svmLinear100$rho
 
 
-plot(scale(svmX), col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
-abline(b001/w001[1], -w001[2]/w001[1], lty=1, lwd=2, col="blue")
-abline(b100/w100[1], -w100[2]/w100[1], lty=1, lwd=2, col="purple")
+plot(svmX, col=1+svmY[,1], pch=19, cex=2, 
+     main="Example (Red for Input Y=1) Linear SVM Decision Boundaries"
+     )
+abline(-b001/w001[,2], -w001[,1]/w001[,2], lty=1, lwd=2, col="blue")
+abline(-b100/w100[,2], -w100[,1]/w100[,2], lty=1, lwd=2, col="purple")
+legend("bottomleft", legend=c("C=1", "C=100"), lty=1, lwd=2, col=c("blue", "purple"))
 
 ```
   
-This will need further research and exploration!  The concept is clear, but the implementation not so much.
+Within this implementation, as the cost (C) increases, the model increasingly searches for a decision boundary to minimize classification errors.  With a smaller C, the model looks to maximize the margin between the cloud of positive points and negative points.  More or less, high C risks high variance, while low C risks high bias.  A good CV process would be helpful for tuning and tradeoffs.
+  
+###_Kernels_  
