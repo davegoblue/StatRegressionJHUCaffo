@@ -1352,3 +1352,85 @@ legend("bottomleft", legend=c("C=1", "C=100"), lty=1, lwd=2, col=c("blue", "purp
 Within this implementation, as the cost (C) increases, the model increasingly searches for a decision boundary to minimize classification errors.  With a smaller C, the model looks to maximize the margin between the cloud of positive points and negative points.  More or less, high C risks high variance, while low C risks high bias.  A good CV process would be helpful for tuning and tradeoffs.
   
 ###_Kernels_  
+Kernels are the process of defining "features" about certain points in the training set, then definining "similarity" of other points.  For example:   
+  
+* Suppose you pick three points - L1, L2, and L3 - and define these to be your landmarks  
+* Then, for a given x, define the "similarity" of x with L1 based on the euclidean distance from x-to-L1, or length(x - L1)  
+* For "Gaussian" kernel f1, sometimes noted k(x, L(1)), use f1 = exp( -(length(x-to-L1)^2) / (2 * sigma^2) )  
+* In general, then, f1 will be near 1 for points close to L1 and near 0 for points far from L1, with sigma definining the rate of drop-off  
+* In essence, then, you get some contours around L1, L2, and L3  
+  
+The kernels concept can be generalized to the full training set by creating a new features vector for all train, CV, and test data points:  
+  
+* Define every training data point to be a landmark (L1 = x1, L2 = x2, L3 = x3, etc.)  
+* For every x(i), define f(i)1 = k(x1, L1), f(i)2 = k(x2, L2), . . . , f(i)n = k(xn, Ln)  
+* Then, x(i) becomes a feature vector f0, f1, f2, . . . , fn, where f0 defaults as the bias (always 1) unit  
+  
+SVM can be run with this kernel.  Specifically, calibrate Theta with an eye towards predicting y=1 iff t(Theta) * f >= 0.  Largely as before:  
+  
+* minimize { C * sum-over-all-points-of [ y(i) * cost1( t(theta) * f(i) ) + (1 - y(i)) * cost0( t(theta) * f(i) ) ] + 0.5 * sum( theta^2 ) } - recall that theta0 is by convention not penalized  
+* sum( theta^2 ) can be re-written as t(theta) * theta, provided theta0 has been excluded  
+* High C and/or low sigma mean high variance and low bias  
+* Low C and/or high sigma mean low variance and high bias  
+  
+In practice, there are several considerations about using kernels with SVM.  
+  
+* Libraries have largely been optimized - use these pre-optimized approaches, much as you would for matrix inversion and the like  
+* Linear kernels can be good when there are a large number of features with a small number of samples  
+* Gaussian kernels can be good when there are a small number of features with a large number of samples  
+* Multi-class classification is typically built in to the kernel software; if not, then use the "one vs. all" method and pick the class with the highest t(theta) * x  
+  
+A related question is when to use logistic regression rather than SVM.  Some suggestions for n features with m observations include:  
+  
+* For n > m (e.g., spam classification), use logistic regression or SVM with no kernel (linear kernel)  
+* For n of 1-1,000 with m of 10-10,000, try SVM with a Gaussian kernel  
+* For n of 1-1,000 with m of 50,000+, create new features and run logit or SVM with a linear kernel  
+* Large m is a particular problem for many of the kernel algorithms  
+  
+Logistic regression and linear kernels have many similarities, and the power of the kernel is typically in learning about non-linear relationships.  Neural networks can work well in similar environments as kernels, though the kernel may be easier (less computationally expensive) to train than the neural network.  
+  
+An example of a highly non-linear pattern includes:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week07/"  # Using relative path
+wgtData <- "ex6data2.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $x and $y
+
+svmX <- listWgtData$X  # First item in the list should be 863x2
+svmY <- listWgtData$y  # Second item in the list (y) should be 863x1
+
+str(svmX)  # Check that 863x2 and matricized
+str(svmY)  # Check that 863x1 and matricized
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+```
+  
+We now run the data through the Gaussian kernel, choosing C=1 and sigma=0.1:  
+```{r}
+# Model implements as gamma * length rather than length / (2 * sigma^2)
+# Want length(2 * .1^2) = length * 50, so gamma=50
+svmRadial001 <- svm(svmX, svmY, type="C-classification", kernel="radial", cost=1, gamma=50, scale=FALSE)
+
+x1Range <- max(svmX[ , 1]) - min(svmX[ , 1])
+x2Range <- max(svmX[ , 2]) - min(svmX[ , 2])
+x1Min <- min(svmX[ , 1])
+x2Min <- min(svmX[ , 2])
+
+testX <- matrix(data=0, nrow=10000, ncol=2)
+
+testX[, 1] <- ((0:9999) %/% 100) * (x1Range / 99) + x1Min
+testX[, 2] <- ((0:9999) %% 100) * (x2Range / 99) + x2Min
+
+decY <- predict(svmRadial001, newdata=testX)
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+points(testX, col=as.integer(decY), cex=0.3)
+
+```
+  
+So, the Gaussian kernel does a nice job finding the non-linear boundary given this particular dataset.  A related question is how well this would work on a train-CV-test dataset.  
+  
+###_Clustering_  
