@@ -1426,7 +1426,7 @@ testX[, 2] <- ((0:9999) %% 100) * (x2Range / 99) + x2Min
 
 decY <- predict(svmRadial001, newdata=testX)
 
-plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=1, main="SVM Sample Data (Red for Y=1)")
 points(testX, col=as.integer(decY), cex=0.3)
 
 ```
@@ -1434,3 +1434,70 @@ points(testX, col=as.integer(decY), cex=0.3)
 So, the Gaussian kernel does a nice job finding the non-linear boundary given this particular dataset.  A related question is how well this would work on a train-CV-test dataset.  
   
 ###_Clustering_  
+Most of the examples so far have been "supervised learning", meaning that we told the computer the right answers for the training data and asked it to tune algorithms to drive better fits to these right answers.  Clustering on the other hand is an example of "unsupervised learning", meaning that we just give the computer the raw data but not the answer.  Clustering is commonly run when the goal is to identify groups that behave like each other.  Examples could be customer segmentation, social network analysis, or astronomy.  
+  
+K-means is one of the most common forms of clustering.  The algorithm works as follows:  
+  
+* Assume you have m observations each consisting of a length-n vector of features  
+* Choose K centroids and specify an initial position for each centroid  
+* REPEAT START: Assign each point to the nearest centroid  
+* REPEAT CONTINUE: Move the centroid position to the average of its members  
+* REPEAT END: Upon hitting convergence  
+* REPEAT CAUTION:  If a cluster has zero data points, either delete it (down to K-1 clsuters total) or make a new random centroid  
+  
+The k-means optimization function is to minimize the "distortion", defined as the average euclidean distance between every point and its centroid.  It can be shown mathematically that the steps described above continually decrease the distortion, though it is possible to get trapped by local minima.  
+  
+A common approach is to run the k-means clustering multiple times, keeping only the final clusters with the "best" distortion cost.  Specifically, it is common to just pick K training data points and use these as the starting centroids.  There is no perfect method of picking the number of clusters, K.  While it is possible to plot distortion cost vs. K, there is not always an obvious point of diminishing returns.  As such, domain expertise becomes very valuable at this stage.  
+  
+An example is again drawn from the Ng Coursera Octave files:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week08/"  # Using relative path
+wgtData <- "ex7data1.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with one item, $X
+
+kMeansX <- listMATData$X  # First item in the list should be 50x2
+str(kMeansX)  # Check that 50x2 and matricized
+plot(kMeansX, pch=19, cex=2, main="K-Means Raw Data")
+
+K = 3  # Default to 3 clusters
+
+# Make a place to store each distance and the final cluster
+kMeansX <- cbind(kMeansX, matrix(data=NA, nrow=nrow(kMeansX), ncol=K+1))  
+kCost <- NA
+
+foo <- function(x, fixedPoint) { sum((x - fixedPoint)^2) }
+
+set.seed(2016053119)
+
+# Try 1 run to find the best clusters
+kCentroids <- kMeansX[sample(nrow(kMeansX), K), 1:2]
+    
+# Iterate 10 times each
+for (intCtr2 in 1:10) {
+    for (kCtr in 1:K) {
+        kMeansX[ , 2+kCtr] <- apply(kMeansX[, 1:2], 1, FUN=foo, fixedPoint=kCentroids[kCtr, ])
+    }
+    kMeansX[ , ncol(kMeansX)] <- apply(kMeansX[, 3:(ncol(kMeansX)-1)], 1, FUN=which.min )
+    kCentroids[ , 1] <- tapply(kMeansX[, 1], kMeansX[, ncol(kMeansX)], FUN=mean)
+    kCentroids[ , 2] <- tapply(kMeansX[, 2], kMeansX[, ncol(kMeansX)], FUN=mean)
+}
+
+plot(kMeansX[ , 1:2], pch=19, cex=2, main="K-Means Clusters", col=1 + kMeansX[ , ncol(kMeansX)])
+
+```
+  
+The single-run algorithm grouped a few outliers (red) as well as splitting low (green) vs. high (blue).  Of interest is how well this compares with the pre-programmed R routine:  
+```{r}
+rKMeans <- kmeans(kMeansX[ , 1:2], centers=K)
+plot(kMeansX[ , 1:2], pch=19, cex=2, main="K-Means Clusters", col=1 + kMeansX[ , ncol(kMeansX)])
+points(kMeansX[ , 1:2], pch=19, cex=1, col=4 + rKMeans$cluster)
+
+```
+  
+And, it is obvious that the clusters do not always converge to the same global minima.  
+  
+###_Dimension Reduction Background_  
