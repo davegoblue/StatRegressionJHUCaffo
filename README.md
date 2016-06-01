@@ -38,4 +38,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 29-MAY-2016 - Precision/Recall/F1; Large Data Advantages; Initial SVM      
 * 30-MAY-2016 - Refined Linear SVM (e1071)  
 * 31-MAY-2016 - Gaussian kernel SVM (e1071) and k-means  
-* 01-JUN-2016 - Data compression background; image RGB k-means  
+* 01-JUN-2016 - Data compression background; image RGB k-means; PCA background  
