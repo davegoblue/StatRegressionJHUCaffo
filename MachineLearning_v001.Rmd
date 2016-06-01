@@ -1501,3 +1501,50 @@ points(kMeansX[ , 1:2], pch=19, cex=1, col=4 + rKMeans$cluster)
 And, it is obvious that the clusters do not always converge to the same global minima.  
   
 ###_Dimension Reduction Background_  
+Dimension reduction is the idea that it may not take all n features to richly describe the data, particularly when there are strong correlations (and thus redundancies) among some combinations of features.  There are typically two main objectives behind dimension reduction:  
+  
+1.  Data compression for faster processing time - if 100 features describe the data nearly as well as 1,000 features, saving ~90% of the disk space, memory, CPU time, etc., may be warranted  
+2.  Visulaization - since humans are typically limited to 2D (perhaps 3D with nice graphics) visuals, finding 2-3 dimensions that strongly describe the data can be attractive.  For example, with OECD data there could be a "size" dimension and a "per capita" dimension  
+  
+As an example, the k-means algorithm can be used for image compression, again using data from the Ng Coursera modules:  
+```{r}
+library(png)
+
+matPath <- "../../../OctaveDirectory/Week08/"  # Using relative path
+birdData <- "bird_small.png"
+
+birdArray <- readPNG(paste0(matPath, birdData))
+birdSize <- dim(birdArray)[1]
+
+posX <- numeric(birdSize^2)
+posY <- numeric(birdSize^2)
+
+for (intCtr in 1:(birdSize^2)) {
+    posX[intCtr] <- (intCtr-1) %/% birdSize
+    posY[intCtr] <- (intCtr-1) %% birdSize
+}
+
+par(mfrow=c(1,2))
+
+# Original bird plot
+plot(posX, -posY, col=rgb(birdArray[,,1], birdArray[,,2], birdArray[,,3]), pch=19, 
+     xaxt="n", yaxt="n", main="Original Image", xlab="", ylab=""
+     )
+
+# Run k-means on the colors to pick out just the "best" 32
+birdKMeans <- kmeans(matrix(data=aperm(birdArray), ncol=3, byrow=TRUE), centers=32)
+
+plot(posY, -posX, col=rgb(birdKMeans$centers[birdKMeans$cluster, 1], 
+                          birdKMeans$centers[birdKMeans$cluster, 2], 
+                          birdKMeans$centers[birdKMeans$cluster, 3] 
+                          ), 
+     pch=19, xaxt="n", yaxt="n", main="Compressed Image", xlab="", ylab=""
+     )
+
+par(mfrow=c(1,1))
+
+```
+  
+So, even with this small picture, it is possible to compress the RGB grid down to a single color, saving ~65% of the space for the image.  There is a modest space needed to store the kMeans object, offset by no longer needing to store the full color palette for each pixel.  There is also some data loss.
+  
+###_Principal Component Analysis (PCA)_  
