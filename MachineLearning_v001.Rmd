@@ -1527,7 +1527,7 @@ for (intCtr in 1:(birdSize^2)) {
 par(mfrow=c(1,2))
 
 # Original bird plot
-plot(posX, -posY, col=rgb(birdArray[,,1], birdArray[,,2], birdArray[,,3]), pch=19, 
+plot(posX, -posY, col=rgb(birdArray[,,1], birdArray[,,2], birdArray[,,3]), pch=15, 
      xaxt="n", yaxt="n", main="Original Image", xlab="", ylab=""
      )
 
@@ -1538,7 +1538,7 @@ plot(posY, -posX, col=rgb(birdKMeans$centers[birdKMeans$cluster, 1],
                           birdKMeans$centers[birdKMeans$cluster, 2], 
                           birdKMeans$centers[birdKMeans$cluster, 3] 
                           ), 
-     pch=19, xaxt="n", yaxt="n", main="Compressed Image", xlab="", ylab=""
+     pch=15, xaxt="n", yaxt="n", main="Compressed Image", xlab="", ylab=""
      )
 
 par(mfrow=c(1,1))
@@ -1548,3 +1548,51 @@ par(mfrow=c(1,1))
 So, even with this small picture, it is possible to compress the RGB grid down to a single color, saving ~65% of the space for the image.  There is a modest space needed to store the kMeans object, offset by no longer needing to store the full color palette for each pixel.  There is also some data loss.
   
 ###_Principal Component Analysis (PCA)_  
+PCA is a common technique for data compression.  The problem objective is to minimize the sum-squared distances (project errors) to the project line.  Feature scaling/normalization to mean=0, sd=1 is nearly always applied prior to PCA.  By convention, the projection vectors are denoted as "u".  
+  
+While the actual algorithm is fairly complex, it is well-implemented as one of the results of running SVD (singular vector decomposition).  In R, this is implemented as base::svd(), returning a list with:  
+  
+* $u, the left singular vectors  
+* $d, the values of the diagonal matrix  
+* $v, the right singular vectors  
+  
+A few properties include:  
+
+* The sum of the first n $d^2 divided by the total sum($d^2) describes the total variance captured by the first n principal components  
+* X = U % * % diag(D) % * % t(V)  
+* D = t(U) % * % X % * % V
+  
+For example, continuing with the bird RGB data:  
+```{r}
+par(mfrow=c(1,2))
+
+
+birdColors <- matrix(data=aperm(birdArray), ncol=3, byrow=TRUE)
+plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(birdColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Original"
+     )
+
+# Run SVD
+svdColors <- svd(birdColors)
+
+# Verify decomposition
+reconColors <- svdColors$u %*% diag(svdColors$d) %*% t(svdColors$v)
+reconColors[which(reconColors > 1)] <- 1
+plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(reconColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Reconstructed"
+     )
+
+# Verify diagnonal
+reconD <- t(svdColors$u) %*% birdColors %*% svdColors$v
+diag(reconD) - svdColors$d
+
+par(mfrow=c(1,1))
+
+```
+  
+And, suppose that you then wanted to just take the first singular value and do a mapping against that:  
+```{r}
+# Take just the first column
+uReduce <- svdColors$u[,1,drop=FALSE]
+```
+
