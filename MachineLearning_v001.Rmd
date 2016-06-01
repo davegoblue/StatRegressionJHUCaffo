@@ -1558,7 +1558,7 @@ While the actual algorithm is fairly complex, it is well-implemented as one of t
   
 A few properties include:  
 
-* The sum of the first n $d^2 divided by the total sum($d^2) describes the total variance captured by the first n principal components  
+* The sum of the first n $d divided by the total sum($d) describes the total variance captured by the first n principal components  
 * X = U % * % diag(D) % * % t(V)  
 * D = t(U) % * % X % * % V
   
@@ -1593,6 +1593,44 @@ par(mfrow=c(1,1))
 And, suppose that you then wanted to just take the first singular value and do a mapping against that:  
 ```{r}
 # Take just the first column
-uReduce <- svdColors$u[,1,drop=FALSE]
-```
+maxSVD <- 3
 
+par(mfrow=c(2, 2))
+defMar <- par()$mar
+par(mar=c(1.1, 0, 1.1, 0))
+
+
+plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(birdColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Original"
+     )
+
+# Run the compressions
+picSVD <- vector("list", maxSVD)
+for (intCtr in 1:maxSVD) {
+    picSVD[[intCtr]] <- svdColors$u[ ,1:intCtr] %*% 
+                        diag(svdColors$d[1:intCtr], nrow=intCtr) %*% 
+                        t(svdColors$v[, 1:intCtr])
+
+    picSVD[[intCtr]][which(picSVD[[intCtr]] > 1)] <- 1
+    plot((0:16383) %% 128, -(0:16383) %/% 128, 
+         col=rgb(matrix(data=aperm(picSVD[[intCtr]]), ncol=3, byrow=TRUE)), 
+         pch=15, axes=FALSE, xlab="", ylab="", main=paste0("Using ", intCtr, " PCA")
+         )
+        
+}
+
+
+par(mar=defMar)
+par(mfrow=c(1, 1))
+
+```
+  
+In this case, the first PCA is primarily capturing the grayscale of the image, which is very accurate as to features.  The second PCA pulls in a good chunk of the colors, while the third PCA brings back the full image.  This could be especially advantageous if the image were large and the colors were not just described by a simple RGB.  
+  
+Often, PCA are captured only until 90%, 95%, or 99% of the total variation in the raw data is retained.  Algorithms can then be run on the smaller subspace of features post-PCA.  A few other notes about PCA:  
+  
+* PCA should only be run on the training data, with resulting SVD used to transform test data as needed  
+* It is common to get a 5x or 10x reduction in data sizes (and thus processing times) using PCA  
+* However, PCA is not a panacea and should be considered after some exploratory analysis.  If the project can be feasibly completed (run times, memory, etc.) without PCA, then that is frequently for the better  
+  
+###_Density Estimation and Anomalies_
