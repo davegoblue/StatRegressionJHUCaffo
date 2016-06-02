@@ -1759,3 +1759,117 @@ In this example, the algorithm flags 6 points in the training data as anomalies.
 In this example, the algorithm correctly flags 6 points in the CV data as anomalies, avoids classifying any normal data as anomalies, and fails to identify 2 actual anomalies.  Since these 2 anomalies are close to tge center of the cloud, there may be a missing feature.  This would be ideal to explore further with a domain expert.  
   
 ###_Multivariate Gaussian Distribution_  
+The multivariate Gaussian is an extension to anomaly detection where the algorithm can automatically detect correlations among the features (no longer need to assume feature independence).  The key change for the multivariate Gaussian approach is to model p(x) all in a single go:  
+  
+* Define mu to be an nx1 vector of the column means  
+* Define Sigma to be an nxn covariance matrix for the columns  
+* p(x ; mu, Sigma) = ( 1 / [ (2 * pi)^(n/2) * sqrt(length(Sigma)) ] ) * exp[ -0.5 * t((x - mu) % * % solve(Sigma) % * % (x - mu) ]  
+* length(Sigma) is defined as being the determinant of Sigma  
+* Off-diagnonals in the Sigma matrix will tend to force correlations (clouds) among the data entries  
+  
+The multivariate Gaussian is generally best if m is not too large (due to computational expense) and m >> n (typically, Ng suggests m at least 10xn).  In practice, the original model is often used, with new features created if a key ratio is important.  An example is included, again from Ng Coursera:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8data2.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with three items, $X, $Xval, $yval
+
+trainX <- listMATData$X
+cvX <- listMATData$Xval
+cvY <- listMATData$yval
+
+str(trainX)  # Validate that 1000x11 matrix
+str(cvX)  # Validate that 100x11 matrix
+str(cvY)  # Validate that 100x1 matrix
+
+```
+  
+First, we calculate mu and Sigma based on the training data, as well as the associated inverse/determinant for Sigma.  We then apply these to get probabilities for the training and CV data:  
+```{r}
+muTrain <- apply(trainX, 2, FUN=mean)  ## Should be 1x11 since trainX is mx11
+bigSigma <- cov(trainX)  ## Should be 11x11 since trainX is mx11
+invSigma <- solve(bigSigma)
+detSigma <- det(bigSigma)
+
+multSigma <- 1 / ( (2 * pi)^(0.5 * ncol(trainX)) * sqrt(detSigma) )
+
+foo <- function(x, mu, invSigma) { 
+    exp( -0.5 * ( matrix(data=(x - mu), ncol=length(x)) %*% invSigma %*% 
+                  matrix(data=(x - mu), nrow=length(x)) 
+                 ) 
+        ) 
+}
+
+pTrain <- multSigma * apply(trainX, 1, FUN=foo, mu=muTrain, invSigma=invSigma)
+probCV <- multSigma * apply(cvX, 1, FUN=foo, mu=muTrain, invSigma=invSigma)
+
+
+par(mfrow=c(1,2))
+
+
+plot(log10(pTrain), col=1 + (log10(pTrain) < -20), pch=19, 
+     main="Train Data (Red: Possible Anomaly)", cex.main=0.75, ylab="Log10 (Probability)"
+     )
+abline(h=-20, lty=2)
+
+plot(log10(probCV), col=1 + (log10(probCV) < -20), pch=19, 
+     main="CV Data (Red: Possible Anomaly)", cex.main=0.75, ylab="Log10 (Probability)"
+     )
+abline(h=-20, lty=2)
+
+
+par(mfrow=c(1,1))
+
+```
+  
+Then, run the same epsilon-finding process as above:  
+```{r}
+testF1 <- 0
+useEps <- 0
+
+for (testEps in probCV[order(probCV)][2:length(probCV)]) {
+    # Precision is TP / (TP + FP) or TP / (declared positive)
+    precCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum(probCV < testEps)
+    
+    # Recall is TP / (TP + FN) or TP / (actually positive)
+    recCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum( cvY == 1 )
+    
+    # F1 = 2 * P * R / (P + R)
+    f1CV <- 2 * precCV * recCV / (precCV + recCV)
+    
+    if (f1CV > testF1) {
+        useEps <- testEps
+        testF1 <- f1CV
+    }
+}
+
+print(paste0("Best fit found at log10(epsilon): ", round(log10(useEps),2)," driving CV F1=", round(testF1,3)))
+
+
+par(mfrow=c(1,2))
+
+
+yLim <- c( floor(log10(min(probCV, pTrain))), 4 + ceiling(log10(max(probCV, pTrain))) )
+
+plot(log10(pTrain), col=1 + (pTrain < useEps), pch=19, cex=1 + (pTrain < useEps),
+     main="Train Data (Red: Declared Anomaly - Multivariate)", cex.main=0.75, ylim=yLim, ylab="Log10 (Prob)"
+     )
+
+plot(log10(probCV), col=1 + (probCV < useEps), pch=19, cex=1 + (probCV < useEps),
+     main="CV Data (Red: Declared Anomaly - Multivariate)", cex.main=0.75, ylim=yLim, ylab="Log10 (Prob)"
+     )
+keyX <- which(cvY == 1)
+points(keyX, log10(probCV[keyX]), pch=19, col="lightblue")
+legend("top", legend=c("Known Anomaly", "Known OK"), pch=19, col=c("lightblue", "black"))
+
+
+par(mfrow=c(1,1))
+
+```
+  
+In this case, the algorithm detects 6 of the 10 anomalies in the CV data while never falsely detecting a non-anomaly.  Consulting with a domain expert about the 4 missed anomalies could help improve the F1 score.  
+  
+###_Recommender Systems_  
