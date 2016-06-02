@@ -1568,7 +1568,7 @@ par(mfrow=c(1,2))
 
 
 birdColors <- matrix(data=aperm(birdArray), ncol=3, byrow=TRUE)
-plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(birdColors), 
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(birdColors), 
      pch=15, axes=FALSE, xlab="", ylab="", main="Original"
      )
 
@@ -1578,7 +1578,7 @@ svdColors <- svd(birdColors)
 # Verify decomposition
 reconColors <- svdColors$u %*% diag(svdColors$d) %*% t(svdColors$v)
 reconColors[which(reconColors > 1)] <- 1
-plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(reconColors), 
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(reconColors), 
      pch=15, axes=FALSE, xlab="", ylab="", main="Reconstructed"
      )
 
@@ -1600,7 +1600,7 @@ defMar <- par()$mar
 par(mar=c(1.1, 0, 1.1, 0))
 
 
-plot((0:16383) %% 128, -(0:16383) %/% 128, col=rgb(birdColors), 
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(birdColors), 
      pch=15, axes=FALSE, xlab="", ylab="", main="Original"
      )
 
@@ -1612,7 +1612,7 @@ for (intCtr in 1:maxSVD) {
                         t(svdColors$v[, 1:intCtr])
 
     picSVD[[intCtr]][which(picSVD[[intCtr]] > 1)] <- 1
-    plot((0:16383) %% 128, -(0:16383) %/% 128, 
+    plot((0:16383) %% 128, -((0:16383) %/% 128), 
          col=rgb(matrix(data=aperm(picSVD[[intCtr]]), ncol=3, byrow=TRUE)), 
          pch=15, axes=FALSE, xlab="", ylab="", main=paste0("Using ", intCtr, " PCA")
          )
@@ -1634,3 +1634,128 @@ Often, PCA are captured only until 90%, 95%, or 99% of the total variation in th
 * However, PCA is not a panacea and should be considered after some exploratory analysis.  If the project can be feasibly completed (run times, memory, etc.) without PCA, then that is frequently for the better  
   
 ###_Density Estimation and Anomalies_
+Anomaly detection is a common unsupervised machine learning problem, for example in fraud detection or monitoring a group of servers.  The main thrust is to identify anomalies that merit follow-up by a human, as opposed to supervised learning where the main goal is often accuracy.  That is not to say that accuracy does not matter; crying wolf is still a big problem (e.g., declining too many valid credit card charges).  Rather it is to say that the algorithm is just looking for things that differ from normal.  
+  
+The Gaussian distribution is commonly used.  Suppose you have n features about m historical observations, and categorize these as x(1), x(2), . . . , x(m).  Suppose also that each of the features can be assumed to be normal with mean mu and standard deviation sigma.  For each of the histoircal features:  
+  
+* mu = (1/m) * sum( feature )  
+* sigma = (1/m) * sum( (feature - mu)^2 ), noting that machine learning usually uses 1/m rather than 1/(m-1)  
+* p(x; mu, sigma) = ( 1 / [ sqrt(2 * pi) * sigma ] ) * exp[ -(x - mu)^2 / (2 * sigma^2) ]  
+  
+That is to say that the normal pdf (dnorm) provides some guidance as to how likely this specific occurence is.  Note that in this case we are not using the typical "area under the curve" from statistics.  Instead, we look at the actual probability from dnorm().  
+  
+Suppose we have an unlabeled training set with independent features (the next section covers the case of dependent features).  Then, we can define p(x) = p(x1; mu1, sigma1) * p(x2; mu2, sigma2) * . . . * p(xn; mun, sigman), commonly format as p(x) = PI ( p(xj; muj, sigmaj) ).  The algorithm is then fairly simple:  
+  
+* Choose a set of features of interest  
+* Find mu and sigma based on a relevant reference dataset (ideally, iid from all "good" or "normal" conditions, though that is not strictly required)  
+* Given any new example, calculate p(x) = PI ( p(xj; muj, sigmaj) ), where PI means "product over"  
+* Declare an anomaly any time p(x) < epsilon, with epsilon driving the ratio between false positives (declaring normal things anomalous) and false negatives (failing to find true anomalies)  
+  
+It is very common in the anomaly detection world that the overwhelming majority of observations will not be anomalous.  This means that a good CV/Test process with a proper metric (such as F1 score) can be valuable in picking the best epsilon for the task at hand.  A common example might be:  
+  
+* 10,000 normal (good) engines have been produced along with 20 bad engines, and we have historical feature data and a true classification for each  
+* TRAIN: Common to train on 6,000 good engines  
+* CV: Common to run CV on 2,000 good engines and 10 bad engines  
+* TEST: Common to run Test on 2,000 good engines and 10 bad engines  
+  
+The TRAIN data is used to calculate mu, sigma, while the CV data is then used to calculate an epsilon with a desirable Precision, Recall, F1, etc..  The TEST data serves as guidance on expected out-of-sample results.  
+  
+Anomaly detection is preferred to supervised learning since it is hard to predict in advance which feature will be the outlier, and extremely difficult to train a model on 20 bad cases which may each be very different than all other bad cases.  Anomaly detection benefits by taking a simpler angle - it is not trying to flag that a new engine is "bad"; instead, it is flagging that the new engine looks different than the historical good engines.  There is no pre-conceived notion of how that needs to occur - it could be normal on all features but 20-sigma off on 1, or it could be 2-sigma off on all features or etc.  
+  
+Choosing the right features can be an art, and an important one.  A few guiding principles include:  
+  
+* The more Gaussian the features the better - see if a transformation can help improve a feature  
+* Ideal to see relatively large p(x) for most good cases, with much smaller p(x) for the anomalies.  If not, work with a domain expert to see if there may be a missing feature  
+* Further, see if ratios of features might make sense, again in conjunction with a domain expert.  For example, high CPU with high memory usage might be expected as might low CPU with low memory usage.  But, high CPU with low memory usage might signal an infinite loop or other condition that should be checked by a systems engineer; if so, CPU/memory could become an interesting feature  
+  
+Example data is again taken from the Ng Coursera Machine Learning course:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8data1.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with three items, $X, $Xval, $yval
+
+trainX <- listMATData$X
+cvX <- listMATData$Xval
+cvY <- listMATData$yval
+
+str(trainX)  # Validate that 307x2 matrix
+str(cvX)  # Validate that 307x2 matrix
+str(cvY)  # Validate that 307x1 matrix
+
+```
+  
+First, we calculate mu and sigma for each feature (column) of trainX, and use that to calculate the associated probabilities for each sample in the training data.  Then, we use the CV data to determine a good choice for epsilon:  
+```{r}
+muTrain <- apply(trainX, 2, FUN=mean)
+sigmaTrain <- apply(trainX, 2, FUN=sd)  # Will return 1/(m-1) rather than 1/m
+
+pTrain <- apply(dnorm(trainX, mean=muTrain, sd=sigmaTrain), 1, FUN=prod)
+
+par(mfrow=c(1,2))
+
+
+plot(log10(pTrain), pch=19, col="blue", main="Probabilities for Training Data", 
+     ylab="Log-10 Probability", xlab="Observation Number"
+     )
+abline(h=-5, lty=2, lwd=1)
+
+plot(trainX[,1], trainX[,2], col=1 + (pTrain < 10^-5), pch=19, cex=1 + (pTrain < 10^-5),
+     main="Train Data (Red: p < 10^-5)")
+
+
+par(mfrow=c(1,1))
+
+
+testF1 <- 0
+useEps <- 0
+
+probCV <- apply(dnorm(cvX, mean=muTrain, sd=sigmaTrain), 1, FUN=prod)  # Use train mu/sigma
+
+for (testEps in probCV[order(probCV)][2:length(probCV)]) {
+    # Precision is TP / (TP + FP) or TP / (declared positive)
+    precCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum(probCV < testEps)
+    
+    # Recall is TP / (TP + FN) or TP / (actually positive)
+    recCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum( cvY == 1 )
+    
+    # F1 = 2 * P * R / (P + R)
+    f1CV <- 2 * precCV * recCV / (precCV + recCV)
+    
+    if (f1CV > testF1) {
+        useEps <- testEps
+        testF1 <- f1CV
+    }
+}
+
+print(paste0("Best fit found at epsilon: ", round(useEps,8)," driving CV F1=", round(testF1,3)))
+
+
+par(mfrow=c(1,2))
+
+
+xLim <- c( floor(min(trainX[,1], cvX[,1])), ceiling(max(trainX[,1], cvX[,1])) )
+yLim <- c( floor(min(trainX[,2], cvX[,2])), ceiling(max(trainX[,2], cvX[,2])) )
+
+plot(trainX[,1], trainX[,2], col=1 + (pTrain < useEps), pch=19, cex=1 + (pTrain < useEps),
+     main="Train Data (Red: Declared Anomaly)", cex.main=0.75, xlim=xLim, ylim=yLim
+     )
+
+plot(cvX[,1], cvX[,2], col=1 + (probCV < useEps), pch=19, cex=1 + (probCV < useEps),
+     main="CV Data (Red: Declared Anomaly)", cex.main=0.75, xlim=xLim, ylim=yLim
+     )
+points(cvX[cvY == 1, 1], cvX[cvY == 1, 2], pch=19, col="lightblue")
+legend("bottomright", legend=c("Known Anomaly", "Known OK"), pch=19, col=c("lightblue", "black"))
+
+par(mfrow=c(1,1))
+
+```
+  
+In this example, the algorithm flags 6 points in the training data as anomalies.  These would be good to explore with a domain expert in the interest of potentially further tuning the model.  
+  
+In this example, the algorithm correctly flags 6 points in the CV data as anomalies, avoids classifying any normal data as anomalies, and fails to identify 2 actual anomalies.  Since these 2 anomalies are close to tge center of the cloud, there may be a missing feature.  This would be ideal to explore further with a domain expert.  
+  
+###_Multivariate Gaussian Distribution_  
