@@ -40,3 +40,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 31-MAY-2016 - Gaussian kernel SVM (e1071) and k-means  
 * 01-JUN-2016 - Data compression background; image RGB k-means; PCA background and image compression  
 * 02-JUN-2016 - Anomaly detection example (independent, multivariate Gaussian)  
+* 03-JUN-2016 - Recommender systems  
