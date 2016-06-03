@@ -1693,7 +1693,7 @@ First, we calculate mu and sigma for each feature (column) of trainX, and use th
 muTrain <- apply(trainX, 2, FUN=mean)
 sigmaTrain <- apply(trainX, 2, FUN=sd)  # Will return 1/(m-1) rather than 1/m
 
-pTrain <- apply(dnorm(trainX, mean=muTrain, sd=sigmaTrain), 1, FUN=prod)
+pTrain <- apply(dnorm(trainX/sigmaTrain, mean=muTrain/sigmaTrain, sd=1), 1, FUN=prod)
 
 par(mfrow=c(1,2))
 
@@ -1713,7 +1713,7 @@ par(mfrow=c(1,1))
 testF1 <- 0
 useEps <- 0
 
-probCV <- apply(dnorm(cvX, mean=muTrain, sd=sigmaTrain), 1, FUN=prod)  # Use train mu/sigma
+probCV <- apply(dnorm(cvX/sigmaTrain, mean=muTrain/sigmaTrain, sd=1), 1, FUN=prod)  # Use train mu/sigma
 
 for (testEps in probCV[order(probCV)][2:length(probCV)]) {
     # Precision is TP / (TP + FP) or TP / (declared positive)
@@ -1731,7 +1731,9 @@ for (testEps in probCV[order(probCV)][2:length(probCV)]) {
     }
 }
 
-print(paste0("Best fit found at epsilon: ", round(useEps,8)," driving CV F1=", round(testF1,3)))
+print(paste0("Best fit found at log10(epsilon): ", round(log10(useEps),3),
+             " driving CV F1=", round(testF1,3))
+      )
 
 
 par(mfrow=c(1,2))
@@ -1873,3 +1875,26 @@ par(mfrow=c(1,1))
 In this case, the algorithm detects 6 of the 10 anomalies in the CV data while never falsely detecting a non-anomaly.  Consulting with a domain expert about the 4 missed anomalies could help improve the F1 score.  
   
 ###_Recommender Systems_  
+A recommender system relies on input from many users to predict what products other users will like.  Good recommendations can be central to the profitability of companies like Amazon and Netflix.  As a first example, suppose that your goal is to predict how much a user will like a movie they have not yet watched, assuming that all ratings are on the 0-5 scale.  
+  
+* Call n(u) the number of users  
+* Call n(m) the number of movies  
+* Set r(i, j) = 1 whenever user j has rated movie i (0 or NA otherwise)  
+* Set y(i, j) as the rating given by user j for movie i, created only in cases where r(i, j)=1  
+* Suppose you have calculated values for features x0 (bias, always 1), x1, and x2 for each movie; x1 might be degree of romance and x2 might be degree of violence  
+* Define theta(j) as the prediction vector for user j - how do x0, x1, and x2 combine to make movies good/bad for user j?
+  
+The goal is then to learn theta(j) for every user, with a goal of minimizing the prediction costs.  Specifically:  
+  
+* J = (1 / (2 * m(j) ) * sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( lambda / (2 * m(j) )  * sum( theta^2 ), excluding theta0 from the regularization term  
+* Since m(j) is a constant for the specific user, can multiply by m(j)  
+* So, J = 0.5 * sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( 0.5 * lambda )  * sum( theta^2 ), excluding theta0 from the regularization term  
+  
+And then for all users, we would have:  
+  
+* J(theta(1), theta(2), . . . , theta(n(u)) = { 0.5 * sum-over-j-of [ sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] ] } + 0.5 * lambda * sum-over-j-of [ sum-over-k=1+ of [ theta(k)(j)^2 ] ]  
+* Gradient Descent: theta(k)(j) = theta(k)(j) - alpha * { sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * x(k)(i) ] + lambda * thata(j)(k) }, noting that lambda should never be applied if k=0  
+  
+Of course, the challenge is that this algorithm requires creating features for every movie.  This could be cumbersome and inaccurate.  On the one hand, we could ask each person to declare their own theta vector and then use that to calculate the features for each movie (using cost minimization).  But, could we instead ask the algorithm to calculate both the features and theta vector simultaneously?
+  
+###_Collaborative Filtering_  
