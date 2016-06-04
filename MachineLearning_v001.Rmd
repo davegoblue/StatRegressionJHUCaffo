@@ -1897,4 +1897,103 @@ And then for all users, we would have:
   
 Of course, the challenge is that this algorithm requires creating features for every movie.  This could be cumbersome and inaccurate.  On the one hand, we could ask each person to declare their own theta vector and then use that to calculate the features for each movie (using cost minimization).  But, could we instead ask the algorithm to calculate both the features and theta vector simultaneously?
   
-###_Collaborative Filtering_  
+###_Collaborative Filtering (Background)_  
+Collaborative filtering is the solution.  Each user gives ratings for movies that they have watched, and the algorithm simultaneously solves for features by movie and thetas by user in a manner that minimizes costs.  The name comes from the fact that a large group of people are pooling their inputs in a manner that helps make better (lower cost/error) recommendations for everyone.  
+  
+* J = 0.5 * sum-over-(I,j):r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( 0.5 * lambda )  * sum( x(k)(i)^2 ) + ( 0.5 * lambda )  * sum( theta^2 )  
+* There is no longer any need for a bias unit - the algorithm can create a bias unit if it likes  
+* Each x is an n-dimensional vector, and each theta is an n-dimensional vector; the n features are picked by the model  
+* Begin by initializing every theta and feature to a small random number (important for breaking symmetry)  
+* x(k)(i) = x(k)(i) - alpha * { sum-over-j:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * theta(k)(j) ] + lambda * x(k)(i) }  
+* theta(k)(j) = theta(k)(j) - alpha * { sum-over-i:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * x(k)(i) ] + lambda * theta(k)(j) }  
+* After convergence, use t(theta) * x to predict how a user will rate a movie they have not yet seen  
+  
+While the final features will not have meaning per se, they can be used to group "similar" movies and "similar" users by finding small euclidean distances between movie features and/or user thetas  
+  
+###_Collaborative Filtering (Example Given Input Matrices)_  
+An example is again drawn from the Ng Coursera Machine Learning files:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movies.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with two items, $Y, $R
+
+movieRatings <- listMATData$Y
+mtxSparse <- listMATData$R
+
+str(movieRatings)  # Validate that 1682x943 matrix (1682 movies, 943 users)
+str(mtxSparse)  # Validate that 1682x943 matrix
+
+```
+  
+Next an algorithm is created to calculate the cost given the relevant thetas and features:  
+```{r}
+cofiCost <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate cost
+    movJ <- 0.5 * sum( ( (useX %*% t(useTheta) - mtxY)^2)[mtxR==1] )
+    movJ <- movJ + 0.5 * lambda * ( sum(useX^2) + sum(useTheta^2) )
+    
+    return(movJ)
+}
+
+```
+  
+Then, the sample theta and features from Ng Coursera Machine learning are additionally read-in:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movieParams.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+# Check that as expected - list with five items: $X, $Theta, $num.users, $num.movies, $num.features
+str(listMATData)  
+
+mtxX <- listMATData$X
+mtxTheta <- listMATData$Theta
+
+str(mtxX)  # Validate that 1682x10 matrix (1682 movies, 10 features)
+str(mtxTheta)  # Validate that 943x10 matrix (943 users, 10 features)
+
+```
+  
+The cost function is then tested for 4 users, 5 movies, and 3 features to ensure it brings back ~22.22 given these base inputs.  
+```{r}
+
+# Modify them for the test
+nUser <- 4
+nMovie <- 5
+nFeature <- 3
+
+# Validate that ~22.22
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+
+# Capture these properly for remainder of program
+nUser <- nrow(mtxTheta)
+nMovie <- nrow(mtxX)
+nFeature <- ncol(mtxX)
+
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+
+```
+  
+So, provided that we have the proper inputs, we can calculate the associated costs.  The next step is to find the gradients and optimize the parameters.  
+  
+###_Collaborative Filtering (Example Solving for Input Matrices)_  

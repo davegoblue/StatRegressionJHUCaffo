@@ -280,7 +280,7 @@ y0001 &lt;- gdTest(alpha=0.0001)</code></pre>
 <pre><code>## [1] &quot;Total run time for function gdTest: &quot;</code></pre>
 <pre class="r"><code>print(proc.time() - baseTime)</code></pre>
 <pre><code>##    user  system elapsed 
-##    3.49    1.85    5.36</code></pre>
+##    3.43    1.80    5.24</code></pre>
 <pre class="r"><code># Benchmarking based on subset of mtcars dataset
 # mtxX is 32x6 (32 observations, each with an intercept plus 5 predictors)
 # mtxY is 32x1 (32 results)
@@ -2297,8 +2297,118 @@ legend(&quot;top&quot;, legend=c(&quot;Known Anomaly&quot;, &quot;Known OK&quot;
 </ul>
 <p>Of course, the challenge is that this algorithm requires creating features for every movie. This could be cumbersome and inaccurate. On the one hand, we could ask each person to declare their own theta vector and then use that to calculate the features for each movie (using cost minimization). But, could we instead ask the algorithm to calculate both the features and theta vector simultaneously?</p>
 </div>
-<div id="collaborative-filtering" class="section level3">
-<h3><em>Collaborative Filtering</em></h3>
+<div id="collaborative-filtering-background" class="section level3">
+<h3><em>Collaborative Filtering (Background)</em></h3>
+<p>Collaborative filtering is the solution. Each user gives ratings for movies that they have watched, and the algorithm simultaneously solves for features by movie and thetas by user in a manner that minimizes costs. The name comes from the fact that a large group of people are pooling their inputs in a manner that helps make better (lower cost/error) recommendations for everyone.</p>
+<ul>
+<li>J = 0.5 * sum-over-(I,j):r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( 0.5 * lambda ) * sum( x(k)(i)^2 ) + ( 0.5 * lambda ) * sum( theta^2 )<br />
+</li>
+<li>There is no longer any need for a bias unit - the algorithm can create a bias unit if it likes<br />
+</li>
+<li>Each x is an n-dimensional vector, and each theta is an n-dimensional vector; the n features are picked by the model<br />
+</li>
+<li>Begin by initializing every theta and feature to a small random number (important for breaking symmetry)<br />
+</li>
+<li>x(k)(i) = x(k)(i) - alpha * { sum-over-j:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * theta(k)(j) ] + lambda * x(k)(i) }<br />
+</li>
+<li>theta(k)(j) = theta(k)(j) - alpha * { sum-over-i:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * x(k)(i) ] + lambda * theta(k)(j) }<br />
+</li>
+<li>After convergence, use t(theta) * x to predict how a user will rate a movie they have not yet seen</li>
+</ul>
+<p>While the final features will not have meaning per se, they can be used to group “similar” movies and “similar” users by finding small euclidean distances between movie features and/or user thetas</p>
+</div>
+<div id="collaborative-filtering-example-given-input-matrices" class="section level3">
+<h3><em>Collaborative Filtering (Example Given Input Matrices)</em></h3>
+<p>An example is again drawn from the Ng Coursera Machine Learning files:</p>
+<pre class="r"><code>library(R.matlab, quietly=TRUE)
+
+matPath &lt;- &quot;../../../OctaveDirectory/Week09/&quot;  # Using relative path
+wgtData &lt;- &quot;ex8_movies.mat&quot;
+
+listMATData &lt;- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with two items, $Y, $R</code></pre>
+<pre><code>## List of 2
+##  $ Y: num [1:1682, 1:943] 5 3 4 3 3 5 4 1 5 3 ...
+##  $ R: int [1:1682, 1:943] 1 1 1 1 1 1 1 1 1 1 ...
+##  - attr(*, &quot;header&quot;)=List of 3
+##   ..$ description: chr &quot;MATLAB 5.0 MAT-file, Platform: GLNXA64, Created on: Thu Dec  1 17:19:26 2011                                                &quot;
+##   ..$ version    : chr &quot;5&quot;
+##   ..$ endian     : chr &quot;little&quot;</code></pre>
+<pre class="r"><code>movieRatings &lt;- listMATData$Y
+mtxSparse &lt;- listMATData$R
+
+str(movieRatings)  # Validate that 1682x943 matrix (1682 movies, 943 users)</code></pre>
+<pre><code>##  num [1:1682, 1:943] 5 3 4 3 3 5 4 1 5 3 ...</code></pre>
+<pre class="r"><code>str(mtxSparse)  # Validate that 1682x943 matrix</code></pre>
+<pre><code>##  int [1:1682, 1:943] 1 1 1 1 1 1 1 1 1 1 ...</code></pre>
+<p>Next an algorithm is created to calculate the cost given the relevant thetas and features:</p>
+<pre class="r"><code>cofiCost &lt;- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut &lt;- nMovie * nFeature
+    vecX &lt;- vecMatrix[1:keyCut]
+    vecTheta &lt;- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX &lt;- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta &lt;- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate cost
+    movJ &lt;- 0.5 * sum( ( (useX %*% t(useTheta) - mtxY)^2)[mtxR==1] )
+    movJ &lt;- movJ + 0.5 * lambda * ( sum(useX^2) + sum(useTheta^2) )
+    
+    return(movJ)
+}</code></pre>
+<p>Then, the sample theta and features from Ng Coursera Machine learning are additionally read-in:</p>
+<pre class="r"><code>library(R.matlab, quietly=TRUE)
+
+matPath &lt;- &quot;../../../OctaveDirectory/Week09/&quot;  # Using relative path
+wgtData &lt;- &quot;ex8_movieParams.mat&quot;
+
+listMATData &lt;- readMat(paste0(matPath, wgtData))
+# Check that as expected - list with five items: $X, $Theta, $num.users, $num.movies, $num.features
+str(listMATData)  </code></pre>
+<pre><code>## List of 5
+##  $ X           : num [1:1682, 1:10] 1.049 0.781 0.642 0.454 0.938 ...
+##  $ Theta       : num [1:943, 1:10] 0.2854 0.505 -0.4319 0.7286 0.0521 ...
+##  $ num.users   : num [1, 1] 943
+##  $ num.movies  : num [1, 1] 1682
+##  $ num.features: num [1, 1] 10
+##  - attr(*, &quot;header&quot;)=List of 3
+##   ..$ description: chr &quot;MATLAB 5.0 MAT-file, Platform: GLNXA64, Created on: Thu Dec  1 17:16:53 2011                                                &quot;
+##   ..$ version    : chr &quot;5&quot;
+##   ..$ endian     : chr &quot;little&quot;</code></pre>
+<pre class="r"><code>mtxX &lt;- listMATData$X
+mtxTheta &lt;- listMATData$Theta
+
+str(mtxX)  # Validate that 1682x10 matrix (1682 movies, 10 features)</code></pre>
+<pre><code>##  num [1:1682, 1:10] 1.049 0.781 0.642 0.454 0.938 ...</code></pre>
+<pre class="r"><code>str(mtxTheta)  # Validate that 943x10 matrix (943 users, 10 features)</code></pre>
+<pre><code>##  num [1:943, 1:10] 0.2854 0.505 -0.4319 0.7286 0.0521 ...</code></pre>
+<p>The cost function is then tested for 4 users, 5 movies, and 3 features to ensure it brings back ~22.22 given these base inputs.</p>
+<pre class="r"><code># Modify them for the test
+nUser &lt;- 4
+nMovie &lt;- 5
+nFeature &lt;- 3
+
+# Validate that ~22.22
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=0
+         )</code></pre>
+<pre><code>## [1] 22.2246</code></pre>
+<pre class="r"><code># Capture these properly for remainder of program
+nUser &lt;- nrow(mtxTheta)
+nMovie &lt;- nrow(mtxX)
+nFeature &lt;- ncol(mtxX)
+
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+         )</code></pre>
+<pre><code>## [1] 27918.64</code></pre>
+<p>So, provided that we have the proper inputs, we can calculate the associated costs. The next step is to find the gradients and optimize the parameters.</p>
+</div>
+<div id="collaborative-filtering-example-solving-for-input-matrices" class="section level3">
+<h3><em>Collaborative Filtering (Example Solving for Input Matrices)</em></h3>
 </div>
 </div>
 
