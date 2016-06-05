@@ -1982,6 +1982,12 @@ cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta
          nMovie=nMovie, nFeature=nFeature, lambda=0
          )
 
+# Validate that ~31.34
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )
+
 # Capture these properly for remainder of program
 nUser <- nrow(mtxTheta)
 nMovie <- nrow(mtxX)
@@ -1991,9 +1997,66 @@ nFeature <- ncol(mtxX)
 cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
          mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
          )
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )
 
 ```
   
 So, provided that we have the proper inputs, we can calculate the associated costs.  The next step is to find the gradients and optimize the parameters.  
   
 ###_Collaborative Filtering (Example Solving for Input Matrices)_  
+The process of simultaneously solving for theta and features is an example of low rank matrix factorization.  The rank of an mxn matrix is typically the smaller of m or n, defining the degree of linear independence that exists in the matrix.  However, when certain rows and/or columns are linear combinations of each other, the matrix is no longer considered to be "full rank".  Instead, the matrix is considered to be "rank deficient" and to have rank equal to the smaller of # linearly independent columns/rows.  Fortunately, gradient descent works fine even in a rank-deficient environment:  
+```{r}
+cofiGrad <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate gradients
+    gradX <- ((useX %*% t(useTheta) - mtxY) * mtxR) %*% useTheta + (lambda * useX)
+    gradTheta <- t((useX %*% t(useTheta) - mtxY) * mtxR) %*% useX + (lambda * useTheta)
+    
+    return(c(as.vector(gradX), as.vector(gradTheta)))
+    
+}
+```
+  
+Then, we can initialize theta and X as small random numbers (break the symmetry), normalize the movie ratings, and call optim to find the solution:  
+```{r, cache=TRUE}
+useLambda=10
+
+# Initialize mtxX and mtxTheta
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+
+# Normalize movie ratings (movieRatings is 1682 x 943, with each of the 1682 rows being a movie)
+movSum <- apply(movieRatings, 1, FUN=sum)
+movCount <- apply(mtxSparse, 1, FUN=sum)
+movAvg <- movSum / movCount
+
+normRatings <- movieRatings - movAvg * mtxSparse
+
+# cofiGrad <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda)
+# Initialize vecMatrix
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime <- proc.time()
+movList <- optim(vecMatrix, cofiCost, cofiGrad, mtxY=normRatings,
+                 mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                 lambda=useLambda, control=list(maxit=50), method="BFGS"
+                 )
+proc.time() - startTime
+
+```
+  
+This runs much slower than the equivalent in Octave.  It may be helpful to explore optim() and/or a faster equivalent in more detail.  
+```{r}
+str(movList)
+```
+  

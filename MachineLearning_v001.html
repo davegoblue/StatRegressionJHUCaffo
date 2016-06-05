@@ -280,7 +280,7 @@ y0001 &lt;- gdTest(alpha=0.0001)</code></pre>
 <pre><code>## [1] &quot;Total run time for function gdTest: &quot;</code></pre>
 <pre class="r"><code>print(proc.time() - baseTime)</code></pre>
 <pre><code>##    user  system elapsed 
-##    3.43    1.80    5.24</code></pre>
+##    3.44    1.86    5.32</code></pre>
 <pre class="r"><code># Benchmarking based on subset of mtcars dataset
 # mtxX is 32x6 (32 observations, each with an intercept plus 5 predictors)
 # mtxY is 32x1 (32 results)
@@ -2395,6 +2395,12 @@ cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta
          nMovie=nMovie, nFeature=nFeature, lambda=0
          )</code></pre>
 <pre><code>## [1] 22.2246</code></pre>
+<pre class="r"><code># Validate that ~31.34
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )</code></pre>
+<pre><code>## [1] 31.34406</code></pre>
 <pre class="r"><code># Capture these properly for remainder of program
 nUser &lt;- nrow(mtxTheta)
 nMovie &lt;- nrow(mtxX)
@@ -2405,10 +2411,67 @@ cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRating
          mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
          )</code></pre>
 <pre><code>## [1] 27918.64</code></pre>
+<pre class="r"><code># Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )</code></pre>
+<pre><code>## [1] 34821.7</code></pre>
 <p>So, provided that we have the proper inputs, we can calculate the associated costs. The next step is to find the gradients and optimize the parameters.</p>
 </div>
 <div id="collaborative-filtering-example-solving-for-input-matrices" class="section level3">
 <h3><em>Collaborative Filtering (Example Solving for Input Matrices)</em></h3>
+<p>The process of simultaneously solving for theta and features is an example of low rank matrix factorization. The rank of an mxn matrix is typically the smaller of m or n, defining the degree of linear independence that exists in the matrix. However, when certain rows and/or columns are linear combinations of each other, the matrix is no longer considered to be “full rank”. Instead, the matrix is considered to be “rank deficient” and to have rank equal to the smaller of # linearly independent columns/rows. Fortunately, gradient descent works fine even in a rank-deficient environment:</p>
+<pre class="r"><code>cofiGrad &lt;- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut &lt;- nMovie * nFeature
+    vecX &lt;- vecMatrix[1:keyCut]
+    vecTheta &lt;- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX &lt;- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta &lt;- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate gradients
+    gradX &lt;- ((useX %*% t(useTheta) - mtxY) * mtxR) %*% useTheta + (lambda * useX)
+    gradTheta &lt;- t((useX %*% t(useTheta) - mtxY) * mtxR) %*% useX + (lambda * useTheta)
+    
+    return(c(as.vector(gradX), as.vector(gradTheta)))
+    
+}</code></pre>
+<p>Then, we can initialize theta and X as small random numbers (break the symmetry), normalize the movie ratings, and call optim to find the solution:</p>
+<pre class="r"><code>useLambda=10
+
+# Initialize mtxX and mtxTheta
+mtxTheta &lt;- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX &lt;- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+
+# Normalize movie ratings (movieRatings is 1682 x 943, with each of the 1682 rows being a movie)
+movSum &lt;- apply(movieRatings, 1, FUN=sum)
+movCount &lt;- apply(mtxSparse, 1, FUN=sum)
+movAvg &lt;- movSum / movCount
+
+normRatings &lt;- movieRatings - movAvg * mtxSparse
+
+# cofiGrad &lt;- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda)
+# Initialize vecMatrix
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime &lt;- proc.time()
+movList &lt;- optim(vecMatrix, cofiCost, cofiGrad, mtxY=normRatings,
+                 mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                 lambda=useLambda, control=list(maxit=50), method=&quot;BFGS&quot;
+                 )
+proc.time() - startTime</code></pre>
+<pre><code>##    user  system elapsed 
+##  783.00    5.29  793.19</code></pre>
+<p>This runs much slower than the equivalent in Octave. It may be helpful to explore optim() and/or a faster equivalent in more detail.</p>
+<pre class="r"><code>str(movList)</code></pre>
+<pre><code>## List of 5
+##  $ par        : num [1:26250] -2.917 0.525 -0.431 1.091 -0.176 ...
+##  $ value      : num 72215
+##  $ counts     : Named int [1:2] 243 50
+##   ..- attr(*, &quot;names&quot;)= chr [1:2] &quot;function&quot; &quot;gradient&quot;
+##  $ convergence: int 1
+##  $ message    : NULL</code></pre>
 </div>
 </div>
 
