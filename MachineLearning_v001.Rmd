@@ -2291,3 +2291,89 @@ axis(1, at=1:4, labels=c("BFGS 150 iter", "CG 10 iter", "CG 50 iter", "CG 150 it
   
 Interestingly, though, in this case CG is not converging as quickly to a good solution as had been observed in the BFGS modeling.  So, the algorithm may be faster but less accurate in this case.  
   
+###_Comparing Accuracies_  
+Further, we compare the accuracies driven by the varying neural network models.  First, a look at BFGS 150 (repeated from above):  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListBFGS150$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListBFGS150$par[(keyCut+1):length(nnListBFGS150$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYBFGS150 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYBFGS150), y=predYBFGS150, col = 1 + (mtxY[,1] != predYBFGS150), 
+     main="Predictions vs Actual (BFGS 150)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYBFGS150, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda
+                )
+     )
+
+```
+  
+So, the BFGS 150 is driving 98.2% accuracy.  Next, we look at the CG 150 outcomes:  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListCG150$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListCG150$par[(keyCut+1):length(nnListCG150$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYCG150 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYCG150), y=predYCG150, col = 1 + (mtxY[,1] != predYCG150), 
+     main="Predictions vs Actual (CG 150)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYCG150, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda
+                )
+     )
+
+```
+  
+While the CG 150 is driving to 96.9% accuracy (1.3% higher classification error than BFGS 150).  And, we check that the starting cost is the same as the base case:  
+```{r}
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+```
+  
+Lastly, we look at the CG 50 outcomes:  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListCG050$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListCG050$par[(keyCut+1):length(nnListCG050$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYCG050 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYCG050), y=predYCG050, col = 1 + (mtxY[,1] != predYCG050), 
+     main="Predictions vs Actual (CG 50)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYCG050, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda
+                )
+     )
+
+```
+  
+And, accuracy here is only 88%, suggestive that 50 iterations of CG in R is driving to a less optimal outcome than 50 iterations of CG in Octave (which hits ~95%).  So, perhaps there is still further tuning to explore?  
