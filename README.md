@@ -43,3 +43,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 03-JUN-2016 - Recommender systems  
 * 04-JUN-2016 - Collabarative Filtering (Background, Usage)  
 * 05-JUN-2016 - Collabarative Filtering (Solving for Matrices)  
+* 06-JUN-2016 - Tune optimization methods for cofi and nn    
