@@ -192,7 +192,7 @@ Gradient descent eventually finds coefficients that are close to optimal for RMS
   
 
 ###_Logistic Regression_  
-Logistic regression ("logit") is used to make binary classifications.  By convention, 1 often expresses the presence of something (malignnancy, school acceptance, fraudulent transaction, etc.) while 0 is set to express the absence of that something.  The models work the same regardless of which state is called 1, of course.  
+Logistic regression ("logit") is used to make binary classifications.  By convention, 1 often expresses the presence of something (malignancy, school acceptance, fraudulent transaction, etc.) while 0 is set to express the absence of that something.  The models work the same regardless of which state is called 1, of course.  
   
 There are many drivers behind using logit rather than linear regression for a classification problem.  Among the drivers:  
   
@@ -253,7 +253,7 @@ par(mfrow=c(1,1))
 
 ```
   
-The LM appropriately responds to the new data by driving up the intercept (more of the data are positive, and making more positive predictions will drive up the overall accuracy).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though the closed has probability of malignancy at size 0.011 as ~20%.  
+The LM appropriately responds to the new data by driving up the intercept (more of the data are positive, and making more positive predictions will drive up the overall accuracy).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though the closed form function has probability of malignancy at size 0.011 as ~20%.  
   
 This can be seen from the very poor specificity of the modified test; we essentially declare everyone to have cancer, so a positive result from our test does not have much meaning (prior would not change by that much.
   
@@ -523,9 +523,9 @@ str(mtxY)  # Check that 5000x1 and matricized
 hist(mtxY[,1], col="blue", breaks=0:10)  # Equal distributions of items in each of y==1:10
 ```
 
-The MATLAB data have loaded successfully, and mtxY has 500 observations in each class 1:10.  There are 400 potential predictors for each of the 5000 observations, so there is some risk of over-fitting.  There are some clever matrix maths that can be run (see later), but for now we run through 10 trials using glmnet().  The glmnet() function will test mutliple ambda using elasticnet regularization.  
+The MATLAB data have loaded successfully, and mtxY has 500 observations in each class 1:10.  There are 400 potential predictors for each of the 5000 observations, so there is some risk of over-fitting.  There are some clever matrix maths that can be run (see later), but for now we run through 10 trials using glmnet().  The glmnet() function will test mutliple lambda using elasticnet regularization.  
 
-Many default parameters are used, with the exception that we ask not to standaridze the input variables (they are already pixel activations 0-1 so there is no major outlier concern).  Further, we request alpha=0 (ridge penbalty) rather than the default alpha=1 (lasso penalty).  This is a logit (family="binomial") regression call.  Further, a for loop is used (clunkily) to go through each of the 10 cases, with the results cached since this is not an overwhelmingly fast procedure:  
+Many default parameters are used, with the exception that we ask not to standaridze the input variables (they are already pixel activations 0-1 so there is no major outlier concern).  Further, we request alpha=0 (ridge penalty) rather than the default alpha=1 (lasso penalty).  This is a logit (family="binomial") regression call.  Further, a for loop is used (clunkily) to go through each of the 10 cases, with the results cached since this is not an overwhelmingly fast procedure:  
 ```{r, cache=TRUE}
 library(glmnet, quietly=TRUE)
 
@@ -961,7 +961,7 @@ proc.time() - startTime
   
 The optim() function is seemingly not as fast as the equivalent function fmingc() in Octave, although it is driving better accuracy with more iterations so there may be a chicken and egg issue.  This may be because optim() is not yet tuned, and packages like "trust" and/or further tweaking of control parameters may help.  
 
-Still, it provides a good starting solution to a neural network with ~10,000 parameters for ~50,000 predictions in ~5 minutes.  So, while it can likely be significantly further optimized, it is pretty cool to be able to do simple image identification (on a cleaned dataset consisting of numbers only) in not too much time.  
+Still, it provides a good starting solution to a neural network with ~10,000 parameters for ~50,000 predictions (10 final nodes for each of the 5,000 observations) in ~5 minutes.  So, while it can likely be significantly further optimized, it is pretty cool to be able to do simple image identification (on a cleaned dataset consisting of numbers only) in not too much time.  
   
 Below, we assess the accuracy of the optimized neural network:  
 ```{r}
@@ -990,7 +990,7 @@ nnListBFGS150 <- myList
 The model is ~98% accurate with identifying images (n.b., there was no out-of-sample test run, so this is an inflated accuracy) based on this simple neural network.  A very interesting exercise!  
   
 ###_Model Selection (Bias vs. Varaince)_  
-A primary goal with prediction is to correctly classify out-of-sample observations, meaning data that was not used to train the model.  When applyin a model to make out-of-sample predictions, there are three common sources of error:  
+A primary goal with prediction is to correctly classify out-of-sample observations, meaning data that was not used to train the model.  When applying a model to make out-of-sample predictions, there are three common sources of error:  
   
 * Intrinsic - there is some degree of randomness in the real-world, and no model can ever avoid the impact of that intrinsic randomness on model predictions  
 * Bias (under-fitting) - there is some structure in the data that is not captured in the model, thus the model makes worse predictions than it would if it tuned on that structure  
@@ -1562,7 +1562,7 @@ While the actual algorithm is fairly complex, it is well-implemented as one of t
   
 A few properties include:  
 
-* The sum of the first n $d divided by the total sum($d) describes the total variance captured by the first n principal components  
+* The sum of the first n diagonals divided by the total sum(diagonals) describes the total variance captured by the first n principal components  
 * X = U % * % diag(D) % * % t(V)  
 * D = t(U) % * % X % * % V
   
@@ -1762,7 +1762,7 @@ par(mfrow=c(1,1))
   
 In this example, the algorithm flags 6 points in the training data as anomalies.  These would be good to explore with a domain expert in the interest of potentially further tuning the model.  
   
-In this example, the algorithm correctly flags 6 points in the CV data as anomalies, avoids classifying any normal data as anomalies, and fails to identify 2 actual anomalies.  Since these 2 anomalies are close to tge center of the cloud, there may be a missing feature.  This would be ideal to explore further with a domain expert.  
+In this example, the algorithm correctly flags 6 points in the CV data as anomalies, avoids classifying any normal data as anomalies, and fails to identify 2 actual anomalies.  Since these 2 anomalies are close to the center of the cloud, there may be a missing feature.  This would be ideal to explore further with a domain expert.  
   
 ###_Multivariate Gaussian Distribution_  
 The multivariate Gaussian is an extension to anomaly detection where the algorithm can automatically detect correlations among the features (no longer need to assume feature independence).  The key change for the multivariate Gaussian approach is to model p(x) all in a single go:  
@@ -2104,11 +2104,11 @@ str(movListBFGS010)
   
 The outcomes are intriguing and show that optim() is the primary time-sink:  
   
-* 10 runs of the cost function take ~0.6 seconds  
-* 10 runs of the gradient function take ~1.2 seconds  
+* 10 runs of the cost function take ~0.5 seconds  
+* 10 runs of the gradient function take ~1.1 seconds  
 * Total cost after 10 runs of BFGS is ~160k, roughly double the ~80k seen above at 50 iterations  
 * 43 runs of cost and 10 runs of gradient made by way of BFGS in optim() take ~140 seconds  
-* Extrapolating, the raw functions should take 4.3 * 0.6 + 1.2 = ~4 seconds  
+* Extrapolating, the raw functions should take 4.3 * 0.5 + 1.1 = ~3.5 seconds  
   
 So, it appears that the optim() function using BFGS is taking 30x-40x longer than calls to the underlying functions would suggest.  One potential reason is that BFGS is storing a matrix - see below for some comments from Details under ?optim:  
   
@@ -2138,7 +2138,7 @@ The outcomes are highly suggestive that CG is an all-around better method for th
   
 * Total cost after 10 runs of CG is ~45k, roughly half the ~80k seen above at 50 iterations of BFGS  
 * 28 runs of cost and 11 runs of gradient made by way of BFGS in optim() take ~3 seconds  
-* Extrapolating, the raw functions should take 2.8 * 0.6 + 1.2 = ~3 seconds  
+* Extrapolating, the raw functions should take 2.8 * 0.5 + 1.1 = ~2.5 seconds  
   
 So, the CG method seems to take only as long to run as the underlying function calls, and converges to a lower cost with fewer iterations.  
 
@@ -2274,11 +2274,11 @@ str(nnListCG150)
 The results are again interesting and show the enormous timing advantage for CG over BFGS.  For example:  
   
 * 10 runs of nnCost takes ~1 seconds  
-* 10 runs of nnGradient takes ~2 seconds  
-* Running optim() using BFGS for 150 iterations takes ~240 seconds, while making 257 calls to nnCost and 150 calls to nnGradient; these should only take ~55 seconds, so optim() is taking ~4x as long as expected  
-* Running optim() using CG for 10 iterations takes ~4 seconds, while making 22 calls to nnCost and 11 calls to nnGradient; these should take ~4 seconds, suggesting very little inefficiency  
-* Running optim() using CG for 50 iterations takes ~19 seconds, while making 107 calls to nnCost and 51 calls to nnGradient; these should take ~20 seconds, suggesting very little inefficiency  
-* Running optim() using CG for 150 iterations takes ~55 seconds, while making 312 calls to nnCost and 151 calls to nnGradient; these should take ~60 seconds, suggesting very little inefficiency  
+* 10 runs of nnGradient takes ~1.5 seconds  
+* Running optim() using BFGS for 150 iterations takes ~240 seconds, while making 257 calls to nnCost and 150 calls to nnGradient; these should only take ~50 seconds, so optim() is taking ~5x as long as expected  
+* Running optim() using CG for 10 iterations takes ~3.5 seconds, while making 21 calls to nnCost and 11 calls to nnGradient; these should take ~4 seconds, suggesting very little inefficiency  
+* Running optim() using CG for 50 iterations takes ~17 seconds, while making 106 calls to nnCost and 51 calls to nnGradient; these should take ~19 seconds, suggesting very little inefficiency  
+* Running optim() using CG for 150 iterations takes ~50 seconds, while making 307 calls to nnCost and 151 calls to nnGradient; these should take ~55 seconds, suggesting very little inefficiency  
   
 Additionally, the results are again plotted to see the estimated cost rates:  
 ```{r}
@@ -2346,7 +2346,7 @@ plot(nnGradient(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabe
 
 ```
   
-While the CG 150 is driving to 96.9% accuracy (1.3% higher classification error than BFGS 150).  And, we check that the starting cost is the same as the base case:  
+While the CG 150 is driving to 97.8% accuracy (0.4% higher classification error than BFGS 150).  And, we check that the starting cost is the same as the base case:  
 ```{r}
 vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
 nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
@@ -2378,4 +2378,4 @@ plot(nnGradient(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabe
 
 ```
   
-And, accuracy here is only 88%, suggestive that 50 iterations of CG in R is driving to a less optimal outcome than 50 iterations of CG in Octave (which hits ~95%).  So, perhaps there is still further tuning to explore?  
+And, accuracy here is only 89.5%, suggestive that 50 iterations of CG in R is driving to a less optimal outcome than 50 iterations of CG in Octave (which hits ~95%).  So, perhaps there is still further tuning to explore?  
