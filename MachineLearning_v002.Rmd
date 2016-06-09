@@ -2216,8 +2216,6 @@ nHiddenNodes <- 25
 nFinalLabels <- 10
 epsInit <- 0.12  # Initial thetas will be randomized as epsInit * runif(min=-1, max=1)
 
-lambda=1  # Run scenario with lambda=1
-
 # Recycle the pre-existing bpThetaOne and bpThetaTwo
 vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
 
@@ -2226,7 +2224,7 @@ vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpTheta
 startTime <- proc.time()
 for (intCtr in 1:10) {
     nnCost(vecMatrix=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
-           nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=lambda
+           nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
            )
 }
 proc.time() - startTime
@@ -2234,7 +2232,7 @@ proc.time() - startTime
 startTime <- proc.time()
 for (intCtr in 1:10) {
     nnGradient(vecMatrix=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
-               nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=lambda
+               nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
                )
 }
 proc.time() - startTime
@@ -2243,7 +2241,7 @@ startTime <- proc.time()
 vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
 nnListCG010 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
                      nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
-                     X=mtxX, y=mtxY, lambda=lambda, control=list(maxit=10), method="CG"
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=10), method="CG"
                      )
 proc.time() - startTime
 
@@ -2251,7 +2249,7 @@ startTime <- proc.time()
 vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
 nnListCG050 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
                      nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
-                     X=mtxX, y=mtxY, lambda=lambda, control=list(maxit=50), method="CG"
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=50), method="CG"
                      )
 proc.time() - startTime
 
@@ -2259,7 +2257,7 @@ startTime <- proc.time()
 vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
 nnListCG150 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
                      nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
-                     X=mtxX, y=mtxY, lambda=lambda, control=list(maxit=150), method="CG"
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=150), method="CG"
                      )
 proc.time() - startTime
 
@@ -2310,11 +2308,11 @@ plot(x=1:length(predYBFGS150), y=predYBFGS150, col = 1 + (mtxY[,1] != predYBFGS1
 confusionMatrix(predYBFGS150, mtxY[,1])
 
 # Print the post-optimization cost
-nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
 
 # Plot the post-optimization gradients
 plot(nnGradient(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
-                X=mtxX, y=mtxY, lambda
+                X=mtxX, y=mtxY, lambda=1
                 )
      )
 
@@ -2336,11 +2334,11 @@ plot(x=1:length(predYCG150), y=predYCG150, col = 1 + (mtxY[,1] != predYCG150),
 confusionMatrix(predYCG150, mtxY[,1])
 
 # Print the post-optimization cost
-nnCost(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+nnCost(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
 
 # Plot the post-optimization gradients
 plot(nnGradient(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
-                X=mtxX, y=mtxY, lambda
+                X=mtxX, y=mtxY, lambda=1
                 )
      )
 
@@ -2368,14 +2366,117 @@ plot(x=1:length(predYCG050), y=predYCG050, col = 1 + (mtxY[,1] != predYCG050),
 confusionMatrix(predYCG050, mtxY[,1])
 
 # Print the post-optimization cost
-nnCost(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+nnCost(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
 
 # Plot the post-optimization gradients
 plot(nnGradient(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, 
-                X=mtxX, y=mtxY, lambda
+                X=mtxX, y=mtxY, lambda=1
                 )
      )
 
 ```
   
 And, accuracy here is only 89.5%, suggestive that 50 iterations of CG in R is driving to a less optimal outcome than 50 iterations of CG in Octave (which hits ~95%).  So, perhaps there is still further tuning to explore?  
+  
+###_Gradient Descent with Large Datasets_  
+With much more data available, it is possible to build low bias models that are also low variance.  It is again "he who has the best data that wins".  But, working with the very largest data requires different techniques:  
+  
+* Suppose that you have 100 million observations (m=100 million)  
+* This would mean that you need to sum across 100 million observations to find the gradient  
+* A good idea is to first look at the learning curves for a smaller sample - if it shows high variance, more data may help, but if it shows high bias then more data will likely not help  
+  
+If the full 100 million record dataset appears to be useful, then there are techniques for running gradient descent more quickly.  One example is stochastic gradient descent:  
+  
+* Randomly shuffle the dataset (in case there is some structure)  
+* Repeatedly run i=1 to m, and calculate theta(j) = theta(j) - alpha * { ( h(x(i)) - y(i) ) * x(j)(i) }  
+* This means theta is being updated every time we see a data point; in fact, sometimes a single pass through the descent gets you to a good point  
+* The main downside is that it means there is a meandering path to the global minima, which is never actually hit; however, the descent tends to find a "good enough" solution  
+  
+Another example approach is mini-batch, where b=10 is common, and b is very often in the range of 2-100.  The mini-batch approach uses b data points at once and alpha/b, meaning that 1) it can be vectorized, but 2) it requires an additional parameter.  If the code for mini-batch is not vectorized, then there is no real gain.  
+  
+Plotting cost curves is recommended with stochastic gradient descent or mini-batch gradient descent.  Basically, plot the cost after every 1,000 iterations and see how well it is converging.  If the cost is generally growing or oscillating too wildly, that may signal that alpha is too large.  
+  
+Let's try an example of the mini-batch approach for the neural network problem run above:  
+```{r}
+# Re-initialize vecPass to the beginning values
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+# Use a batch size of 100
+nBatch <- 100
+
+# Use an adjusted lambda in functions that take lambda/m
+
+
+# Calculate the starting cost
+startCost <- nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, 
+                    X=mtxX, y=mtxY, lambda=1
+                    )
+
+# Set vecUse as vecPass and alpha=1 (rather large)
+vecUse <- vecPass
+alpha <- 1
+
+# Set the number of runs and the timing for plotting the learning curve
+nRuns <- 1000
+nPerSave <- 1000
+nPerSave <- nBatch * ceiling(nPerSave/nBatch)
+costSave <- numeric(length=nRuns*nBatch/nPerSave)
+
+startTime <- proc.time()
+
+# Run through 1000 mini-batch descents
+# Since the gradients already come back with 1/m, do not divide alpha by nBatch
+for (intCtr in 1:nRuns) {
+    miniRand <- sample(1:nrow(mtxX), nBatch, replace=FALSE)
+    vecUse <- vecUse - (alpha) * nnGradient(vecMatrix=vecUse, nInputLayer, nHiddenNodes, 
+                                            nFinalLabels, X=mtxX[miniRand, ], 
+                                            y=mtxY[miniRand, ,drop=FALSE], lambda=1
+                                            )
+    
+    if ((intCtr * nBatch) %% nPerSave == 0) {
+        costSave[[(intCtr * nBatch) %/% nPerSave]] <- nnCost(vecMatrix=vecUse, nInputLayer, 
+                                                             nHiddenNodes, nFinalLabels, 
+                                                             X=mtxX, y=mtxY, lambda=1
+                                                             )
+    }
+    
+}
+
+proc.time() - startTime
+
+plot(x=0:length(costSave), y=c(startCost, costSave), pch=19, col="blue", 
+     ylim=c(0, max(startCost, costSave)), xlab="Sample Number", ylab="Total Cost",
+     main="Mini-Batch Descent for Neural Network"
+     )
+
+# Assess the optimized accuracies
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=vecUse[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=vecUse[(keyCut+1):length(vecUse)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+predYMini <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYMini), y=predYMini, col = 1 + (mtxY[,1] != predYMini), 
+     main="Predictions vs Actual (Mini-Batch)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYMini, mtxY[,1])
+
+plot(nnGradient(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+# Comparison to the BFGS 150 algorithm
+nnCost(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+sum(vecUse^2)
+sum((nnListBFGS150$par)^2)
+```
+  
+So, the mini-batch converges to a lower overall cost mainly by keeping theta smaller (and avoiding that penalty) even though it means keeping the accuracy lower also.
+  
+* NEED TO FIX nnGradient to use LAMBDA  
+* NEED TO INVESTIGATE how to better use LAMBDA in the later functions  
+  
