@@ -1,0 +1,2538 @@
+---
+title: "Machine Learning Notes"
+author: "davegoblue"
+date: "May 17, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background and Overview  
+This document is to test a few ideas from the Machine Learning course by Ng (Stanford) on Coursera.  The course seems to dive deeper in to some of the algorithms and linear algebra underlying the techniques.  While the Ng course uses Octave (more or less GNU MATLAB), this document tries to capture a few key concepts in R.  
+
+## Key Concepts  
+###_Cost Functions and Linear Regression_  
+The course begins with a discussion of cost functions and moving all variables simultaneously in the direction of "greatest descent" in cost.  Generically, suppose you have the following:  
+  
+* There are m observations each consisting of n predictors and 1 outcome  
+* Y - known results in training set (mx1 matrix, commonly known as m-dimensional vector)  
+* x1..n - known predictors in training set (mxn matrix, created from the n m-dimensional predictor vectors)  
+* X - total predictors in training set (mx(n+1) matrix, where "column 0"" is added as all 1)  
+* Theta - potential fitting parameters ((n+1)-dimensional vector matching to the n+1 columns in X)  
+  
+Then, for any given set of values, define the cost function J for linear regression to be:  
+  
+* J = [ 1 / (2 * m) ] * sum[ (X * Theta - Y)^2 ]  
+* Note that X is the mx(n+1) matrix, so Theta needs to be treated (by transpose or other means) as an (n+1)x1 matrix so that X * Theta becomes an mx1 matrix (or m-dimensional vector) that is comparable to Y  
+  
+Now, consider just theta(i) which operates on the x(i) column of the X matrix, and how to find its partial derivative.  Expanding:  
+  
+* J = [ 1 / (2 * m) ] * sum[ (X * Theta)^2 - 2 * (X * Theta) * Y + Y^2 ]  
+* Temporarily, define d(X * Theta)/d(thetai) as Q  
+* dJ/d(thetai) = [ 1 / (2 * m) ] * sum[2 * (X * Theta) * Q - 2 * Y * Q]  
+* dJ/d(thetai) = 1/m * sum[(X * Theta - Y) * Q]  
+* And, d(X * Theta) / d(thetai) = x(i)  
+* So, dJ/d(thetai) = 1/m * sum[(X * Theta - Y) * x(i)]  
+  
+The cost function algorithm then includes a learning factor, alpha.  This factor determines how far to run in the "opposite direction, same magnitude"" of each partial derivative w.r.t theta.  
+  
+We begin with a very simple dataset, mtcars, looking only at the continuous variables (mpg, disp, hp, drat, wt, and qsec):  
+```{r}
+library(caret, quietly=TRUE)  # May be useful for confusionMatrix and the like
+data(mtcars)
+str(mtcars)
+
+varPreds <- mtcars[,c("disp", "hp", "drat", "wt", "qsec")]
+vecMPG <- mtcars$mpg
+vecOnes <- rep(1, nrow(varPreds))
+
+mtxX <- as.matrix(cbind(vecOnes, varPreds))
+mtxY <- as.matrix(vecMPG)
+mtxTheta <- matrix(data=1, nrow=ncol(mtxX), ncol=1)
+
+str(mtxY)
+str(mtxX)
+str(mtxTheta)
+```
+  
+The dimensions all look OK, and we will have 6 theta (5 predictors plus the intercept) across 32 observations.  Next, we run the simple linear regression to see what the coefficients "should" be:  
+```{r}
+mpgLM <- lm(vecMPG ~ ., data=varPreds)  # Includes intercept by R default, only a -1 kills that off
+summary(mpgLM)
+```
+  
+While this is far from the world's best regression, it solves since all of the underlying matrices are non-singular.  We can test the coefficients using the relevant matrix math, specifically:  
+  
+* Optimal Theta = solve(X' * X) * X' * Y, where X' is the transponse of X and solve() is the matrix inverse  
+  
+We test this matrix math on the same data:  
+```{r}
+optTheta <- solve(t(mtxX) %*% mtxX) %*% t(mtxX) %*% mtxY
+print(round(t(optTheta),4))
+print(round(summary(mpgLM)$coef[,1],4))
+```
+  
+The coefficients are identical, as expected given that matrix math underlies the lm algorithm in R.  
+  
+Lastly, we test the gradient descent method using the same dataset, trying several alpha:  
+```{r}
+gdTest <- function(gdX=mtxX, gdY=mtxY, alpha=0.001, nIter=20000, mtxCalc=TRUE) {
+    nObs <- nrow(gdX)  # Total number of observations . . .  
+    mtxTheta <- matrix(0, nrow=ncol(gdX), ncol=1)  # Set up a theta matrix
+    
+    # Standardize the X variables to be roughly -1 to 1
+    # Calculate the mean and SD for each column
+    meanX <- apply(gdX, 2, FUN=mean)
+    sdX <- apply(gdX, 2, FUN=sd)
+    
+    # Set the mean/sd for column 1 (all ones) to be 0/1 so we do not change it
+    meanX[1] <- 0  # Use 0 as the mean conversion factor for column 1
+    sdX[1] <- 1  # Use 1 as the sd scaling factor for column 1
+    
+    # Use vector operations to update gdX (probably a better way, but I do not yet know it)
+    gdX <- (gdX - mapply(rep, meanX, nObs)) / mapply(rep, sdX, nObs)
+    
+    # Set up the cost function vectors, and initialize with preliminary data
+    vecCost <- rep(NA, nIter+1)
+    vecCost[1] <- (0.5 / nObs) * sum((gdX %*% mtxTheta - gdY)^2)
+    vecPartial <- rep(NA, ncol(gdX))
+    
+    for (intCtr in 1:nIter) {
+        # Simultaneously update thetas for the next iteration
+        if (mtxCalc) {
+            # Use matrix operations to simultaneously update theta
+            # theta = theta - (alpha/nObs) * Q
+            # Q should be the vector of partial derivatives
+            mtxPartial <- t(gdX) %*% (gdX %*% mtxTheta - gdY)  # Matrix of (# theta)x1
+            mtxTheta <- mtxTheta - (alpha/nObs) * mtxPartial  # Matrix of (# theta)x1
+        } else {
+            # Run using a for loop instead - same answers, but much slower
+            # Added as an example for benchmarking purposes
+            # Need to create all the partial derivatives (loop 1) then apply them (loop 2)
+            for (varNum in 1:ncol(gdX)) {
+                vecPartial[varNum] <- sum((gdX %*% mtxTheta - gdY) * gdX[,varNum])
+            }
+            for (varNum in 1:ncol(gdX)) {
+                mtxTheta[varNum, 1] <- mtxTheta[varNum, 1] - (alpha/ nObs) * vecPartial[varNum]
+            }
+        }
+        
+        # Update the cost vector, using slot intCtr + 1
+        vecCost[intCtr + 1] <- (0.5 / nObs) * sum((gdX %*% mtxTheta - gdY)^2)
+    }
+    
+    plot(vecCost, main=paste0("Cost Function vs. Iterations: ",alpha))
+    print(paste0("Intercept: ",round(mtxTheta[1,1],4)))
+    print(round(mtxTheta[-1,1] / sdX[-1],4))
+    
+    return(gdX %*% mtxTheta)
+}
+
+baseTime <- proc.time()
+
+y0001 <- gdTest(alpha=0.0001)
+y0003 <- gdTest(alpha=0.0003)
+y0010 <- gdTest(alpha=0.001)
+y0030 <- gdTest(alpha=0.003)
+y0100 <- gdTest(alpha=0.01)
+y0300 <- gdTest(alpha=0.03)
+y1000 <- gdTest(alpha=0.1)
+y3000 <- gdTest(alpha=0.3)
+
+print("Total run time for function gdTest: ")
+print(proc.time() - baseTime)
+
+# Benchmarking based on subset of mtcars dataset
+# mtxX is 32x6 (32 observations, each with an intercept plus 5 predictors)
+# mtxY is 32x1 (32 results)
+# nIter is 20,000
+# 8 combinations of alpha are run, all that converge so there are no NaN or related timing issues
+# 
+# Run using matrix maths to simultaneosuly update theta:  4.3 user 2.1 system 6.9 elapsed
+# RMSE from different alpha [lm() RMSE is 2.306]: 3.675 2.398 2.320 2.306 2.306 2.306 2.306 2.306
+# 
+# Run using for loops to simultaneously update theta:  14.1 user 2.1 system 17.7 elapsed
+# RMSE from different alpha [lm() RMSE is 2.306]: 3.675 2.398 2.320 2.306 2.306 2.306 2.306 2.306
+# 
+# So, even with these very small datasets, matrix maths reduce user time by ~70% and elapsed time by ~60%
+```
+  
+The gradient descents converge at different paces depending on the learning parameter (alpha).  For a look at the goodness of fit, we assess the actual predictions:  
+```{r}
+graphFrame <- cbind(y0001[,1], y0003[,1], y0010[,1], y0030[,1], 
+                    y0100[,1], y0300[,1], y1000[,1], y3000[,1], 
+                    mtcars$mpg
+                    )
+graphFrame <- graphFrame[order(graphFrame[,ncol(graphFrame)]),]
+plot(x=1:nrow(graphFrame), y=graphFrame[,ncol(graphFrame)], type="l", 
+     col="dark green", lwd=3, ylim=c(0,50)
+     )
+lines(x=1:nrow(graphFrame), y=graphFrame[,1], col="red", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,4], col="blue", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,6], col="purple", lty=2)
+lines(x=1:nrow(graphFrame), y=graphFrame[,8], col="orange", lty=2)
+```
+
+As expected, the smaller alpha have not yet had enough time to converge, and so they have worse predictions (their gradients are still declining).  On the other hand, for the larger alpha, they have had enough time to converge without inducing oscillations, suggesting that the are a reasonable solution to the problem.  To assess how good, we examine:  
+```{r}
+rmseLM <- sqrt(mean((summary(mpgLM)$residuals)^2))
+rmseMod <- rep(0, ncol(graphFrame)-1)
+for (intCtr in 1:(ncol(graphFrame)-1)) {
+    rmseMod[intCtr] <- sqrt(mean((graphFrame[,ncol(graphFrame)] - graphFrame[,intCtr])^2))
+}
+
+print(paste0("RMSE from LM: ",round(rmseLM,3)))
+print(paste0("RMSE from Gradient Descent: "))
+print(round(rmseMod,3))
+```
+  
+Gradient descent eventually finds coefficients that are close to optimal for RMSE.  This exploration is helpful for seeing some advantnges of gradient descent (no matrix inverting means it can be fast for many predictors, no per se requirement that the cost function be linear), as well as some advantages of the closed form (converges immediately to the optimal answer with no iterations, easier to program).  This will be a good topic for continued exploration.  
+  
+
+###_Logistic Regression_  
+Logistic regression ("logit") is used to make binary classifications.  By convention, 1 often expresses the presence of something (malignancy, school acceptance, fraudulent transaction, etc.) while 0 is set to express the absence of that something.  The models work the same regardless of which state is called 1, of course.  
+  
+There are many drivers behind using logit rather than linear regression for a classification problem.  Among the drivers:  
+  
+* New data can play a large role even when they obviously do not matter.  For example, if we model tumor size vs. mailgnancy, we may find 2.5 cm is roughly where most tumors start to be malignant.  We might even get an OK linear regression line that passes through a prediction of 0.5 at ~2.5 cm.  But, if we add malignancies with 10 cm, the regression line will pass through 0.5 at a larger tumor size.  This makes little sense as our model had already learned that 2.5 cm is the cutoff; it became stupider when exposed to additional data that agreed with it!  
+* The linear regression will also classify some points as being below 0 probability and above 1 probability.  While this is not the end of the world (we will predict <0 as 0 and >1 as 1), neither is it sensible.  
+
+An example of this phenomenon is shown below, based on entirely made up data:  
+```{r}
+set.seed(1605181831)
+
+par(mfrow=c(1, 2))
+
+## Create some fake tumor data
+tumorSize <- runif(100, min=0, max=0.1)
+tumorType <- rbinom(length(tumorSize), 1, 1 - ((0.1 - tumorSize)^2 * 100))
+fakeTumorLMOrig <- lm(tumorType ~ tumorSize)
+keyCutOrig <- (0.5-coef(fakeTumorLMOrig)[[1]])/coef(fakeTumorLMOrig)[[2]]
+predOrig <- pmax(0, pmin(1, round(predict(fakeTumorLMOrig, data.frame(tumorSize)), 0) 
+                         ) 
+                 )
+
+plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predOrig, pch=19,
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutOrig,4)), cex.main=0.85
+     )
+abline(fakeTumorLMOrig, col="blue", lwd=2)
+abline(h=0.5, v=keyCutOrig, lty=2, lwd=2)
+
+confOrig <- confusionMatrix(predOrig, tumorType, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confOrig$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confOrig$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confOrig$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Val: ",round(confOrig$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Val: ",round(confOrig$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+## Add some larger tumors that are all malignant
+tumorSizeMod <- c(tumorSize, runif(50, min=0.1, max=0.2))
+tumorTypeMod <- c(tumorType, rep(1, 50))
+fakeTumorLMMod <- lm(tumorTypeMod ~ tumorSizeMod)
+keyCutMod <- (0.5-coef(fakeTumorLMMod)[[1]])/coef(fakeTumorLMMod)[[2]]
+predMod <- pmax(0, pmin(1, round(predict(fakeTumorLMMod, data.frame(tumorSizeMod)), 0) 
+                        ) 
+                )
+
+plot(tumorSizeMod, tumorTypeMod, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predMod, pch=19,
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutMod,4)), cex.main=0.85
+     )
+abline(fakeTumorLMMod, col="blue", lwd=2)
+abline(h=0.5, v=keyCutMod, lty=2, lwd=2)
+
+confMod <- confusionMatrix(predMod, tumorTypeMod, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confMod$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confMod$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confMod$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Value: ",round(confMod$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Value: ",round(confMod$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+par(mfrow=c(1,1))
+
+```
+  
+The LM appropriately responds to the new data by driving up the intercept (more of the data are positive, and making more positive predictions will drive up the overall accuracy).  But, this means we declare tumors of size 0.011 to have a 50% chance of being malignant, even though the closed form function has probability of malignancy at size 0.011 as ~20%.  
+  
+This can be seen from the very poor specificity of the modified test; we essentially declare everyone to have cancer, so a positive result from our test does not have much meaning (prior would not change by that much.
+  
+Logistic regression is an attempt to cure some of these deficiencies.  Broadly, differences in the logit include:  
+  
+* Predicted probability, h, in the logit is 1 / [ 1 + exp(-(X * theta)) ], as opposed to X * theta in linear regression.  The 1 / (1 + exp(-d)) is referred to as the sigmoid function, which has the desirable properties that it asymptotes to 0 for d of -Inf and to 1 for d of +Inf; it also is 0.5 for d=0, so making predictions can be as easy as just looking at each predicted d [-(X * theta) ] and using 0 as the cutoff  
+* The cost function is defined based on the "true y" to be -log(h) for "true y == 1" and -log(1-h) for "true y == 0".  Essentially, the more extreme (whether towards 0 or towards 1) the probability decalred by the model, the greater the penalty for a missed prediction.  
+* This cost function is asserted to be convex, while using sum((y-x)^2) as in linear regression is asserted to have many local minima.  Further, this cost function is asserted to be equivalent to a maximum likelihood estimate (MLE).  
+* The short version seems to be that a great deal of thought (and proof) went in to this cost function, making it a good modelling choice  
+  
+The logit model is now tested on the same fake malignancy data as used in the previous example.  The call for the logit in R is based on glm() using family="binomial".  The prediction method is broadly the same, with an added call to type="response":  
+```{r}
+par(mfrow=c(1, 2))
+
+## Run the GLM (logit) for the original tumor data
+fakeTumorGLMOrig <- glm(tumorType ~ tumorSize, family="binomial")
+
+## When response variables times coefficients equal intercept, h=0.5 (sigmoid(0))
+keyCutOrigGLM <- -coef(fakeTumorGLMOrig)[[1]]/coef(fakeTumorGLMOrig)[[2]]
+predOrigGLM <- pmax(0, pmin(1, round(predict(fakeTumorGLMOrig, data.frame(tumorSize), type="response"), 0) 
+                           ) 
+                    )
+
+plot(tumorSize, tumorType, xlab="Tumor Size", ylab="Malignant (1=Yes, 0=No)", col=1+predOrigGLM, pch=19,
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutOrigGLM,4)), cex.main=0.85
+     )
+points(x=tumorSize, y=predict(fakeTumorGLMOrig, data.frame(tumorSize), type="response"), col="blue", pch=19)
+abline(h=0.5, v=keyCutOrigGLM, lty=2, lwd=2)
+
+confOrigGLM <- confusionMatrix(predOrigGLM, tumorType, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confOrigGLM$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confOrigGLM$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confOrigGLM$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Val: ",round(confOrigGLM$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Val: ",round(confOrigGLM$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+## Run the logit on the dataset with the larger tumors that are all malignant
+fakeTumorGLMMod <- glm(tumorTypeMod ~ tumorSizeMod, family="binomial")
+
+## When response variables times coefficients equal intercept, h=0.5 (sigmoid(0))
+keyCutModGLM <- -coef(fakeTumorGLMMod)[[1]]/coef(fakeTumorGLMMod)[[2]]
+predModGLM <- pmax(0, pmin(1, round(predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 0) 
+                        ) 
+                )
+
+plot(tumorSizeMod, tumorTypeMod, ylab="Malignant (1=Yes, 0=No)", 
+     col=1+predModGLM, pch=19, cex.main=0.85, xlab="Tumor Size", 
+     main=paste0("50% Probability at Tumor Size: ",round(keyCutModGLM,4))
+     )
+points(y=predict(fakeTumorGLMMod, data.frame(tumorSizeMod), type="response"), 
+       x=tumorSizeMod, col="blue", pch=19
+       )
+abline(h=0.5, v=keyCutModGLM, lty=2, lwd=2)
+
+confModGLM <- confusionMatrix(predModGLM, tumorTypeMod, positive="1")
+text(0.04, 0.4, paste0("Accuracy: ",round(confModGLM$overall[["Accuracy"]], 2)), adj=c(0, 0))
+text(0.04, 0.34, paste0("Sensitivity: ",round(confModGLM$byClass[["Sensitivity"]], 2)), adj=c(0, 0))
+text(0.04, 0.28, paste0("Specificity: ",round(confModGLM$byClass[["Specificity"]], 2)), adj=c(0, 0))
+text(0.04, 0.22, paste0("+ Pred Value: ",round(confModGLM$byClass[["Pos Pred Value"]], 2)), adj=c(0, 0))
+text(0.04, 0.16, paste0("- Pred Value: ",round(confModGLM$byClass[["Neg Pred Value"]], 2)), adj=c(0, 0))
+
+par(mfrow=c(1,1))
+
+```
+  
+While the overall accuracy of the logit is actually slightly lower (with the added malignancy data), the model is in aggregate substantially better.  Specifically, the model on the original data already tuned to predict 99%+ probabilities at sizes of 0.10 and above.  So, when the model gets a whack of new data that is all 100% malignant at sizes of 0.10 - 0.20, it does not learn anything new (it is, for practical purposes, unchanged).  As such, the model remains just as good at predicting negatives while getting better (technically, just seeing even more obvious cases of) at predicting positives.  It retains its specificity.  
+  
+It is notable that for "ideal" faked data (the original 100 data points), the LM slightly outperformed the logit.  The underlying data has structure that is neither precisely p ~ x nor precisely p ~ 1/(1+exp(-x))) so neither of these formulations precisely matches the data.  As always, the question during analysis is which model better reflects realtiy and better predicts unseen cases.  There is nothing magical about the logit that makes it certain to outperform simply because the outcomes are all 0/1.  But, it is a decent default with some very attractive properties.  
+  
+###_Regularization_  
+The concept of regularization is that it can be helpful to shrink the magnitudes of the coefficients, largely to avoid overfitting to the training data.  The specific implementation is that that sum-squared-error for the linear regression becomes sum((f(x) - y)^2) + lambda * sum(theta^2), where by convention the intercept term is not included in the theta^2 summation.  
+  
+In general, regularization means worse predictions on the training data, since the method preferences small increases in RMSE if achieved by holding down the magnitude of the parameters.  However, the method can increase test/validation accuracy materially by vastly reducing variance (overfitting of the training data).  
+
+A classic case for regularization is conofunding input vectors correlated to a relevant input vector.  While we "know" the correct model is Y = x1 + eps, if x2/x3 ~ x1 the regression can find something silly like Y = -2 * x1 + 4 * x2 - 1 * x3 + eps based on a small structure that happens to appear in the randomness in the training data.  The small gain in RMSE is completely artificial, and can fail in the validation stage.  For example:  
+```{r}
+set.seed(1605200803)
+nSim <- 40
+
+x1 <- rnorm(nSim)  #x1 = N(0, 1)
+x2 <- 0.5 * x1 + rnorm(nSim, 0, 0.01)  # x2 will be 0.5 * x1 + N(0, 0.01)
+x3 <- 2 * x1 + rnorm(nSim, 0, 0.4)  # x3 will be 2 * x1 + N(0, 0.4)
+y <- x1 + rnorm(nSim)  # y will be x1 + N(0, 1)
+
+# Test how well y = x1 fits the data - what is the R^2?
+rndTSS <- sum( (y - mean(y))^2 )
+rndSSE <- sum( (y - x1)^2 )
+rndR2 <- 1 - rndSSE / rndTSS
+print(paste0("R-squared for an assumed model of y = x1 is: ", round(rndR2,4)))
+
+# Run the actual regression using lm
+rndLM <- lm(y ~ x1 + x2 + x3)
+summary(rndLM)
+```
+
+The full linear regression improves R-squared (unadjsuted) from 0.5255 to 0.5866, but at the expense of wildly varying thetas (+13.6 vs. +1.0 and -22.3 vs. 0.0).  It is reasonable to doubt this model will perform as well on an independent validation set - let's see:  
+```{r}
+x1Test <- rnorm(nSim)  #x1Test = N(0, 1)
+x2Test <- 0.5 * x1Test + rnorm(nSim, 0, 0.01)  # x2Test will be 0.5 * x1Test + N(0, 0.01)
+x3Test <- 2 * x1Test + rnorm(nSim, 0, 0.4)  # x3Test will be 2 * x1Test + N(0, 0.4)
+yTest <- x1Test + rnorm(nSim)  # yTest will be x1Test + N(0, 1)
+
+# Test how well y = x1 fits the test data - what is the R^2?
+rndTestTSS <- sum( (yTest - mean(yTest))^2 )
+rndTestSSE <- sum( (yTest - x1Test)^2 )
+rndTestR2 <- 1 - rndTestSSE / rndTestTSS
+print(paste0("R-squared when applying y = x1 to test data is: ", 
+             round(rndTestR2,4)
+             )
+      )
+
+# Test how well the lm fits the data
+rndPredLM <- predict(rndLM, data.frame(x1=x1Test, x2=x2Test, x3=x3Test))
+lmTestSSE <- sum( (yTest - rndPredLM)^2 )
+print(paste0("R-squared when applying lm(y ~ x1 + x2 + x3) to test data is: ", 
+             round(1-lmTestSSE/rndTestTSS, 4)
+             )
+      )
+```
+
+Absent regularization, the LM performs worse than the assumed y=x1.  While this is a contrived example, it provides an excellent illustration of how attempting to reduce bias with additional predictors can instead explode variance.  The "more accurate" training model then performs materially worse on validation data.  
+
+A further issue in this example is that there is very high VIF in all of the LM coefficients, meaning that the model is rather unstable to small perturbations.  So, the coefficients and predictions not only have higher variance, they are additionally much harder to interpret.  See plots:  
+```{r}
+par(mfrow=c(1, 2))
+
+plot(x=x1, y=y, pch=19, col="blue", main="Training data")
+abline(a=0, b=1, lwd=2, lty=2, col="orange")
+points(x=x1, y=predict(rndLM, data.frame(x1=x1, x2=x2, x3=x3)), 
+       pch=19, col="red", cex=0.75
+       )
+
+plot(x=x1Test, y=yTest, pch=19, col="blue", main="Testing data")
+abline(a=0, b=1, lwd=2, lty=2, col="orange")
+points(x=x1Test, y=rndPredLM, pch=19, col="red", cex=0.75)
+
+par(mfrow=c(1, 1))
+```
+  
+The red points represent an overfit to the training data, as they are (essentially) tuning on some noise in x2 and x3 while trying to keep x1 + x2 + x3 = 1 in line with the actual trend of the data (x1=1, x2=x3=0).  When the overfit is applied to the testing data, it is not certain to perform well; in this example, it is actually performing worse.  
+  
+The LM can instead be run using regularization, and there are many algorithms (ridge, lasso, elasticnet, etc.) coded in R.  For this demonstration, we use lm.ridge() from the MASS library:  
+```{r}
+library(MASS)
+
+# Reuse the same y, x1, x2, x3 from above (35 lambda runs)
+myLambda = c(seq(0, 0.1, by=0.01), seq(0.12, 0.30, by=.02), seq(0.35, 1.00, by=.05))
+rndLMRidge <- lm.ridge(y ~ x1 + x2 + x3, lambda=myLambda)
+
+par(mfrow=c(1, 2))
+
+# Plot the coefficients vs. Lambda
+plot(y=coef(rndLMRidge)[,2], x=myLambda, type="l", col="blue", lwd=2,
+     ylim=c(floor(min(coef(rndLMRidge))), ceiling(max(coef(rndLMRidge)))),
+     main="Ridge Coefficients", xlab="Lambda", ylab="Coefficients"
+     )
+lines(y=coef(rndLMRidge)[,3], x=myLambda, lwd=2, col="dark green")
+lines(y=coef(rndLMRidge)[,4], x=myLambda, lwd=2, col="purple")
+abline(h=0, lty=2)
+legend("bottomright", legend=c("x1", "x2", "x3"), col=c("blue", "dark green", "purple"), lwd=2)
+
+# Calculate and then plot the R^2 for Test and Training Data
+mtxOrig <- matrix(data=c(rep(1, nSim), x1, x2, x3), ncol=4, byrow=FALSE)
+mtxTest <- matrix(data=c(rep(1, nSim), x1Test, x2Test, x3Test), ncol=4, byrow=FALSE)
+mtxY <- matrix(data=rep(y, length(myLambda)), nrow=nSim, byrow=FALSE)
+mtxYTest <- matrix(data=rep(yTest, length(myLambda)), nrow=nSim, byrow=FALSE)
+mtxCoefRidge <- as.matrix(coef(rndLMRidge))
+
+predRidgeOrig <- mtxOrig %*% t(mtxCoefRidge)  # nSimx4 %*% 4x11 = nSimx11 (each y predicted 11 times)
+predRidgeTest <- mtxTest %*% t(mtxCoefRidge)  # nSimx4 %*% 4x11 = nSimx11 (each y predicted 11 times)
+
+r2OrigRidge <- 1 - (colSums((predRidgeOrig - mtxY)^2) / rndTSS)
+r2TestRidge <- 1 - (colSums((predRidgeTest - mtxYTest)^2) / rndTestTSS)
+
+plot(x=myLambda, y=r2OrigRidge, type="l", col="blue", lwd=2, ylim=c(0.3, 0.7),
+     main="R^2 LM.RIDGE", xlab="Lambda", ylab="R^2"
+     )
+lines(x=myLambda, y=r2TestRidge, col="dark green", lwd=2, ylim=c(0.3 ,0.7))
+legend("topright", legend=c("Train Data", "Test Data"), col=c("blue", "dark green"), lwd=2)
+
+par(mfrow=c(1, 1))
+```
+  
+* As lambda increases, the magnitude of the coefficients decreases and the accuracy on the training data decreases also (as expected)  
+* But, accuracy on the test (validation) data increases with lambda, showing that regularization is helping the model to avoid overfitting to the training data  
+* At some point, lambda could become so large that the model goes to intercept-only, so it is not the case that larger lambda is always better  
+* Calculating the best lambda would likely require k-fold and/or bootstrap to assess lambda with optimal predictive power, for example as implemented by caret::train  
+* This example was simply to illustrate the that penalizing large coefficients can, under some conditions, improve out-of-sample predictive power  
+  
+###_Log Loss vs RMSE Example for Binomial Classification_  
+The loss function for the logistic regression is set to highly penalize wrong predictions made with high confidence.  Specifically:  
+  
+* Consider h(x) to be the predicted probability given vector x, associated to y which is the actual 0/1    
+* RMSE Cost (per estimate): (y - h(x))^2  
+* Log-Loss Cost (per estimate): [ -y * log(h(x)) ] - [ (1 - y) * log(1 - h(x)) ]  
+  
+We can graph these functions for y=0 and y=1:  
+```{r}
+
+pEst <- seq(0.01, 0.99, by=0.01)
+
+par(mfrow=c(1, 2))
+
+
+# Plot RMSE Loss Functions
+plot(x=pEst, y=(1-pEst)^2, type="l", col="blue", lwd=2, main="RMSE for 0/1 Class",
+     xlab="Estimated Probability", ylab="RMSE Cost"
+     )
+lines(x=pEst, y=(0-pEst)^2, type="l", col="dark green", lwd=2)
+abline(h=0, v=0.5, lty=2)
+legend("top", legend=c("True y=1", "True y=0"), col=c("blue", "dark green"), lwd=2)
+
+# Plot Log Loss Functions
+plot(x=pEst, y=-log(pEst), type="l", col="blue", lwd=2, main="Log-Loss for 0/1 Class",
+     xlab="Estimated Probability", ylab="Log-Loss Cost"
+     )
+lines(x=pEst, y=-log(1-pEst), type="l", col="dark green", lwd=2)
+abline(h=0, v=0.5, lty=2)
+legend("top", legend=c("True y=1", "True y=0"), col=c("blue", "dark green"), lwd=2)
+
+
+par(mfrow=c(1, 1))
+
+```
+  
+A related question is what prediction is optimal if you "know" the true probability to be p.  Under both RMSE and Log-Loss, any estimate other than p will incur higher errors (on average):  
+  
+* Suppose that true probability is p, and estimated probability is d  
+* Over n trials, this experiment should on average have p * n state "1"" and (1-p) * n state "0"  
+  
+* RMSE E[Cost]:  (p * n) * (1 - d)^2 + ((1 - p) * n) * (-d)^2  
+* RMSE E[Cost]:  (p * n) * (1 - 2 * d + d^2) + ((1 - p) * n) * d^2  
+* RMSE E[Cost]:  (p * n) - 2 * (p * n) * d + (p * n) * d^2 + n * d^2 - p * n * d^2  
+* d(RMSE E[Cost])/dd:  -2 * p * n + 2 * (p * n) * d + 2 * d * n - 2 * (p * n) * d  
+* d(RMSE E[Cost])/dd:  -2 * p * n + 2 * d * n, which equals 0 (hits minimum) when d=p  
+  
+* Log-Loss E[Cost]:  -(p * n) * ln(d) - (1 - p) * n * ln(1 - d)  
+* d(Log-Loss E[Cost])/dd:  -(p * n) / d + (1 - p) * n / (1 - d)  
+* d(Log-Loss E[Cost])/dd:  Need (1 - p) * n / (1 - d) = (p * n) / d -> (1 - p) * n * d = (1 - d) * (p * n)
+* d(Log-Loss E[Cost])/dd:  Need n * d  - (p * n) * d = (p * n) - (p * n) * d -> n * d = n * p -> d = p  
+  
+###_One vs. All Classification_  
+Sometimes the feature for a classification problem has more than two potential states.  For example, a patient could be healthy, sick with sore throat, or sick with flu.  Provided that the states are MECE, then the typical logit approach can be run once for each state, with the feature being state="yes" vs. state="no".  
+  
+In many ways, the pre-processing of features is analogous to what would be required for a chi-squared test of association:  
+  
+* If some observations do not fall in to any of the states, create an additional state called "None"  
+* If some observations fall in to 2+ of the states, either create additional states (A only, B only, A and B, None) or declare that each of the observations has a primary state (e.g., perhaps sore throat and flu should be flagged as flu and not sore throat).  The choice of feature creation/aggregation may materially influence the model's performance.  
+  
+The data for this example is from an assignment downloaded for the Coursera Ng Machine Learning class.  The Ng course uses Octave (free version of MATLAB), and the data are on my machine in MATLAB format.  The function readMat() from library R.matlab is used to read this data for processing in R.  This code is cached so that the data need only be converted to R format once.
+  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week04/"  # Using relative path
+matData <- "ex3data1.mat"
+
+listMatData <- readMat(paste0(matPath, matData))
+str(listMatData)  # Check that as expected - list with two items, $X and $y
+
+mtxX <- listMatData$X  # First item in the list should be 5000x400
+mtxY <- listMatData$y  # Second item in the list (y) should be 5000x1
+
+str(mtxX)  # Check that 5000x400 and matricized
+str(mtxY)  # Check that 5000x1 and matricized
+
+hist(mtxY[,1], col="blue", breaks=0:10)  # Equal distributions of items in each of y==1:10
+```
+
+The MATLAB data have loaded successfully, and mtxY has 500 observations in each class 1:10.  There are 400 potential predictors for each of the 5000 observations, so there is some risk of over-fitting.  There are some clever matrix maths that can be run (see later), but for now we run through 10 trials using glmnet().  The glmnet() function will test mutliple lambda using elasticnet regularization.  
+
+Many default parameters are used, with the exception that we ask not to standaridze the input variables (they are already pixel activations 0-1 so there is no major outlier concern).  Further, we request alpha=0 (ridge penalty) rather than the default alpha=1 (lasso penalty).  This is a logit (family="binomial") regression call.  Further, a for loop is used (clunkily) to go through each of the 10 cases, with the results cached since this is not an overwhelmingly fast procedure:  
+```{r, cache=TRUE}
+library(glmnet, quietly=TRUE)
+
+glmList <- vector("list", 10)
+
+for (intCtr in 1:10) {
+    modelY=factor(mtxY[,1]==intCtr, levels=c(FALSE, TRUE))
+    
+    # Run ridge (alpha=0) regressions using logit (family="binomial") using defaults for lambda search
+    glmList[[intCtr]] <- glmnet(x=mtxX, y=modelY, family="binomial", standardize=FALSE, alpha=0)
+}
+
+```
+
+Just as an example, we inspect the predictions made by this routine, thinking specifically about how well it does at predicting 5 vs. not 5:  
+```{r}
+# If this is cached, then RStudio has no access to glmnet -- duplicate call here
+library(glmnet, quietly=TRUE)
+
+set.seed(16060709)
+
+# Request the ridge penalty (alpha=0), same as modeled
+# Request s=0.01 (nearest result to lambda=0.01)
+myTest <- predict(glmList[[5]], mtxX, type="response", s=0.00595, alpha=0)
+
+plot(myTest, col= 1 + (mtxY[,1] == 5),
+     main="Prediction for y=5", ylab="Probability", xlab="Index"
+     )
+```
+  
+Then, run the predictions for each of 1-10, pick the maximum, and report/graph the accuracies:  
+```{r}
+probY <- matrix(data=-1, nrow=nrow(mtxY), ncol=10)
+
+for (intCtr in 1:10) {
+    probY[,intCtr] <- predict(glmList[[intCtr]], mtxX, type="response", s=0.01, alpha=0)
+}
+
+predY <- apply(probY, 1, FUN=which.max)
+
+plot(x=1:length(predY), y=predY, col = 1 + (mtxY[,1] != predY), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+
+confusionMatrix(predY, mtxY[,1])
+```
+
+In this case, the simple model (with guessed lambda, no cross-validation, and no out-of-sample prediction) classifies ~90% of the images correctly.  This code will later work through better methods for fitting matrices () since a simple Octave routine drives 95% accuracy without too much added time.  The idea was merely to show that the concept of logit classification can be extended to mutliple classes as needed.  
+  
+###_Neural Networks - Representation and Forward Propagation_  
+Neural networks are a fairly old idea that experienced a resurgence as computing power became cheaper and more readily available.  The general idea is to find non-linear features in the input data that combine to be useful predictors.  While creating thousands (or even millions) of new covariates using combinations of polynomials on the original predictors is also a possibility, the neural network can drive strong accuracy without needing to make so many guesses (and then process/filter them down) at the covariate creation stage.  
+  
+Broadly, the idea of the neural network is to function like the brain.  Input signals excite various combinations of neurons, which then pass messages to other neurons, which eventually reach a conclusion.  The idea is to try to make the computer behave like the brain.  
+  
+A small bit of the science is that neurons are cells in the brain.  Broadly, neurons get information by way of dendrites, make some calculations, and pass results on to other neurons by way of axons.  The neurons sometimes work as a group, and scientists have showed that they can be re-wired.  For example, people can "see" by way of their tongue or use reflected sounds (sonar) to navigate if they have enough training and repetition.  
+  
+For the computer, the process works by taking input data, processing it through one or more hidden layers, and then creating a final hypothesis.  In general for classification, the sigmoid (1 / (1 + exp(-x)) ) function is applied to the result at each stage.  As well, a bias term (all 1s) is introduced for the next step of the process.  Suppose we have input matrix X (n observatons of m covariates) and reponse vector y (n observations of factors):  
+  
+* Step 1:  Create a column of all ones at the front of X, and call this X1  
+* Step 2a:  Create a2 = g(X1 * Theta1)  
+* Step 2b:  Add a column of all ones at the front of a2, and call this X2  
+* Step 3a:  Create a3 = g(X2 * Theta2)  
+* Step 3b:  Add a column of all ones at the front, and call this X3  
+* . . . 
+* Step Final:  Create aFinal = g(Xfinal-1 * Thetafinal-1), and call this the prediction  
+  
+The intermediate nodes are referred to as "hidden layers".  While it is common to have only a single "hidden layer", sometimes it is helpful to have more.  
+  
+As a somewhat simplified example, a small hidden layer can perform any of the common logical functions, as well as XOR (exclusive OR) and XNOR (negation of exclusive XOR):  
+  
+* AND: Suppose you have x0 (bias term) of 1 with binary inputs x1 and x2.  Then, if you have theta = c(-30, 20, 20) you will get g(-30) ~ 0 for x1=x2=0, g(-10) ~ 0 for x1+x2=1, and g(10) ~ 1 for x1=x2=1  
+* OR:  Same concept, but with theta = c(-10, 20, 20), providing g(-10) ~ 0 for x1=x2=0 and g(10) ~ 1 or g(30) ~ 1 for x1+x2=1 or x1=x2=1  
+* NEGATION: Same idea but with just x1 and theta = c(10, -20)  
+* XOR:  Create hidden node1 as NOT AND using theta = c(30, -20, -20) and hidden node2 as OR using theta = c(-10, 20, 20).  Then add the bias unit, and use final theta = c(-30, 20, 20) which will come back TRUE provided that both OR and NOT AND are true  
+  
+As you continue to add nodes/layers, you can continue to add logic and interactions and the like.  The output vector can also be a multi-class rather than just a single 0/1.  
+  
+For an example, we expand on the number recognition problem from the previous section.  The instructor calculated a theta matrix that can be loaded from the MATLAB format:  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week04/"  # Using relative path
+wgtData <- "ex3weights.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $Theta1 and $Theta2
+
+mtxTheta1 <- listWgtData$Theta1  # First item in the list should be 25x401
+mtxTheta2 <- listWgtData$Theta2  # Second item in the list (y) should be 10x26
+
+str(mtxTheta1)  # Check that 25x401 and matricized
+str(mtxTheta2)  # Check that 10x26 and matricized
+
+```
+  
+These data can then be used to run the forward propagation, ending with a 5000x10 matrix containing probabilities for each of the 10 potential states.  
+  
+```{r}
+XOnes <- cbind(rep(1, nrow(mtxX)), mtxX)  # Will now be 5000x401
+
+mtxA2 <- XOnes %*% t(mtxTheta1)  # 5000x401 %*% 401x25 will be 5000x25
+mtxA2 <- 1 / (1 + exp(-mtxA2))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+
+a2Ones <- cbind(rep(1, nrow(mtxA2)), mtxA2)  # Will now be 5000x26
+
+mtxResults <- a2Ones %*% t(mtxTheta2)  # 5000x26 %*% 26x10 will be 5000x10 (as desired)
+mtxResults <- 1 / (1 + exp(-mtxResults))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+
+```
+
+Further, the above code for finding the best prediction (maximum probability) and plotting the outcomes is slightly adapted:  
+```{r}
+predYnn <- apply(mtxResults, 1, FUN=which.max)
+
+plot(x=1:length(predYnn), y=predYnn, col = 1 + (mtxY[,1] != predYnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+
+confusionMatrix(predYnn, mtxY[,1])
+
+```
+  
+With these well-optimized theta (more on that later), the neural network achieves ~97.5% accuracy on the in-sample data.  We have not yet run any out-of-sample testing.  
+  
+###_Neural Networks - Logic Gates_  
+Below is an example of using neural networks to create logic gates for two input nodes.  We create the data such that there is a bias unit (1) and then each of the four binary combinations of a1/a2:  
+```{r}
+nnLogicInput <- matrix(data=c(1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0), nrow=4, byrow=FALSE)
+nnLogicInput
+
+nnThetaAnd <- c(-30, 20, 20)
+nnThetaOr <- c(-10, 20, 20)
+nnThetaNotA <- c(10, -20, 0)
+
+nnThetaOne <- matrix(data=c(nnThetaAnd, nnThetaOr, nnThetaNotA), nrow=3, byrow=FALSE)
+
+nnHiddenOne <- cbind(rep(1, 4), 1 / (1 + exp(-(nnLogicInput %*% nnThetaOne))))
+round(nnHiddenOne, 3)
+
+nnThetaXOR <- c(-10, -20, 20, 0)
+nnThetaXNOR <- c(10, 20, -20, 0)
+nnThetaA <- c(10, 0, 0, -20)
+nnThetaB <- c(-30, 20, 20, 20)
+nnKeepAnd <- c(-10, 20, 0, 0)
+nnKeepOr <- c(-10, 0, 20, 0)
+
+nnThetaTwo <- matrix(data=c(nnThetaXOR, nnThetaXNOR, nnKeepAnd, nnKeepOr, nnThetaA, nnThetaB), 
+                     nrow=4, byrow=FALSE
+                     )
+
+nnHiddenTwo <- 1 / (1 + exp(-(nnHiddenOne %*% nnThetaTwo)))
+prtHidden <- cbind(nnLogicInput[,-1], nnHiddenTwo)
+dimnames(prtHidden)[[2]] <- c("Raw A", "Raw B", "XOR", "XNOR", "AND", "OR", "Proc A", "Proc B")
+round(prtHidden, 3)
+```
+  
+So while this is a highly simplified example, it illustrated the power of the neural network to tease out interactions among the inputs.  
+  
+###_Neural Networks - Back Propagation_
+####_Back Propagation (Setup and Costs)_  
+Back propagation is a technique for optimizing Thetas in a neural network.  The process broadly runs as follows:  
+  
+* Start with randomized Theta matrices (there is a singularity issue if there are any initial symmetries)  
+* Forward propagate the train X data by way of the Theta matrices to make predictions  
+* Adjudge the predictions for delta (desired change), and back-propagate the deltas from end to start  
+* Adjust all Theta matrices accordingly, and then repeat  
+  
+Like many things, it is less complicated to write than to implement.  But, the image-recognition from above can be leveraged for this analysis to see if we can come up with "good" theta choices on our own.  First, we double-check that the X and Y data are still available:  
+```{r}
+str(mtxX)  # Check that 5000x400 and matricized
+str(mtxY)  # Check that 5000x1 and matricized
+
+hist(mtxY[,1], col="blue", breaks=0:10)  # Check equal distributions of items in each of y==1:10
+```
+  
+Next, we create images of a random sample of digits and initialize theta matrices assuming a 25-unit hidden layer with 10 possible outcomes:  
+```{r}
+nInputLayer <- ncol(mtxX)
+nHiddenNodes <- 25
+nFinalLabels <- 10
+epsInit <- 0.12  # Initial thetas will be randomized as epsInit * runif(min=-1, max=1)
+
+# First matrix needs [1 + nInputLayer] columns and nHiddenNodes rows
+bpThetaOne <- matrix(data=runif(nHiddenNodes * (1 + nInputLayer), min=-epsInit, max=epsInit), 
+                     nrow=nHiddenNodes, ncol=(1 + nInputLayer), byrow=FALSE
+                     )
+
+# Second matrix needs [1 + nHiddenNodes] columns and nFinalLables rows
+bpThetaTwo <- matrix(data=runif(nFinalLabels * (1 + nHiddenNodes), min=-epsInit, max=epsInit), 
+                     nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE
+                     )
+
+# Set up margins and mfrow for image printing
+defMargin <- par()$mar
+par(mar=c(0, 0, 0, 0))
+par(mfrow=c(8, 12))
+
+# Grab 96 random images to show
+myVal <- sample(5000, 96, replace=FALSE)
+
+# Draw the images (need to manipulate a lot of up vs. down due to how image() works)
+for (picNum in myVal) { 
+    image( matrix(data=rev(mtxX[picNum,]), nrow=20, byrow=TRUE)[20:1,], axes=FALSE) 
+}
+
+# Print the associated mtxY for comparison
+print(matrix(data=mtxY[myVal,1], nrow=8, byrow=TRUE))
+
+# Put graphing back to defaults
+par(mfrow=c(1,1))
+par(mar=defMargin)
+```
+
+Next, we need to convert matrices to vectors for passing back/forth to various cost and gradient functions.  Essentially, the idea is that minimization functions want to work on vectors while we actually have matrices.  So, we will convert matrices to vectors, use functions to convert back to matrices to calculate cost and gradients, then pass back the results as numbers and vectors.  The first phase of this is to create a cost function that takes a single vector of ThetaOne/ThetaTwo plus descriptors and calculates the cost.  We then unroll the matrices to vectors and run the cost calculation (forward propagation) function:  
+```{r}
+nnCost <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y, lambda) {
+    
+    # Roll vecMatrix back to theta matrices (assume Theta One by rows then Theta Two by rows)
+    keyCut <- (nInputLayer + 1) * nHiddenNodes
+    mtxOneData <- vecMatrix[1:keyCut]
+    mtxTwoData <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useThetaOne <- matrix(data=mtxOneData, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    useThetaTwo <- matrix(data=mtxTwoData, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Forward propagate using X, y, and thetas
+    m = nrow(X)
+    Xones <- cbind(rep(1, m), X)
+    layerOne <- cbind(rep(1, m), (1 / (1 + exp(-(Xones %*% t(useThetaOne))) ) ) )
+    layerTwo <- 1 / (1 + exp(-(layerOne %*% t(useThetaTwo))) ) 
+    
+    # Calculate costs using log-loss, assuming the match should be to column number
+    yPreds <- (y[,1] == matrix(data=rep(1:nFinalLabels, m), nrow=m, ncol=nFinalLabels, byrow=TRUE))
+    nnJ <- (-1/m) * ( sum(yPreds * log(layerTwo)) + sum((1-yPreds) * log(1 - layerTwo) ) )
+    
+    # Add the lambda costing also
+    nnJ <- nnJ + (lambda / (2 * m)) * (sum(useThetaOne[,-1]^2) + sum(useThetaTwo[,-1]^2) )
+    
+    return(nnJ)
+}
+
+```
+  
+The function is then tested on the instructor inputs as provided in exercise 4 from Ng Machine Learning on Coursera:  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week05/"  # Using relative path
+wgtData <- "ex4weights.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $Theta1 and $Theta2
+
+testTheta1 <- listWgtData$Theta1  # First item in the list should be 25x401
+testTheta2 <- listWgtData$Theta2  # Second item in the list (y) should be 10x26
+
+str(testTheta1)  # Check that 25x401 and matricized
+str(testTheta2)  # Check that 10x26 and matricized
+
+# Calculate cost for lambda=0 (should be 0.287629)
+nnCost(vecMatrix=c(as.vector(testTheta1), as.vector(testTheta2)), nInputLayer=nInputLayer, 
+       nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=0
+       )
+
+# Calculate cost for lambda=1 (should be 0.383770)
+nnCost(vecMatrix=c(as.vector(testTheta1), as.vector(testTheta2)), nInputLayer=nInputLayer, 
+       nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
+       )
+
+```
+  
+Further, a very short function is written to calculate the sigmoid gradient for any object (number, vector, matrix, etc.) that is passed to it.  The maths are:  
+  
+* Sigmoid = 1 / (1 + exp(-z))  
+* dSigmoid/dz = exp(-z) / (1 + exp(-z))^2 = (1 - Sigmoid) * Sigmoid  
+* Desire is to perform this calculation for each element, assuming that z has been passed to the function    
+  
+As well, an even shorter function is written to calculate the Sigmoid, g(z), given an input z:  
+```{r}
+sigmoidGradient <- function(zSig) {
+    tempSig <- 1 / (1 + exp(-zSig))
+    return(tempSig * (1 - tempSig))
+}
+
+sigmoidPlain <- function(zSig) {
+    return(1 / (1 + exp(-zSig)))
+}
+
+sigmoidPlain(0)
+sigmoidPlain(c(1, -0.5, 0, 0.5, 1))
+sigmoidPlain(matrix(data=0.5*(0:14-7), nrow=5, byrow=FALSE))
+
+sigmoidGradient(0)
+sigmoidGradient(c(1, -0.5, 0, 0.5, 1))
+sigmoidGradient(matrix(data=0.5*(0:14-7), nrow=5, byrow=FALSE))
+```
+  
+####_Back Propagation (Gradients)_  
+The back-propagation algorithm is at the heart of the neural network setup.  The intent is to find the gradients for every entry in the theta matrices by back-propagating the error in each training example.  Specifically, given this example with a single hidden layer, we attempt:  
+  
+For each set of inputs x(i) spanning x(1)-x(m), run the following:  
+  
+1.  Treat x(i) as the sole input to the neural network (the a1 vector).  Use this to forward propagate to z2, a2=g(z2), z3, a3=g(z3); recalling that g() is the sigmoid function  
+2.  Calculate the deltas for each of the k final nodes, definining delta(3)(k) as (a(3)(k) - y(k)) or basically how much different is my node than I wish it were  
+3.  Calculate the deltas for each of the hidden layer nodes, defined as delta2 = t(ThetaTwo) %*% delta(3) * g'(z(2)), where g' means the sigmoid gradient and z(2) is the hidden layer PRIOR to running sigmoid  
+4.  Accumulate deltas as D(L) = D(L) + 1/m * delta(L+1) % * % t(a(L)), where a(L) is the activation of the nodes in layer L while delta(L+1) is the delta from the layer one ahead  
+  
+Note that by convention, delta and gradient and etc. for the bias unit is always considered to be 0 since the bias unit will always be 1.  This can be accounted for in many ways, but the gist is that it should never be fed to an optimizer function.  
+
+A gradient function is created to manage this.  In theory, it would be nice to add this as a component of the cost function.  For now, it is maintained as a separate function taking the same inputs:  
+```{r}
+nnGradient <- function(vecMatrix, nInputLayer, nHiddenNodes, nFinalLabels, X, y, lambda) {
+
+    # Copied directly from nnCost for unrolling the Theta vectors
+    # Roll vecMatrix back to theta matrices (assume Theta One by rows then Theta Two by rows)
+    keyCut <- (nInputLayer + 1) * nHiddenNodes
+    mtxOneData <- vecMatrix[1:keyCut]
+    mtxTwoData <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useThetaOne <- matrix(data=mtxOneData, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    useThetaTwo <- matrix(data=mtxTwoData, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Set up empty Theta Gradients
+    gradThetaOne <- matrix(data=0, nrow=nHiddenNodes, ncol=(nInputLayer + 1), byrow=FALSE)
+    gradThetaTwo <- matrix(data=0, nrow=nFinalLabels, ncol=(1 + nHiddenNodes), byrow=FALSE)
+    
+    # Calculate the number of observations to process
+    m = nrow(X)
+    
+    # Convert y (mx1) to yPreds (mx10) with each column being "is it this digit (1/0"
+    yPreds <- (y[,1] == matrix(data=rep(1:nFinalLabels, m), nrow=m, ncol=nFinalLabels, byrow=TRUE))
+    
+    # Run the forward propagation outside the loop
+    # Step 1 - Forward propagate this observation
+    a1 <- cbind(rep(1, m), X)  # Take X and add 1 in front (mx401)
+    z2 <- a1 %*% t(useThetaOne)  # mx401 %*% 401x25 = mx25
+    a2 <- cbind(rep(1, m), sigmoidPlain(z2))  # Take sigmoid of z2, add 1 in front (mx26)
+    z3 <- a2 %*% t(useThetaTwo)  # mx26 %*% 26x10 = mx10
+    a3 <- sigmoidPlain(z3)  # Take sigmoid of z3, and this is a3
+    
+    # Calculate delta03 outside the loop
+    # Step 2 - Calculate delta03
+    delta_03 <- a3 - yPreds  # This will be mx10, same as a3
+    
+    # Calculate delta02 outside the loop
+    # Step 3 - Calculate delta02
+    delta_02 <- (delta_03 %*% useThetaTwo[,-1]) * sigmoidGradient(z2)  # (mx10 %*% 10x25) * mx25 = mx25
+    
+    # Calculate the gradients outside the for loop
+    # Step 4a - Accumulate Theta Gradeints
+
+    # 10x26 + 10x5000 %*% 5000x26 = 10x26 (as desired)
+    gradThetaTwo <- gradThetaTwo + t(delta_03) %*% a2
+
+    # 25x401 + 25x5000 %*% 5000x401 = 25x401 (as desired)
+    gradThetaOne <- gradThetaOne + t(delta_02) %*% a1    
+    
+    # Step 4b - Regularize accumulated gradients by 1/m
+    gradThetaTwo <- (1/m) * gradThetaTwo
+    gradThetaOne <- (1/m) * gradThetaOne
+    
+    # Step 4c - Add penalty term (lambda), except not for bias unit (first column)
+    gradThetaTwo[, -1] <- gradThetaTwo[, -1] + (lambda/m) * useThetaTwo[, -1]
+    gradThetaOne[, -1] <- gradThetaOne[, -1] + (lambda/m) * useThetaOne[, -1]
+    
+    # Roll thetas together in to a long vector for return
+    return(c(as.vector(gradThetaOne), as.vector(gradThetaTwo)))    
+}
+```
+  
+The next step will be to tie this together through an optimization machine.  
+  
+####_Back Propagation (Optimize Thetas)_  
+At any given point, we have a core set of data, including:  
+  
+* mtxX - the feature matrix (5000x400) 
+* mtxY - the response vector (5000x1)  
+* bpThetaOne - the most recent Theta1, starting as uniform -eps to eps (25x401)  
+* bpThetaTwo - the most recent Theta2, starting as uniform -eps to eps (10x26)  
+* nInputLayer - the number of features (400)  
+* nHiddenLayer - the number of hidden layer nodes (25)  
+* nFinalLabels - the number of final categories (10)  
+* lambda - regularization parameter (can start with 1)  
+* vecPass - rolls bpThetaOne and bpThetaTwo in to a single vector (length 10,285) by first going by columns along bpThetaOne and then going by columns along bpThetaTwo  
+* nnCost - function that will pass back the current cost  
+* nnGradient - function that will pass back the current gradient, in an order that matched up to vecMatrix  
+  
+In theory, this is enough to optimize the theta matrices.  We begin by writing a short function for the forward propagation (should clean this up in a later version - redundant with code above):  
+```{r}
+forwardPredY <- function(mtxX, mtxTheta1, mtxTheta2) {
+    XOnes <- cbind(rep(1, nrow(mtxX)), mtxX)  # Will now be 5000x401
+    
+    mtxA2 <- XOnes %*% t(mtxTheta1)  # 5000x401 %*% 401x25 will be 5000x25
+    mtxA2 <- 1 / (1 + exp(-mtxA2))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+    
+    a2Ones <- cbind(rep(1, nrow(mtxA2)), mtxA2)  # Will now be 5000x26
+    
+    mtxResults <- a2Ones %*% t(mtxTheta2)  # 5000x26 %*% 26x10 will be 5000x10 (as desired)
+    mtxResults <- 1 / (1 + exp(-mtxResults))  # sigmoid (R assumes non-matrix math unless requested otherwise)
+    
+    predYnn <- apply(mtxResults, 1, FUN=which.max)
+    
+    return(predYnn)
+}
+```
+  
+We begin by studying the baseline data, and its associated costs and accuracies:  
+```{r}
+lambda=1  # Run scenario with lambda=1
+
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+# Assess the current accuracies
+predYnn <- forwardPredY(mtxX, bpThetaOne, bpThetaTwo)
+plot(x=1:length(predYnn), y=predYnn, col = 1 + (mtxY[,1] != predYnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYnn, mtxY[,1])
+
+# Print the current cost
+nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the current gradients
+plot(nnGradient(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda))
+```
+  
+Apparently, the initial predictions using random theta are not good!  Next, we try to optimize theta (by way of associated vecPass) using some of the R built-in functionality:  
+```{r, cache=TRUE}
+# Run the optimization process
+startTime <- proc.time()
+myList <- optim(vecPass, nnCost, nnGradient, nInputLayer=nInputLayer,
+                nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                X=mtxX, y=mtxY, lambda=lambda, control=list(maxit=150), method="BFGS"
+                )
+proc.time() - startTime
+```
+  
+The optim() function is seemingly not as fast as the equivalent function fmingc() in Octave, although it is driving better accuracy with more iterations so there may be a chicken and egg issue.  This may be because optim() is not yet tuned, and packages like "trust" and/or further tweaking of control parameters may help.  
+
+Still, it provides a good starting solution to a neural network with ~10,000 parameters for ~50,000 predictions (10 final nodes for each of the 5,000 observations) in ~4 minutes.  So, while it can likely be significantly further optimized, it is pretty cool to be able to do simple image identification (on a cleaned dataset consisting of numbers only) in not too much time.  
+  
+Below, we assess the accuracy of the optimized neural network:  
+```{r}
+# Convert the result back to Theta matrices
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=myList$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=myList$par[(keyCut+1):length(myList$par)], nrow=nFinalLabels, byrow=FALSE)
+
+# Assess the optimized accuracies
+predYPostnn <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYPostnn), y=predYPostnn, col = 1 + (mtxY[,1] != predYPostnn), 
+     main="Predictions vs Actual", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYPostnn, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=myList$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=myList$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda))
+
+# Store the results for later optimization technique comparisons
+nnListBFGS150 <- myList
+```
+  
+The model is 98.8% accurate with identifying images (n.b., there was no out-of-sample test run, so this is an inflated accuracy) based on this simple neural network.  A very interesting exercise!  
+  
+###_Model Selection (Bias vs. Varaince)_  
+A primary goal with prediction is to correctly classify out-of-sample observations, meaning data that was not used to train the model.  When applying a model to make out-of-sample predictions, there are three common sources of error:  
+  
+* Intrinsic - there is some degree of randomness in the real-world, and no model can ever avoid the impact of that intrinsic randomness on model predictions  
+* Bias (under-fitting) - there is some structure in the data that is not captured in the model, thus the model makes worse predictions than it would if it tuned on that structure  
+* Variance (over-fitting) - the model has tuned on some noise in the training sample, and will make poor real-world predictions when it no longer can leverage the training noise  
+  
+To assess and minimize error, data are frequently split in to 2-3 groups prior to modeling:  
+  
+* Training data (frequently 60%-80% of the total data) - this is the primary data that is used in creating and tuning the model  
+* Validation / CV data (optional; if present, frequently 10%-20% of the total data) - this data is used for checking the goodness of various models coming from the training dataset, and then using those findings to further refine the models with the training data.  Some techniques use resampling techniques (k-fold, bootstrap, etc.) that automatically run the CV process with the training data, and in those cases this split might be eliminated  
+* Test data (frequently 20%-30% of the data) - this data is used a single time for assessing the quality of the final model.  It should not be used at all for model tuning.  
+  
+A simple example of bias/variance comes from y = x^2 + eps, where eps ~ N(0, sigma^2).  The predictions are certain to have error-squared of at least sigma-squared, since this is an intrinsic error.  However, suppose that we model:  
+  
+* y=theta0 + theta1 * x : This model will not find the curvature that is in the data, so it will tend to be a poor fit to the training dataset and will also perform poorly on the CV data and Test data  
+* y=theta0 + theta1 * x^1 + theta2 * x^2 + . . . theta50 * x^50 : This model will tune on a lot of the noise in the training data and may make good training predictions; however, these predictions will crater when applied to the CV data and Test data  
+  
+See for example:  
+```{r}
+set.seed(2016052618)
+x <- runif(250, 0, 6)
+y <- x^2 + rnorm(250, 0, 2)  # Add some noise to y = x^2
+
+# Split in to Train and Test (without using caret::createDataPartition())
+inTrain <- sample(length(x), round(.7*length(x)), replace=FALSE)
+
+xTrain <- x[inTrain]
+xTest <- x[-inTrain]
+yTrain <- y[inTrain]
+yTest <- y[-inTrain]
+
+# Create all polynomials 1-50
+mtxXTrain <- matrix(data=0, nrow=length(xTrain), ncol=50)
+mtxXTest <- matrix(data=0, nrow=length(xTest), ncol=50)
+for (intCtr in 1:50) {
+    mtxXTrain[, intCtr] <- xTrain^intCtr
+    mtxXTest[, intCtr] <- xTest^intCtr
+}
+
+# Run the biased model
+biasLM <- lm(yTrain ~ mtxXTrain[,1])
+plot(xTrain, yTrain, type="p", pch=19, col="red", 
+     xlab="X (training)", ylab="Y (training)", main="Training Data: Fits for Bias, Proper, Variance"
+     )
+abline(biasLM, lty=2, lwd=2, col="blue")
+
+
+# Run the "correct" model
+properLM <- lm(yTrain ~ mtxXTrain[,2])
+lines(xTrain[order(xTrain)], properLM$fitted.values[order(xTrain)], lty=1, lwd=4, col="dark green")
+
+
+# Run the variance model
+varianceLM <- lm(yTrain ~ mtxXTrain[,])
+lines(xTrain[order(xTrain)], varianceLM$fitted.values[order(xTrain)], lty=1, lwd=4, col="purple")
+
+legend("topleft", legend=c("Bias (y=x)", "Proper (y=x^2)", "Variance (y=x^(1:50))"), 
+       col=c("blue", "dark green", "purple"), lty=c(2, 1, 1), lwd=c(2, 4, 4)
+       )
+
+
+# Apply to the test data
+plot(xTest, yTest, type="p", pch=19, col="red", 
+     xlab="X (test)", ylab="Y (test)", main="Testing Data: Fits for Bias, Proper, Variance"
+     )
+
+yBiasTest <- coef(biasLM)[[1]] + coef(biasLM)[[2]] * mtxXTest[,1]
+lines(xTest[order(xTest)], yBiasTest[order(xTest)], lty=2, lwd=2, col="blue")
+
+yProperTest <- coef(properLM)[[1]] + coef(properLM)[[2]] * mtxXTest[,2]
+lines(xTest[order(xTest)], yProperTest[order(xTest)], lty=1, lwd=4, col="dark green")
+
+coefVar <- coef(varianceLM)
+coefVar[is.na(coefVar)] <- 0
+yVarianceTest <- mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+lines(xTest[order(xTest)], yVarianceTest[order(xTest)], lty=1, lwd=4, col="purple")
+
+legend("topleft", legend=c("Bias (y=x)", "Proper (y=x^2)", "Variance (y=x^(1:50))"), 
+       col=c("blue", "dark green", "purple"), lty=c(2, 1, 1), lwd=c(2, 4, 4)
+       )
+
+print(paste0("RMSE Training (Bias): ", round(sqrt(mean((yTrain - biasLM$fitted.values)^2)),2)))
+print(paste0("RMSE Training (Proper): ", round(sqrt(mean((yTrain - properLM$fitted.values)^2)),2)))
+print(paste0("RMSE Training (Variance): ", round(sqrt(mean((yTrain - varianceLM$fitted.values)^2)),2)))
+
+print(paste0("RMSE Testing (Bias): ", round(sqrt(mean((yTest - yBiasTest)^2)),2)))
+print(paste0("RMSE Testing (Proper): ", round(sqrt(mean((yTest - yProperTest)^2)),2)))
+print(paste0("RMSE Testing (Variance): ", round(sqrt(mean((yTest - yVarianceTest)^2)),2)))
+
+```
+
+The bias model struggles in both the training data and the testing data since it cannot tune on the curvature in the underlying data.  The best solution would be to add a covariate to help it match the real-world structure.  
+  
+The proper model performs reasonably in both the training data and the testing data.  There is not much to be done about the intrinsic noisiness of y.  
+  
+The variance model performs the best in the training data and the worst in the testing data.  This is common with severe overfits which have been learning about noise in addition to structure.  The best solutions would be to either 1) reduce the number of covariates, 2) add regularization to damp down the coefficients, or 3) get a larger dataset (in which case it is much harder to over-fit).  CV/Test error much worse than Train error is a common symptom of variance.  
+  
+Suppose we build on the sample above and explore the behavior of the models as the training set gets bigger.  In this case, we will create 250 points for training and 250 points for testing.  Then, we will explore the behavior of the models as they take larger slices of the training data:  
+```{r}
+# Code copied from above, except training size now 2000 and testing size now 500
+set.seed(2016052618)
+x <- runif(500, 0, 6)
+y <- x^2 + rnorm(500, 0, 2)  # Add some noise to y = x^2
+
+# Split in to Train and Test (without using caret::createDataPartition())
+inTrain <- sample(length(x), round(.5*length(x)), replace=FALSE)
+
+xTrain <- x[inTrain]
+xTest <- x[-inTrain]
+yTrain <- y[inTrain]
+yTest <- y[-inTrain]
+
+# Create all polynomials 1-50
+mtxXTrain <- matrix(data=0, nrow=length(xTrain), ncol=50)
+mtxXTest <- matrix(data=0, nrow=length(xTest), ncol=50)
+for (intCtr in 1:50) {
+    mtxXTrain[, intCtr] <- xTrain^intCtr
+    mtxXTest[, intCtr] <- xTest^intCtr
+}
+
+# Pick some sizes for the training dataset
+trainSizes <- c(25, 50, 75, 100, 125, 150, 175, 200, 250)
+
+# Create a location to store each of the models
+biasLMList <- vector("list", length(trainSizes))
+properLMList <- vector("list", length(trainSizes))
+varianceLMList <- vector("list", length(trainSizes))
+
+# Create a location to store each of the yTest projections
+biasYTestList <- vector("list", length(trainSizes))
+properYTestList <- vector("list", length(trainSizes))
+varianceYTestList <- vector("list", length(trainSizes))
+
+# Create a location to store each of the RMSE ([[1]] for train and [[2]] for test)
+biasRMSE <- vector("list", 2)
+properRMSE <- vector("list", 2)
+varianceRMSE <- vector("list", 2)
+
+# Run each model once per training size - store in list
+for (intCtr in 1:length(trainSizes)) {
+    curSize <- trainSizes[intCtr]
+    
+    # Run the training on the first curSize samples
+    biasModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, 1])
+    properModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, 2])
+    varianceModel <- lm(yTrain[1:curSize] ~ mtxXTrain[1:curSize, ])
+    
+    biasLMList[[intCtr]] <- biasModel
+    properLMList[[intCtr]] <- properModel
+    varianceLMList[[intCtr]] <- varianceModel
+    
+    # Project the model on to the full test dataset
+    biasYTestList[[intCtr]] <- coef(biasModel)[[1]] + coef(biasModel)[[2]] * mtxXTest[,1]
+    properYTestList[[intCtr]] <- coef(properModel)[[1]] + coef(properModel)[[2]] * mtxXTest[,2]
+    
+    coefVar <- coef(varianceModel)
+    coefVar[is.na(coefVar)] <- 0
+    varianceYTestList[[intCtr]] <- 
+        mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+    
+    # Store RMSE for the training and test data
+    biasRMSE[[1]] <- c(biasRMSE[[1]], sqrt(mean( (biasModel$residuals)^2 ) ) )
+    properRMSE[[1]] <- c(properRMSE[[1]], sqrt(mean( (properModel$residuals)^2 ) ) )
+    varianceRMSE[[1]] <- c(varianceRMSE[[1]], sqrt(mean( (varianceModel$residuals)^2 ) ) )
+    
+    biasRMSE[[2]] <- c(biasRMSE[[2]], sqrt(mean( (biasYTestList[[intCtr]] - yTest)^2 ) ) )
+    properRMSE[[2]] <- c(properRMSE[[2]], sqrt(mean( (properYTestList[[intCtr]] - yTest)^2 ) ) )
+    varianceRMSE[[2]] <- c(varianceRMSE[[2]], sqrt(mean( (varianceYTestList[[intCtr]] - yTest)^2 ) ) )
+}
+
+# Plot RMSE findings for each of the models - how good is train fit vs. test fit?
+par(mfrow=c(1, 2))
+
+# Plot #1 is Bias vs. Proper
+plot(trainSizes, log2(biasRMSE[[1]]), ylim=c(-1,10), type="l", col="blue", lty=2,
+     xlab="Training Size", ylab="Log2(RMSE)", main="Bias vs. Proper Model"
+     )
+lines(trainSizes, log2(biasRMSE[[2]]), col="blue", lty=1, lwd=2)
+lines(trainSizes, log2(properRMSE[[1]]), col="dark green", lty=2)
+lines(trainSizes, log2(properRMSE[[2]]), col="dark green", lty=1, lwd=2)
+legend("top", legend=c("Bias Train", "Bias Test", "Proper Train", "Proper Test"), lty=c(2, 1, 2, 1), 
+       lwd=c(1, 2, 1, 2), col=c("blue", "blue", "dark green", "dark green")
+       )
+abline(h=1, lty=2)
+
+# Plot #2 is Variance vs. Proper
+plot(trainSizes, log2(varianceRMSE[[1]]), ylim=c(-1,10), type="l", col="red", lty=2,
+     xlab="Training Size", ylab="Log2(RMSE)", main="Variance vs. Proper Model"
+     )
+lines(trainSizes, log2(varianceRMSE[[2]]), col="red", lty=1, lwd=2)
+lines(trainSizes, log2(properRMSE[[1]]), col="dark green", lty=2)
+lines(trainSizes, log2(properRMSE[[2]]), col="dark green", lty=1, lwd=2)
+legend("topright", legend=c("Variance Train", "Variance Test", "Proper Train", "Proper Test"), 
+       lty=c(2, 1, 2, 1), lwd=c(1, 2, 1, 2), col=c("red", "red", "dark green", "dark green")
+       )
+abline(h=1, lty=2)
+
+par(mfrow=c(1, 1))
+```
+    
+The intrinsic RMSE in this simulated data is 2 (the epsilon is set as N(0, 2^2)).  
+  
+* The proper model tracks closely with intrinsic RMSE at every training size.  This model is neither biased nor variant, and requires only a single covariate (x^2) for a best-fit.  Since there is neither bias nor variance, the test set error and the training error are materially the same  
+* The bias model tracks above instrinsic RMSE at every training size.  This model is unable to tune to the curvature that is truly in the y dataset.  Since there is no overfit, the training error and test errors are materially the same, and they do not improve with a large sample size.  The problem is the missing covariate (x^2), and more training data does not address that  
+* The variance model shows high divergence between test set error and training error at small training sample sizes.  Because of the over-fit to the training data, the projections on to the test data are very poor.  However, as the training set becomes larger, there is much less opportunity for the model to train on noise.  As such, while training error increases with N, testing error decreases with N.  This is the hallmark of a high variance problem - more training data is a viable solution  
+  
+Diagnostics like this can be handy in deciding what to do next.  If the model is not improving with more training data, then getting even more observations is unlikely to help.  Instead, there may be value in thinking through other covariates (polynomials, products, new features, etc.) that might help explain the structure that is currently not being modeled.  
+  
+On the other hand, a model with high variance (testing error >> training error) needs to stop training on the noise.  This can be addressed through more observations, fewer covariates, or punishing the magnitude of the coefficients (regularization).  If more observations are not available, clever use of the CV data to tune the number of covariates and/or magnitude of the coefficients could be very helpful.  
+  
+Suppose we have only the 50 training examples and want to run the high-variance model.  Note that the bias model and the proper model have both already stabilized by this point, while the variance model is creating high errors by overfitting the data.  
+  
+One idea is to regularize the coefficients and to re-run the variance model.  Regularization helps avoid over-fitting, and we explore the implications of different lambda for nTrain=50:  
+```{r}
+lambdaSizes <- c(0, 0.00001, 0.00002, 0.00005, 0.0001, 0.00025, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1)
+useSize <- 50
+
+varRidgeRMSE <- vector("list", 2)
+varRidgeYTrainList <- vector("list", length(lambdaSizes))
+varRidgeYTestList <- vector("list", length(lambdaSizes))
+
+# Run the training on useSize samples for curLambda
+varRidgeModel <- lm.ridge(yTrain[1:useSize] ~ mtxXTrain[1:useSize, ], lambda=lambdaSizes)
+    
+
+for (intCtr in 1:length(lambdaSizes)) {
+    coefVar <- coef(varRidgeModel)[intCtr,]
+    coefVar[is.na(coefVar)] <- 0
+
+    # Project the model on to the full train and test dataset    
+    varRidgeYTrainList[[intCtr]] <- 
+        mtxXTrain[1:useSize,] %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+    varRidgeYTestList[[intCtr]] <- 
+        mtxXTest %*% matrix(data=coefVar[2:length(coefVar)], ncol=1) + coefVar[[1]]
+        
+    # Store RMSE for the training and test data
+    varRidgeRMSE[[1]] <- c(varRidgeRMSE[[1]], 
+                           sqrt(mean( (varRidgeYTrainList[[intCtr]] - yTrain[1:useSize])^2 ) ) 
+                           )
+    varRidgeRMSE[[2]] <- c(varRidgeRMSE[[2]], 
+                           sqrt(mean( (varRidgeYTestList[[intCtr]] - yTest)^2 ) ) 
+                           )
+}
+
+# Plot RMSE findings for each of the models - how good is train fit vs. test fit?
+par(mfrow=c(1, 2))
+
+# Plot #1 is Test vs. Train by Lambda
+plot(log10(lambdaSizes+0.0001), varRidgeRMSE[[1]], ylim=c(1,4), type="l", col="blue", lty=2,
+     xlab="log10(Lambda+0.0001)", ylab="RMSE", main="Variance Model vs. Lambda"
+     )
+lines(log10(lambdaSizes+0.0001), varRidgeRMSE[[2]], col="blue", lty=1, lwd=2)
+legend("top", legend=c("Training", "Testing"), lty=c(2, 1), lwd=c(1, 2), col=c("blue", "blue"))
+abline(h=2, lty=2)
+
+# Plot #2 is Fit for lambda=0 vs. lambda=0.1
+plot(xTest, yTest, type="p", col="red", pch=19,
+     xlab="Test X", ylab="Test Y", main="Model Fits"
+     )
+lines(xTest[order(xTest)], varRidgeYTestList[[1]][order(xTest)], col="purple", lty=1, lwd=2)
+lines(xTest[order(xTest)], varRidgeYTestList[[length(varRidgeYTestList)]][order(xTest)], 
+      col="dark green", lty=1, lwd=4
+      )
+legend("top", legend=c("Lambda=0", "Lambda=0.1"), 
+       lty=c(1, 1), lwd=c(2, 4), col=c("purple", "dark green"), cex=0.8
+       )
+
+par(mfrow=c(1, 1))
+```
+  
+With even modest lambda, the high-polynomail model no longer games the training set.  The penalty on the coefficients means that it can still change theta to drive substantially better RMSE, but can no longer wildly swing theta in pursuit of small gains in RMSE (in essence, what an overfit is).  While this is a highly artificial example, it is also illustrative of the variance issue and use of regularization to address it.  
+  
+###_Skewed Data_  
+When looking for a rare outcome, accuracy becomes a very poor measure.  For example, if 1% of a population being tested has cancer, you could drive 99% accuracy just by returning a "no cancer" diagnosis.  In reality, achieving the "no information rate" accuracy is no achievement at all.  While caret::confusionMatrix() helps by displaying the NIR and p > NIR statistics, there are some other ways to calculate goodness of fit when there are skewed outcomes.  Suppose we look at three outcomes:  
+  
+* True Positive (TP) - we predict y=1 when the correct answer is y=1  
+* False Positive (FP) - we predict y=1 when the correct answer is y=0  
+* False Negative (FN) - we predict y=0 when the correct answer is y=1  
+  
+We can then base a few ratios off these:  
+  
+* Precision (aka Positive Predictive Value): TP / (TP + FP), or "of all our y=1 predictions, how many are truly y=1?"  
+* Recall (aka Sensitivity): TP / (TP + FN), or "of all real-world y=1, how many do we predict to be y=1?"  
+* F1 score = (2 * P * R) / (P + R), which will tend towards 100% when P=R=1 and will tend torward 0% as either P=0 or R=0  
+  
+###_Large Data Notes_  
+Banko and Brill (2001) studied various algorithms for making predictions about language usage given context in a sentence (e.g., "to" or "too" or "two").  They found that their algorithms all had similar accuracies and that their algorithms all become better with a larger training dataset.  This finding has been replicated in many other settings, driving the expression "Who has the best data is who wins, not who has the best algorithm".  
+  
+A general test for whether more training data would be useful is "could a human expert solve this problem if I gave them the input features x".  If yes, then the more training data we gave the machine, the closer the machine will come to matching human-expert predictions.  
+  
+While discussed previously, this is largely based on the bias-variance trade-off.  A model with bias (too few features and/or the wrong features) will have high training error and high testing error.  The typical approach is to create additional features to drive down the bias.  While more features increases the risk of variance (over-fitting), a very large training set highly mitigates these overfitting risks.  Basically, a large training set lets you minimize bias (add a lot of features) while keeping variance low.  
+  
+###_Large Margin Classification (Support Vector Machines aka SVM)_  
+The Support Vector Machine (SVM) is a clever play on logistic regression that drives the largest possible margins between positive and negative classes of data.  Of particular note, the SVM need not draw linear boundaries, so it can be a powerful method for teasing out non-linear connections in the training set.  
+  
+As a recall, the logistic regression has the following:  
+  
+* z = t(theta) * X
+* g(z) = 1 / ( 1 + exp(-z) )  is called the gaussian of z  
+* h(x) = g(z), so when y=1 we want t(theta) * X >> 0 and when y=0 we want t(theta) * X << 0  
+  
+The trick of SVM is to use a linear cost function, with cutoffs at +1 (for y=1) and -1 (for y=0).  This means that if the SVM can find z >= 1 for all true positives and z <= -1 for all true negatives, then it will have a zero cost.  As it happens, the maths behind this cost calculation are computationally cheap also.
+  
+* LOGIT:  min J = (1/m) * sum-over-each-observation [ y * (-log(h(x))) + (1 - y) * (-log(1 - h(x))) ] + (lambda/(2 * m)) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM: min J = (1/m) * sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + (lambda/(2 * m)) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM MOD (kill 1/m by convention): min J = sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + (lambda/2) * sum-over-all-but-theta0-of ( theta^2 )  
+* SVM MOD (use c*Error + theta^2): min J = c * sum-over-each-observation [ y * cost1(t(theta) * X) + (1 - y) * cost0(t(theta) * X) ] + 0.5 * sum-over-all-but-theta0-of ( theta^2 )  
+  
+Notably, the SVM does not return any probabilities.  Instead it returns 1 if t(theta) * X >= 0 and 0 if t(theta) * X < 0.  
+  
+The SVM is referred to as a "large margin" classifier since it has a strong preference for abs(t(thata) * X) >= 1, the region where all correct predictions have zero cost.  More specifically:  
+  
+* min 0.5 * sum( theta^2 ) s.t. t(theta) * X >= 1 (where y=1)  
+* min 0.5 * sum( theta^2 ) s.t. t(theta) * X <= -1 (where y=0)  
+  
+The larger the value of c (which behaves a lot like 1/lambda), the wider the margin the SVM will try to create between the positive and negative data.  One watchout is that this can be very sensitive to outliers, so cross-validation and careful setting of c can be important.  
+  
+A simple example of the SVM can be based on a small Octave dataset available from the Ng Machine Learning (Coursera) Week 7 problem set:  
+  
+```{r}
+# If above has been cached, then RStudio has no access to R.matlab -- duplicate call here
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week07/"  # Using relative path
+wgtData <- "ex6data1.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $x and $y
+
+svmX <- listWgtData$X  # First item in the list should be 51x2
+svmY <- listWgtData$y  # Second item in the list (y) should be 51x1
+
+str(svmX)  # Check that 51x2 and matricized
+str(svmY)  # Check that 51x1 and matricized
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+```
+  
+Basic SVM uses a "linear kernel" (more about kernels in the next section).  These are available in R through the "e1071" and "kernlab" libraries.  In this example, we run e1071::svm() using type "C-classification" and kernel "linear", while exploring how results change with "cost" (Lagrange forumulation C) parameter:  
+```{r}
+library(e1071)
+
+
+# Run with C=1
+svmLinear001 <- svm(svmX, svmY, type="C-classification", kernel="linear", cost=1, scale=FALSE)
+w001 <- t(svmLinear001$coefs) %*% svmX[svmLinear001$index,]
+b001 <- -svmLinear001$rho
+
+# Run with C=100
+svmLinear100 <- svm(svmX, svmY, type="C-classification", kernel="linear", cost=100, scale=FALSE)
+w100 <- t(svmLinear100$coefs) %*% svmX[svmLinear100$index,]
+b100 <- -svmLinear100$rho
+
+
+plot(svmX, col=1+svmY[,1], pch=19, cex=2, 
+     main="Example (Red for Input Y=1) Linear SVM Decision Boundaries"
+     )
+abline(-b001/w001[,2], -w001[,1]/w001[,2], lty=1, lwd=2, col="blue")
+abline(-b100/w100[,2], -w100[,1]/w100[,2], lty=1, lwd=2, col="purple")
+legend("bottomleft", legend=c("C=1", "C=100"), lty=1, lwd=2, col=c("blue", "purple"))
+
+```
+  
+Within this implementation, as the cost (C) increases, the model increasingly searches for a decision boundary to minimize classification errors.  With a smaller C, the model looks to maximize the margin between the cloud of positive points and negative points.  More or less, high C risks high variance, while low C risks high bias.  A good CV process would be helpful for tuning and tradeoffs.
+  
+###_Kernels_  
+Kernels are the process of defining "features" about certain points in the training set, then definining "similarity" of other points.  For example:   
+  
+* Suppose you pick three points - L1, L2, and L3 - and define these to be your landmarks  
+* Then, for a given x, define the "similarity" of x with L1 based on the euclidean distance from x-to-L1, or length(x - L1)  
+* For "Gaussian" kernel f1, sometimes noted k(x, L(1)), use f1 = exp( -(length(x-to-L1)^2) / (2 * sigma^2) )  
+* In general, then, f1 will be near 1 for points close to L1 and near 0 for points far from L1, with sigma definining the rate of drop-off  
+* In essence, then, you get some contours around L1, L2, and L3  
+  
+The kernels concept can be generalized to the full training set by creating a new features vector for all train, CV, and test data points:  
+  
+* Define every training data point to be a landmark (L1 = x1, L2 = x2, L3 = x3, etc.)  
+* For every x(i), define f(i)1 = k(x1, L1), f(i)2 = k(x2, L2), . . . , f(i)n = k(xn, Ln)  
+* Then, x(i) becomes a feature vector f0, f1, f2, . . . , fn, where f0 defaults as the bias (always 1) unit  
+  
+SVM can be run with this kernel.  Specifically, calibrate Theta with an eye towards predicting y=1 iff t(Theta) * f >= 0.  Largely as before:  
+  
+* minimize { C * sum-over-all-points-of [ y(i) * cost1( t(theta) * f(i) ) + (1 - y(i)) * cost0( t(theta) * f(i) ) ] + 0.5 * sum( theta^2 ) } - recall that theta0 is by convention not penalized  
+* sum( theta^2 ) can be re-written as t(theta) * theta, provided theta0 has been excluded  
+* High C and/or low sigma mean high variance and low bias  
+* Low C and/or high sigma mean low variance and high bias  
+  
+In practice, there are several considerations about using kernels with SVM.  
+  
+* Libraries have largely been optimized - use these pre-optimized approaches, much as you would for matrix inversion and the like  
+* Linear kernels can be good when there are a large number of features with a small number of samples  
+* Gaussian kernels can be good when there are a small number of features with a large number of samples  
+* Multi-class classification is typically built in to the kernel software; if not, then use the "one vs. all" method and pick the class with the highest t(theta) * x  
+  
+A related question is when to use logistic regression rather than SVM.  Some suggestions for n features with m observations include:  
+  
+* For n > m (e.g., spam classification), use logistic regression or SVM with no kernel (linear kernel)  
+* For n of 1-1,000 with m of 10-10,000, try SVM with a Gaussian kernel  
+* For n of 1-1,000 with m of 50,000+, create new features and run logit or SVM with a linear kernel  
+* Large m is a particular problem for many of the kernel algorithms  
+  
+Logistic regression and linear kernels have many similarities, and the power of the kernel is typically in learning about non-linear relationships.  Neural networks can work well in similar environments as kernels, though the kernel may be easier (less computationally expensive) to train than the neural network.  
+  
+An example of a highly non-linear pattern includes:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week07/"  # Using relative path
+wgtData <- "ex6data2.mat"
+
+listWgtData <- readMat(paste0(matPath, wgtData))
+str(listWgtData)  # Check that as expected - list with two items, $x and $y
+
+svmX <- listWgtData$X  # First item in the list should be 863x2
+svmY <- listWgtData$y  # Second item in the list (y) should be 863x1
+
+str(svmX)  # Check that 863x2 and matricized
+str(svmY)  # Check that 863x1 and matricized
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=2, main="SVM Sample Data (Red for Y=1)")
+```
+  
+We now run the data through the Gaussian kernel, choosing C=1 and sigma=0.1:  
+```{r}
+# Model implements as gamma * length rather than length / (2 * sigma^2)
+# Want length(2 * .1^2) = length * 50, so gamma=50
+svmRadial001 <- svm(svmX, svmY, type="C-classification", kernel="radial", cost=1, gamma=50, scale=FALSE)
+
+x1Range <- max(svmX[ , 1]) - min(svmX[ , 1])
+x2Range <- max(svmX[ , 2]) - min(svmX[ , 2])
+x1Min <- min(svmX[ , 1])
+x2Min <- min(svmX[ , 2])
+
+testX <- matrix(data=0, nrow=10000, ncol=2)
+
+testX[, 1] <- ((0:9999) %/% 100) * (x1Range / 99) + x1Min
+testX[, 2] <- ((0:9999) %% 100) * (x2Range / 99) + x2Min
+
+decY <- predict(svmRadial001, newdata=testX)
+
+plot(svmX[,1], svmX[,2], col=1+svmY[,1], pch=19, cex=1, main="SVM Sample Data (Red for Y=1)")
+points(testX, col=as.integer(decY), cex=0.3)
+
+```
+  
+So, the Gaussian kernel does a nice job finding the non-linear boundary given this particular dataset.  A related question is how well this would work on a train-CV-test dataset.  
+  
+###_Clustering_  
+Most of the examples so far have been "supervised learning", meaning that we told the computer the right answers for the training data and asked it to tune algorithms to drive better fits to these right answers.  Clustering on the other hand is an example of "unsupervised learning", meaning that we just give the computer the raw data but not the answer.  Clustering is commonly run when the goal is to identify groups that behave like each other.  Examples could be customer segmentation, social network analysis, or astronomy.  
+  
+K-means is one of the most common forms of clustering.  The algorithm works as follows:  
+  
+* Assume you have m observations each consisting of a length-n vector of features  
+* Choose K centroids and specify an initial position for each centroid  
+* REPEAT START: Assign each point to the nearest centroid  
+* REPEAT CONTINUE: Move the centroid position to the average of its members  
+* REPEAT END: Upon hitting convergence  
+* REPEAT CAUTION:  If a cluster has zero data points, either delete it (down to K-1 clsuters total) or make a new random centroid  
+  
+The k-means optimization function is to minimize the "distortion", defined as the average euclidean distance between every point and its centroid.  It can be shown mathematically that the steps described above continually decrease the distortion, though it is possible to get trapped by local minima.  
+  
+A common approach is to run the k-means clustering multiple times, keeping only the final clusters with the "best" distortion cost.  Specifically, it is common to just pick K training data points and use these as the starting centroids.  There is no perfect method of picking the number of clusters, K.  While it is possible to plot distortion cost vs. K, there is not always an obvious point of diminishing returns.  As such, domain expertise becomes very valuable at this stage.  
+  
+An example is again drawn from the Ng Coursera Octave files:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week08/"  # Using relative path
+wgtData <- "ex7data1.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with one item, $X
+
+kMeansX <- listMATData$X  # First item in the list should be 50x2
+str(kMeansX)  # Check that 50x2 and matricized
+plot(kMeansX, pch=19, cex=2, main="K-Means Raw Data")
+
+K = 3  # Default to 3 clusters
+
+# Make a place to store each distance and the final cluster
+kMeansX <- cbind(kMeansX, matrix(data=NA, nrow=nrow(kMeansX), ncol=K+1))  
+kCost <- NA
+
+foo <- function(x, fixedPoint) { sum((x - fixedPoint)^2) }
+
+set.seed(2016053119)
+
+# Try 1 run to find the best clusters
+kCentroids <- kMeansX[sample(nrow(kMeansX), K), 1:2]
+    
+# Iterate 10 times each
+for (intCtr2 in 1:10) {
+    for (kCtr in 1:K) {
+        kMeansX[ , 2+kCtr] <- apply(kMeansX[, 1:2], 1, FUN=foo, fixedPoint=kCentroids[kCtr, ])
+    }
+    kMeansX[ , ncol(kMeansX)] <- apply(kMeansX[, 3:(ncol(kMeansX)-1)], 1, FUN=which.min )
+    kCentroids[ , 1] <- tapply(kMeansX[, 1], kMeansX[, ncol(kMeansX)], FUN=mean)
+    kCentroids[ , 2] <- tapply(kMeansX[, 2], kMeansX[, ncol(kMeansX)], FUN=mean)
+}
+
+plot(kMeansX[ , 1:2], pch=19, cex=2, main="K-Means Clusters", col=1 + kMeansX[ , ncol(kMeansX)])
+
+```
+  
+The single-run algorithm grouped a few outliers (red) as well as splitting low (green) vs. high (blue).  Of interest is how well this compares with the pre-programmed R routine:  
+```{r}
+rKMeans <- kmeans(kMeansX[ , 1:2], centers=K)
+plot(kMeansX[ , 1:2], pch=19, cex=2, main="K-Means Clusters", col=1 + kMeansX[ , ncol(kMeansX)])
+points(kMeansX[ , 1:2], pch=19, cex=1, col=4 + rKMeans$cluster)
+
+```
+  
+And, it is obvious that the clusters do not always converge to the same global minima.  
+  
+###_Dimension Reduction Background_  
+Dimension reduction is the idea that it may not take all n features to richly describe the data, particularly when there are strong correlations (and thus redundancies) among some combinations of features.  There are typically two main objectives behind dimension reduction:  
+  
+1.  Data compression for faster processing time - if 100 features describe the data nearly as well as 1,000 features, saving ~90% of the disk space, memory, CPU time, etc., may be warranted  
+2.  Visulaization - since humans are typically limited to 2D (perhaps 3D with nice graphics) visuals, finding 2-3 dimensions that strongly describe the data can be attractive.  For example, with OECD data there could be a "size" dimension and a "per capita" dimension  
+  
+As an example, the k-means algorithm can be used for image compression, again using data from the Ng Coursera modules:  
+```{r}
+library(png)
+
+matPath <- "../../../OctaveDirectory/Week08/"  # Using relative path
+birdData <- "bird_small.png"
+
+birdArray <- readPNG(paste0(matPath, birdData))
+birdSize <- dim(birdArray)[1]
+
+posX <- numeric(birdSize^2)
+posY <- numeric(birdSize^2)
+
+for (intCtr in 1:(birdSize^2)) {
+    posX[intCtr] <- (intCtr-1) %/% birdSize
+    posY[intCtr] <- (intCtr-1) %% birdSize
+}
+
+par(mfrow=c(1,2))
+
+# Original bird plot
+plot(posX, -posY, col=rgb(birdArray[,,1], birdArray[,,2], birdArray[,,3]), pch=15, 
+     xaxt="n", yaxt="n", main="Original Image", xlab="", ylab=""
+     )
+
+# Run k-means on the colors to pick out just the "best" 32
+birdKMeans <- kmeans(matrix(data=aperm(birdArray), ncol=3, byrow=TRUE), centers=32)
+
+plot(posY, -posX, col=rgb(birdKMeans$centers[birdKMeans$cluster, 1], 
+                          birdKMeans$centers[birdKMeans$cluster, 2], 
+                          birdKMeans$centers[birdKMeans$cluster, 3] 
+                          ), 
+     pch=15, xaxt="n", yaxt="n", main="Compressed Image", xlab="", ylab=""
+     )
+
+par(mfrow=c(1,1))
+
+```
+  
+So, even with this small picture, it is possible to compress the RGB grid down to a single color, saving ~65% of the space for the image.  There is a modest space needed to store the kMeans object, offset by no longer needing to store the full color palette for each pixel.  There is also some data loss.
+  
+###_Principal Component Analysis (PCA)_  
+PCA is a common technique for data compression.  The problem objective is to minimize the sum-squared distances (project errors) to the project line.  Feature scaling/normalization to mean=0, sd=1 is nearly always applied prior to PCA.  By convention, the projection vectors are denoted as "u".  
+  
+While the actual algorithm is fairly complex, it is well-implemented as one of the results of running SVD (singular vector decomposition).  In R, this is implemented as base::svd(), returning a list with:  
+  
+* $u, the left singular vectors  
+* $d, the values of the diagonal matrix  
+* $v, the right singular vectors  
+  
+A few properties include:  
+
+* The sum of the first n diagonals divided by the total sum(diagonals) describes the total variance captured by the first n principal components  
+* X = U % * % diag(D) % * % t(V)  
+* D = t(U) % * % X % * % V
+  
+For example, continuing with the bird RGB data:  
+```{r}
+par(mfrow=c(1,2))
+
+
+birdColors <- matrix(data=aperm(birdArray), ncol=3, byrow=TRUE)
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(birdColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Original"
+     )
+
+# Run SVD
+svdColors <- svd(birdColors)
+
+# Verify decomposition
+reconColors <- svdColors$u %*% diag(svdColors$d) %*% t(svdColors$v)
+reconColors[which(reconColors > 1)] <- 1
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(reconColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Reconstructed"
+     )
+
+# Verify diagnonal
+reconD <- t(svdColors$u) %*% birdColors %*% svdColors$v
+diag(reconD) - svdColors$d
+
+par(mfrow=c(1,1))
+
+```
+  
+And, suppose that you then wanted to just take the first singular value and do a mapping against that:  
+```{r}
+# Take just the first column
+maxSVD <- 3
+
+par(mfrow=c(2, 2))
+defMar <- par()$mar
+par(mar=c(1.1, 0, 1.1, 0))
+
+
+plot((0:16383) %% 128, -((0:16383) %/% 128), col=rgb(birdColors), 
+     pch=15, axes=FALSE, xlab="", ylab="", main="Original"
+     )
+
+# Run the compressions
+picSVD <- vector("list", maxSVD)
+for (intCtr in 1:maxSVD) {
+    picSVD[[intCtr]] <- svdColors$u[ ,1:intCtr] %*% 
+                        diag(svdColors$d[1:intCtr], nrow=intCtr) %*% 
+                        t(svdColors$v[, 1:intCtr])
+
+    picSVD[[intCtr]][which(picSVD[[intCtr]] > 1)] <- 1
+    plot((0:16383) %% 128, -((0:16383) %/% 128), 
+         col=rgb(matrix(data=aperm(picSVD[[intCtr]]), ncol=3, byrow=TRUE)), 
+         pch=15, axes=FALSE, xlab="", ylab="", main=paste0("Using ", intCtr, " PCA")
+         )
+        
+}
+
+
+par(mar=defMar)
+par(mfrow=c(1, 1))
+
+```
+  
+In this case, the first PCA is primarily capturing the grayscale of the image, which is very accurate as to features.  The second PCA pulls in a good chunk of the colors, while the third PCA brings back the full image.  This could be especially advantageous if the image were large and the colors were not just described by a simple RGB.  
+  
+Often, PCA are captured only until 90%, 95%, or 99% of the total variation in the raw data is retained.  Algorithms can then be run on the smaller subspace of features post-PCA.  A few other notes about PCA:  
+  
+* PCA should only be run on the training data, with resulting SVD used to transform test data as needed  
+* It is common to get a 5x or 10x reduction in data sizes (and thus processing times) using PCA  
+* However, PCA is not a panacea and should be considered after some exploratory analysis.  If the project can be feasibly completed (run times, memory, etc.) without PCA, then that is frequently for the better  
+  
+###_Density Estimation and Anomalies_
+Anomaly detection is a common unsupervised machine learning problem, for example in fraud detection or monitoring a group of servers.  The main thrust is to identify anomalies that merit follow-up by a human, as opposed to supervised learning where the main goal is often accuracy.  That is not to say that accuracy does not matter; crying wolf is still a big problem (e.g., declining too many valid credit card charges).  Rather it is to say that the algorithm is just looking for things that differ from normal.  
+  
+The Gaussian distribution is commonly used.  Suppose you have n features about m historical observations, and categorize these as x(1), x(2), . . . , x(m).  Suppose also that each of the features can be assumed to be normal with mean mu and standard deviation sigma.  For each of the histoircal features:  
+  
+* mu = (1/m) * sum( feature )  
+* sigma = (1/m) * sum( (feature - mu)^2 ), noting that machine learning usually uses 1/m rather than 1/(m-1)  
+* p(x; mu, sigma) = ( 1 / [ sqrt(2 * pi) * sigma ] ) * exp[ -(x - mu)^2 / (2 * sigma^2) ]  
+  
+That is to say that the normal pdf (dnorm) provides some guidance as to how likely this specific occurence is.  Note that in this case we are not using the typical "area under the curve" from statistics.  Instead, we look at the actual probability from dnorm().  
+  
+Suppose we have an unlabeled training set with independent features (the next section covers the case of dependent features).  Then, we can define p(x) = p(x1; mu1, sigma1) * p(x2; mu2, sigma2) * . . . * p(xn; mun, sigman), commonly format as p(x) = PI ( p(xj; muj, sigmaj) ).  The algorithm is then fairly simple:  
+  
+* Choose a set of features of interest  
+* Find mu and sigma based on a relevant reference dataset (ideally, iid from all "good" or "normal" conditions, though that is not strictly required)  
+* Given any new example, calculate p(x) = PI ( p(xj; muj, sigmaj) ), where PI means "product over"  
+* Declare an anomaly any time p(x) < epsilon, with epsilon driving the ratio between false positives (declaring normal things anomalous) and false negatives (failing to find true anomalies)  
+  
+It is very common in the anomaly detection world that the overwhelming majority of observations will not be anomalous.  This means that a good CV/Test process with a proper metric (such as F1 score) can be valuable in picking the best epsilon for the task at hand.  A common example might be:  
+  
+* 10,000 normal (good) engines have been produced along with 20 bad engines, and we have historical feature data and a true classification for each  
+* TRAIN: Common to train on 6,000 good engines  
+* CV: Common to run CV on 2,000 good engines and 10 bad engines  
+* TEST: Common to run Test on 2,000 good engines and 10 bad engines  
+  
+The TRAIN data is used to calculate mu, sigma, while the CV data is then used to calculate an epsilon with a desirable Precision, Recall, F1, etc..  The TEST data serves as guidance on expected out-of-sample results.  
+  
+Anomaly detection is preferred to supervised learning since it is hard to predict in advance which feature will be the outlier, and extremely difficult to train a model on 20 bad cases which may each be very different than all other bad cases.  Anomaly detection benefits by taking a simpler angle - it is not trying to flag that a new engine is "bad"; instead, it is flagging that the new engine looks different than the historical good engines.  There is no pre-conceived notion of how that needs to occur - it could be normal on all features but 20-sigma off on 1, or it could be 2-sigma off on all features or etc.  
+  
+Choosing the right features can be an art, and an important one.  A few guiding principles include:  
+  
+* The more Gaussian the features the better - see if a transformation can help improve a feature  
+* Ideal to see relatively large p(x) for most good cases, with much smaller p(x) for the anomalies.  If not, work with a domain expert to see if there may be a missing feature  
+* Further, see if ratios of features might make sense, again in conjunction with a domain expert.  For example, high CPU with high memory usage might be expected as might low CPU with low memory usage.  But, high CPU with low memory usage might signal an infinite loop or other condition that should be checked by a systems engineer; if so, CPU/memory could become an interesting feature  
+  
+Example data is again taken from the Ng Coursera Machine Learning course:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8data1.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with three items, $X, $Xval, $yval
+
+trainX <- listMATData$X
+cvX <- listMATData$Xval
+cvY <- listMATData$yval
+
+str(trainX)  # Validate that 307x2 matrix
+str(cvX)  # Validate that 307x2 matrix
+str(cvY)  # Validate that 307x1 matrix
+
+```
+  
+First, we calculate mu and sigma for each feature (column) of trainX, and use that to calculate the associated probabilities for each sample in the training data.  Then, we use the CV data to determine a good choice for epsilon:  
+```{r}
+muTrain <- apply(trainX, 2, FUN=mean)
+sigmaTrain <- apply(trainX, 2, FUN=sd)  # Will return 1/(m-1) rather than 1/m
+
+pTrain <- apply(dnorm(trainX/sigmaTrain, mean=muTrain/sigmaTrain, sd=1), 1, FUN=prod)
+
+par(mfrow=c(1,2))
+
+
+plot(log10(pTrain), pch=19, col="blue", main="Probabilities for Training Data", 
+     ylab="Log-10 Probability", xlab="Observation Number"
+     )
+abline(h=-5, lty=2, lwd=1)
+
+plot(trainX[,1], trainX[,2], col=1 + (pTrain < 10^-5), pch=19, cex=1 + (pTrain < 10^-5),
+     main="Train Data (Red: p < 10^-5)")
+
+
+par(mfrow=c(1,1))
+
+
+testF1 <- 0
+useEps <- 0
+
+probCV <- apply(dnorm(cvX/sigmaTrain, mean=muTrain/sigmaTrain, sd=1), 1, FUN=prod)  # Use train mu/sigma
+
+for (testEps in probCV[order(probCV)][2:length(probCV)]) {
+    # Precision is TP / (TP + FP) or TP / (declared positive)
+    precCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum(probCV < testEps)
+    
+    # Recall is TP / (TP + FN) or TP / (actually positive)
+    recCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum( cvY == 1 )
+    
+    # F1 = 2 * P * R / (P + R)
+    f1CV <- 2 * precCV * recCV / (precCV + recCV)
+    
+    if (f1CV > testF1) {
+        useEps <- testEps
+        testF1 <- f1CV
+    }
+}
+
+print(paste0("Best fit found at log10(epsilon): ", round(log10(useEps),3),
+             " driving CV F1=", round(testF1,3))
+      )
+
+
+par(mfrow=c(1,2))
+
+
+xLim <- c( floor(min(trainX[,1], cvX[,1])), ceiling(max(trainX[,1], cvX[,1])) )
+yLim <- c( floor(min(trainX[,2], cvX[,2])), ceiling(max(trainX[,2], cvX[,2])) )
+
+plot(trainX[,1], trainX[,2], col=1 + (pTrain < useEps), pch=19, cex=1 + (pTrain < useEps),
+     main="Train Data (Red: Declared Anomaly)", cex.main=0.75, xlim=xLim, ylim=yLim
+     )
+
+plot(cvX[,1], cvX[,2], col=1 + (probCV < useEps), pch=19, cex=1 + (probCV < useEps),
+     main="CV Data (Red: Declared Anomaly)", cex.main=0.75, xlim=xLim, ylim=yLim
+     )
+points(cvX[cvY == 1, 1], cvX[cvY == 1, 2], pch=19, col="lightblue")
+legend("bottomright", legend=c("Known Anomaly", "Known OK"), pch=19, col=c("lightblue", "black"))
+
+par(mfrow=c(1,1))
+
+```
+  
+In this example, the algorithm flags 6 points in the training data as anomalies.  These would be good to explore with a domain expert in the interest of potentially further tuning the model.  
+  
+In this example, the algorithm correctly flags 6 points in the CV data as anomalies, avoids classifying any normal data as anomalies, and fails to identify 2 actual anomalies.  Since these 2 anomalies are close to the center of the cloud, there may be a missing feature.  This would be ideal to explore further with a domain expert.  
+  
+###_Multivariate Gaussian Distribution_  
+The multivariate Gaussian is an extension to anomaly detection where the algorithm can automatically detect correlations among the features (no longer need to assume feature independence).  The key change for the multivariate Gaussian approach is to model p(x) all in a single go:  
+  
+* Define mu to be an nx1 vector of the column means  
+* Define Sigma to be an nxn covariance matrix for the columns  
+* p(x ; mu, Sigma) = ( 1 / [ (2 * pi)^(n/2) * sqrt(length(Sigma)) ] ) * exp[ -0.5 * t((x - mu) % * % solve(Sigma) % * % (x - mu) ]  
+* length(Sigma) is defined as being the determinant of Sigma  
+* Off-diagnonals in the Sigma matrix will tend to force correlations (clouds) among the data entries  
+  
+The multivariate Gaussian is generally best if m is not too large (due to computational expense) and m >> n (typically, Ng suggests m at least 10xn).  In practice, the original model is often used, with new features created if a key ratio is important.  An example is included, again from Ng Coursera:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8data2.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with three items, $X, $Xval, $yval
+
+trainX <- listMATData$X
+cvX <- listMATData$Xval
+cvY <- listMATData$yval
+
+str(trainX)  # Validate that 1000x11 matrix
+str(cvX)  # Validate that 100x11 matrix
+str(cvY)  # Validate that 100x1 matrix
+
+```
+  
+First, we calculate mu and Sigma based on the training data, as well as the associated inverse/determinant for Sigma.  We then apply these to get probabilities for the training and CV data:  
+```{r}
+muTrain <- apply(trainX, 2, FUN=mean)  ## Should be 1x11 since trainX is mx11
+bigSigma <- cov(trainX)  ## Should be 11x11 since trainX is mx11
+invSigma <- solve(bigSigma)
+detSigma <- det(bigSigma)
+
+multSigma <- 1 / ( (2 * pi)^(0.5 * ncol(trainX)) * sqrt(detSigma) )
+
+foo <- function(x, mu, invSigma) { 
+    exp( -0.5 * ( matrix(data=(x - mu), ncol=length(x)) %*% invSigma %*% 
+                  matrix(data=(x - mu), nrow=length(x)) 
+                 ) 
+        ) 
+}
+
+pTrain <- multSigma * apply(trainX, 1, FUN=foo, mu=muTrain, invSigma=invSigma)
+probCV <- multSigma * apply(cvX, 1, FUN=foo, mu=muTrain, invSigma=invSigma)
+
+
+par(mfrow=c(1,2))
+
+
+plot(log10(pTrain), col=1 + (log10(pTrain) < -20), pch=19, 
+     main="Train Data (Red: Possible Anomaly)", cex.main=0.75, ylab="Log10 (Probability)"
+     )
+abline(h=-20, lty=2)
+
+plot(log10(probCV), col=1 + (log10(probCV) < -20), pch=19, 
+     main="CV Data (Red: Possible Anomaly)", cex.main=0.75, ylab="Log10 (Probability)"
+     )
+abline(h=-20, lty=2)
+
+
+par(mfrow=c(1,1))
+
+```
+  
+Then, run the same epsilon-finding process as above:  
+```{r}
+testF1 <- 0
+useEps <- 0
+
+for (testEps in probCV[order(probCV)][2:length(probCV)]) {
+    # Precision is TP / (TP + FP) or TP / (declared positive)
+    precCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum(probCV < testEps)
+    
+    # Recall is TP / (TP + FN) or TP / (actually positive)
+    recCV <- sum( ( probCV < testEps ) & ( cvY == 1 ) ) / sum( cvY == 1 )
+    
+    # F1 = 2 * P * R / (P + R)
+    f1CV <- 2 * precCV * recCV / (precCV + recCV)
+    
+    if (f1CV > testF1) {
+        useEps <- testEps
+        testF1 <- f1CV
+    }
+}
+
+print(paste0("Best fit found at log10(epsilon): ", round(log10(useEps),2)," driving CV F1=", round(testF1,3)))
+
+
+par(mfrow=c(1,2))
+
+
+yLim <- c( floor(log10(min(probCV, pTrain))), 4 + ceiling(log10(max(probCV, pTrain))) )
+
+plot(log10(pTrain), col=1 + (pTrain < useEps), pch=19, cex=1 + (pTrain < useEps),
+     main="Train Data (Red: Declared Anomaly - Multivariate)", cex.main=0.75, ylim=yLim, ylab="Log10 (Prob)"
+     )
+
+plot(log10(probCV), col=1 + (probCV < useEps), pch=19, cex=1 + (probCV < useEps),
+     main="CV Data (Red: Declared Anomaly - Multivariate)", cex.main=0.75, ylim=yLim, ylab="Log10 (Prob)"
+     )
+keyX <- which(cvY == 1)
+points(keyX, log10(probCV[keyX]), pch=19, col="lightblue")
+legend("top", legend=c("Known Anomaly", "Known OK"), pch=19, col=c("lightblue", "black"))
+
+
+par(mfrow=c(1,1))
+
+```
+  
+In this case, the algorithm detects 6 of the 10 anomalies in the CV data while never falsely detecting a non-anomaly.  Consulting with a domain expert about the 4 missed anomalies could help improve the F1 score.  
+  
+###_Recommender Systems_  
+A recommender system relies on input from many users to predict what products other users will like.  Good recommendations can be central to the profitability of companies like Amazon and Netflix.  As a first example, suppose that your goal is to predict how much a user will like a movie they have not yet watched, assuming that all ratings are on the 0-5 scale.  
+  
+* Call n(u) the number of users  
+* Call n(m) the number of movies  
+* Set r(i, j) = 1 whenever user j has rated movie i (0 or NA otherwise)  
+* Set y(i, j) as the rating given by user j for movie i, created only in cases where r(i, j)=1  
+* Suppose you have calculated values for features x0 (bias, always 1), x1, and x2 for each movie; x1 might be degree of romance and x2 might be degree of violence  
+* Define theta(j) as the prediction vector for user j - how do x0, x1, and x2 combine to make movies good/bad for user j?
+  
+The goal is then to learn theta(j) for every user, with a goal of minimizing the prediction costs.  Specifically:  
+  
+* J = (1 / (2 * m(j) ) * sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( lambda / (2 * m(j) )  * sum( theta^2 ), excluding theta0 from the regularization term  
+* Since m(j) is a constant for the specific user, can multiply by m(j)  
+* So, J = 0.5 * sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( 0.5 * lambda )  * sum( theta^2 ), excluding theta0 from the regularization term  
+  
+And then for all users, we would have:  
+  
+* J(theta(1), theta(2), . . . , theta(n(u)) = { 0.5 * sum-over-j-of [ sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] ] } + 0.5 * lambda * sum-over-j-of [ sum-over-k=1+ of [ theta(k)(j)^2 ] ]  
+* Gradient Descent: theta(k)(j) = theta(k)(j) - alpha * { sum-over-r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * x(k)(i) ] + lambda * thata(j)(k) }, noting that lambda should never be applied if k=0  
+  
+Of course, the challenge is that this algorithm requires creating features for every movie.  This could be cumbersome and inaccurate.  On the one hand, we could ask each person to declare their own theta vector and then use that to calculate the features for each movie (using cost minimization).  But, could we instead ask the algorithm to calculate both the features and theta vector simultaneously?
+  
+###_Collaborative Filtering (Background)_  
+Collaborative filtering is the solution.  Each user gives ratings for movies that they have watched, and the algorithm simultaneously solves for features by movie and thetas by user in a manner that minimizes costs.  The name comes from the fact that a large group of people are pooling their inputs in a manner that helps make better (lower cost/error) recommendations for everyone.  
+  
+* J = 0.5 * sum-over-(I,j):r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) )^2 ] + ( 0.5 * lambda )  * sum( x(k)(i)^2 ) + ( 0.5 * lambda )  * sum( theta^2 )  
+* There is no longer any need for a bias unit - the algorithm can create a bias unit if it likes  
+* Each x is an n-dimensional vector, and each theta is an n-dimensional vector; the n features are picked by the model  
+* Begin by initializing every theta and feature to a small random number (important for breaking symmetry)  
+* x(k)(i) = x(k)(i) - alpha * { sum-over-j:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * theta(k)(j) ] + lambda * x(k)(i) }  
+* theta(k)(j) = theta(k)(j) - alpha * { sum-over-i:r(I,j)=1-of [ ( t(theta(j)) * x(i) - y(I, j) ) * x(k)(i) ] + lambda * theta(k)(j) }  
+* After convergence, use t(theta) * x to predict how a user will rate a movie they have not yet seen  
+  
+While the final features will not have meaning per se, they can be used to group "similar" movies and "similar" users by finding small euclidean distances between movie features and/or user thetas  
+  
+###_Collaborative Filtering (Example Given Input Matrices)_  
+An example is again drawn from the Ng Coursera Machine Learning files:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movies.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with two items, $Y, $R
+
+movieRatings <- listMATData$Y
+mtxSparse <- listMATData$R
+
+str(movieRatings)  # Validate that 1682x943 matrix (1682 movies, 943 users)
+str(mtxSparse)  # Validate that 1682x943 matrix
+
+```
+  
+Next an algorithm is created to calculate the cost given the relevant thetas and features:  
+```{r}
+cofiCost <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate cost
+    movJ <- 0.5 * sum( ( (useX %*% t(useTheta) - mtxY)^2)[mtxR==1] )
+    movJ <- movJ + 0.5 * lambda * ( sum(useX^2) + sum(useTheta^2) )
+    
+    return(movJ)
+}
+
+```
+  
+Then, the sample theta and features from Ng Coursera Machine learning are additionally read-in:  
+```{r}
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movieParams.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+# Check that as expected - list with five items: $X, $Theta, $num.users, $num.movies, $num.features
+str(listMATData)  
+
+mtxX <- listMATData$X
+mtxTheta <- listMATData$Theta
+
+str(mtxX)  # Validate that 1682x10 matrix (1682 movies, 10 features)
+str(mtxTheta)  # Validate that 943x10 matrix (943 users, 10 features)
+
+```
+  
+The cost function is then tested for 4 users, 5 movies, and 3 features to ensure it brings back ~22.22 given these base inputs.  
+```{r}
+
+# Modify them for the test
+nUser <- 4
+nMovie <- 5
+nFeature <- 3
+
+# Validate that ~22.22
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+
+# Validate that ~31.34
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )
+
+# Capture these properly for remainder of program
+nUser <- nrow(mtxTheta)
+nMovie <- nrow(mtxX)
+nFeature <- ncol(mtxX)
+
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )
+
+```
+  
+So, provided that we have the proper inputs, we can calculate the associated costs.  The next step is to find the gradients and optimize the parameters.  
+  
+###_Collaborative Filtering (Example Solving for Input Matrices)_  
+The process of simultaneously solving for theta and features is an example of low rank matrix factorization.  The rank of an mxn matrix is typically the smaller of m or n, defining the degree of linear independence that exists in the matrix.  However, when certain rows and/or columns are linear combinations of each other, the matrix is no longer considered to be "full rank".  Instead, the matrix is considered to be "rank deficient" and to have rank equal to the smaller of # linearly independent columns/rows.  Fortunately, gradient descent works fine even in a rank-deficient environment:  
+```{r}
+cofiGrad <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate gradients
+    gradX <- ((useX %*% t(useTheta) - mtxY) * mtxR) %*% useTheta + (lambda * useX)
+    gradTheta <- t((useX %*% t(useTheta) - mtxY) * mtxR) %*% useX + (lambda * useTheta)
+    
+    return(c(as.vector(gradX), as.vector(gradTheta)))
+    
+}
+```
+  
+Then, we can initialize theta and X as small random numbers (break the symmetry), normalize the movie ratings, and call optim to find the solution:  
+```{r, cache=TRUE}
+useLambda=10
+
+# Initialize mtxX and mtxTheta
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+
+# Normalize movie ratings (movieRatings is 1682 x 943, with each of the 1682 rows being a movie)
+movSum <- apply(movieRatings, 1, FUN=sum)
+movCount <- apply(mtxSparse, 1, FUN=sum)
+movAvg <- movSum / movCount
+
+normRatings <- movieRatings - movAvg * mtxSparse
+
+# cofiGrad <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda)
+# Initialize vecMatrix
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime <- proc.time()
+movList <- optim(vecMatrix, cofiCost, cofiGrad, mtxY=normRatings,
+                 mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                 lambda=useLambda, control=list(maxit=50), method="BFGS"
+                 )
+proc.time() - startTime
+
+```
+  
+This runs much slower than the equivalent in Octave.  It may be helpful to explore optim() and/or a faster equivalent in more detail.  
+  
+###_Tuning R Optimization for Speed_  
+It would be interesting to understand where the speed challenges occur within R.  For example, is the timing gap due to the underlying functions, or due to how optim() pieces everything together?  We check this with a few code snippets and proc.time():  
+```{r, cache=TRUE}
+# Print the outcomes from the above cached BFGS 50-iteration optimization
+str(movList)
+
+# Test the cost calculation function (10 iterations)
+startTime <- proc.time()
+for (intCtr in 1:10) {
+    cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+             mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+             )
+}
+proc.time() - startTime
+
+# Test the gradient calculation function (10 iterations)
+startTime <- proc.time()
+for (intCtr in 1:10) {
+    cofiGrad(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+             mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+             )
+}
+proc.time() - startTime
+
+# Re-initialize thetas and re-create starting vecMatrix
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+# Run BFGS with 10 iterations for additional benchmarking
+startTime <- proc.time()
+movListBFGS010 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=normRatings,
+                        mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                        lambda=useLambda, control=list(maxit=10), method="BFGS"
+                        )
+proc.time() - startTime
+
+str(movListBFGS010)
+
+```
+  
+The outcomes are intriguing and show that optim() is the primary time-sink:  
+  
+* 10 runs of the cost function take ~0.6 seconds  
+* 10 runs of the gradient function take ~1.1 seconds  
+* Total cost after 10 runs of BFGS is ~160k, roughly double the ~75k seen above at 50 iterations  
+* 43 runs of cost and 10 runs of gradient made by way of BFGS in optim() take ~150 seconds  
+* Extrapolating, the raw functions should take 4.3 * 0.6 + 1.1 = ~3.5 seconds  
+  
+So, it appears that the optim() function using BFGS is taking 30x-40x longer than calls to the underlying functions would suggest.  One potential reason is that BFGS is storing a matrix - see below for some comments from Details under ?optim:  
+  
+* Method "BFGS" is a quasi-Newton method (also known as a variable metric algorithm), specifically that published simultaneously in 1970 by Broyden, Fletcher, Goldfarb and Shanno. This uses function values and gradients to build up a picture of the surface to be optimized.  
+* Method "CG" is a conjugate gradients method based on that by Fletcher and Reeves (1964) (but with the option of Polak-Ribiere or Beale-Sorenson updates). Conjugate gradient methods will generally be more fragile than the BFGS method, but as they do not store a matrix they may be successful in much larger optimization problems.  
+  
+As such, it would be interesting to test the performance using the conjugate gradients method, particularly since that will be a closer match to what is used in the Octave/MATLAB examples:  
+```{r}
+# Run for the same 10 ierations
+# Re-initialize thetas and re-create starting vecMatrix
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime <- proc.time()
+movListCG010 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=normRatings,
+                      mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                      lambda=useLambda, control=list(maxit=10), method="CG"
+                      )
+proc.time() - startTime
+
+str(movListCG010)
+
+```
+  
+The outcomes are highly suggestive that CG is an all-around better method for this specific example:  
+  
+* Total cost after 10 runs of CG is ~45k, roughly half the ~75k seen above at 50 iterations of BFGS  
+* 28 runs of cost and 11 runs of gradient made by way of BFGS in optim() take ~2 seconds  
+* Extrapolating, the raw functions should take 2.8 * 0.6 + 1.1 = ~2.5 seconds  
+  
+So, the CG method seems to take only as long to run as the underlying function calls, and converges to a lower cost with fewer iterations.  
+
+The same process is then run using CG with additional iterations - once at 50 iterations, and once at 250 iterations.  The theta matrix is again re-initialized each time:  
+```{r, cache=TRUE}
+
+# Run for 50 ierations
+# Re-initialize thetas and re-create starting vecMatrix
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime <- proc.time()
+movListCG050 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=normRatings,
+                      mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                      lambda=useLambda, control=list(maxit=50), method="CG"
+                      )
+proc.time() - startTime
+
+str(movListCG050)
+
+
+# Run for 250 ierations
+# Re-initialize thetas and re-create starting vecMatrix
+mtxTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+mtxX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta))
+
+startTime <- proc.time()
+movListCG250 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=normRatings,
+                      mtxR=mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature,
+                      lambda=useLambda, control=list(maxit=250), method="CG"
+                      )
+proc.time() - startTime
+
+str(movListCG250)
+
+```
+  
+The time consumed by the additional runs is roughly proportional to the increased number of iterations, suggesting that CG is a good method for this particular problem.  Further, there is almost no improvement in the overall cost when moving from 10 iterations CG -> 250 iterations CG, which suggests that a nice process might involve a smaller number of iterations but with more robust tuning of the optimal lambda parameter:  
+  
+```{r}
+cofiValues <- c(movListBFGS010$value, movList$value, movListCG010$value, 
+                movListCG050$value, movListCG250$value 
+                )
+
+plot(cofiValues/1000, xaxt="n", ylab="Cost in 000s (lambda=10)", main="Cost by Algorithm", 
+     pch=19, col="blue", cex=2, xlab="", ylim=c(0, 50 * ceiling(max(cofiValues)/50000) )
+     )
+axis(1, at=1:5, labels=c("BFGS 10 iter", "BFGS 50 iter", "CG 10 iter", "CG 50 iter", "CG 250 iter"))
+
+```
+  
+The moral seems clear - for this type of problem, use method="CG" for optimization!  
+  
+It would also be interesting to understand whether method="CG" could help with the neural network tuned previously.  The same code is run, with the method changed to CG for 10 iterations, 50 iterations, 150 iterations, and 300 iterations.  The goal is to see whether CG run-times and/or accuracies can be improved:  
+```{r, cache=TRUE}
+# Bring back the data that would have been used right at the start of the Neural Network
+library(R.matlab, quietly=TRUE)
+
+matPath <- "../../../OctaveDirectory/Week04/"  # Using relative path
+matData <- "ex3data1.mat"
+
+listMatData <- readMat(paste0(matPath, matData))
+str(listMatData)  # Check that as expected - list with two items, $X and $y
+
+mtxX <- listMatData$X  # First item in the list should be 5000x400
+mtxY <- listMatData$y  # Second item in the list (y) should be 5000x1
+
+str(mtxX)  # Check that 5000x400 and matricized
+str(mtxY)  # Check that 5000x1 and matricized
+
+nInputLayer <- ncol(mtxX)
+nHiddenNodes <- 25
+nFinalLabels <- 10
+epsInit <- 0.12  # Initial thetas will be randomized as epsInit * runif(min=-1, max=1)
+
+# Recycle the pre-existing bpThetaOne and bpThetaTwo
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+
+# Benchmark individual neural network functions
+startTime <- proc.time()
+for (intCtr in 1:10) {
+    nnCost(vecMatrix=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
+           nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
+           )
+}
+proc.time() - startTime
+
+startTime <- proc.time()
+for (intCtr in 1:10) {
+    nnGradient(vecMatrix=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
+               nFinalLabels=nFinalLabels, X=mtxX, y=mtxY, lambda=1
+               )
+}
+proc.time() - startTime
+
+startTime <- proc.time()
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnListCG010 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
+                     nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=10), method="CG"
+                     )
+proc.time() - startTime
+
+startTime <- proc.time()
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnListCG050 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
+                     nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=50), method="CG"
+                     )
+proc.time() - startTime
+
+startTime <- proc.time()
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnListCG150 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
+                     nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=150), method="CG"
+                     )
+proc.time() - startTime
+
+startTime <- proc.time()
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnListCG300 <- optim(par=vecPass, fn=nnCost, gr=nnGradient, nInputLayer=nInputLayer,
+                     nHiddenNodes=nHiddenNodes, nFinalLabels=nFinalLabels,
+                     X=mtxX, y=mtxY, lambda=1, control=list(maxit=300), method="CG"
+                     )
+proc.time() - startTime
+
+str(nnListBFGS150)
+str(nnListCG010)
+str(nnListCG050)
+str(nnListCG150)
+str(nnListCG300)
+
+```
+  
+The results are again interesting and show the enormous timing advantage for CG over BFGS.  For example:  
+  
+* 10 runs of nnCost takes ~1 seconds  
+* 10 runs of nnGradient takes ~1.6 seconds  
+* Running optim() using BFGS for 150 iterations takes ~240 seconds, while making 151 calls to nnCost and 150 calls to nnGradient; these should only take ~40 seconds, so optim() is taking ~6x as long as expected  
+* Running optim() using CG for 10 iterations takes ~3.5 seconds, while making 21 calls to nnCost and 11 calls to nnGradient; these should take ~4 seconds, suggesting very little inefficiency  
+* Running optim() using CG for 50 iterations takes ~18 seconds, while making 106 calls to nnCost and 51 calls to nnGradient; these should take ~19 seconds, suggesting very little inefficiency  
+* Running optim() using CG for 150 iterations takes ~55 seconds, while making 322 calls to nnCost and 151 calls to nnGradient; these should take ~55 seconds, suggesting very little inefficiency  
+* Running optim() using CG for 300 iterations takes ~120 seconds, while making 643 calls to nnCost and 301 calls to nnGradient; these should take ~115 seconds, suggesting very little inefficiency  
+  
+Additionally, the results are again plotted to see the estimated cost rates:  
+```{r}
+nnCostValues <- c(nnListBFGS150$value, nnListCG010$value, nnListCG050$value, 
+                  nnListCG150$value, nnListCG300$value
+                  )
+
+plot(nnCostValues, xaxt="n", ylab="Cost (lambda=1)", main="Cost by Algorithm", 
+     pch=19, col="blue", cex=2, xlab="", ylim=c(0, 1 * ceiling(max(nnCostValues)/1) )
+     )
+axis(1, at=1:5, labels=c("BFGS 150 iter", "CG 10 iter", "CG 50 iter", "CG 150 iter", "CG 300 iter"))
+
+```
+  
+Interestingly, though, in this case CG is not converging to as good solution as had been observed in the BFGS modeling.  So, the algorithm may be faster but less accurate for this specific case.  
+  
+###_Comparing Accuracies_  
+Further, we compare the accuracies driven by the varying neural network models.  First, a look at BFGS 150 (repeated from above):  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListBFGS150$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListBFGS150$par[(keyCut+1):length(nnListBFGS150$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYBFGS150 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYBFGS150), y=predYBFGS150, col = 1 + (mtxY[,1] != predYBFGS150), 
+     main="Predictions vs Actual (BFGS 150)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYBFGS150, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+```
+  
+So, the BFGS 150 is driving 98.8% accuracy.  Next, we look at the CG 150 outcomes:  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListCG150$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListCG150$par[(keyCut+1):length(nnListCG150$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYCG150 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYCG150), y=predYCG150, col = 1 + (mtxY[,1] != predYCG150), 
+     main="Predictions vs Actual (CG 150)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYCG150, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+```
+  
+While the CG 150 is driving to 96.3% accuracy (2.5% higher classification error than BFGS 150).  And, we check that the starting cost is the same as the base case:  
+```{r}
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+```
+  
+Additionally, we look at the CG 50 outcomes:  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListCG050$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListCG050$par[(keyCut+1):length(nnListCG050$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYCG050 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYCG050), y=predYCG050, col = 1 + (mtxY[,1] != predYCG050), 
+     main="Predictions vs Actual (CG 50)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYCG050, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+```
+  
+Accuracy here is only 89.5%, suggestive that 50 iterations of CG in R is driving to a less optimal outcome than 50 iterations of CG in Octave (which hits ~95%).  
+
+Finally, we look at the CG 300 outcomes:  
+```{r}
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=nnListCG300$par[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=nnListCG300$par[(keyCut+1):length(nnListCG300$par)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+# Assess the optimized accuracies
+predYCG300 <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYCG300), y=predYCG300, col = 1 + (mtxY[,1] != predYCG300), 
+     main="Predictions vs Actual (CG 300)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYCG300, mtxY[,1])
+
+# Print the post-optimization cost
+nnCost(vecMatrix=nnListCG300$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+# Plot the post-optimization gradients
+plot(nnGradient(vecMatrix=nnListCG300$par, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+```
+  
+With CG 300, accuracy has improved to ~98.6%, within spitting distance of the BFGS 150 accuracy (98.8%).  However, the cost is still relatively higher, likely due to achieving this accuracy with larger thetas than the BFGS algorithm.  
+  
+Perhaps this continues to be an area for further exploration.  
+  
+###_Gradient Descent with Large Datasets_  
+With much more data available, it is possible to build low bias models that are also low variance.  It is again "he who has the best data that wins".  But, working with the very largest data requires different techniques:  
+  
+* Suppose that you have 100 million observations (m=100 million)  
+* This would mean that you need to sum across 100 million observations to find the gradient  
+* A good idea is to first look at the learning curves for a smaller sample - if it shows high variance, more data may help, but if it shows high bias then more data will likely not help  
+  
+If the full 100 million record dataset appears to be useful, then there are techniques for running gradient descent more quickly.  One example is stochastic gradient descent:  
+  
+* Randomly shuffle the dataset (in case there is some structure)  
+* Repeatedly run i=1 to m, and calculate theta(j) = theta(j) - alpha * { ( h(x(i)) - y(i) ) * x(j)(i) }  
+* This means theta is being updated every time we see a data point; in fact, sometimes a single pass through the descent gets you to a good point  
+* The main downside is that it means there is a meandering path to the global minima, which is never actually hit; however, the descent tends to find a "good enough" solution  
+  
+Another example approach is mini-batch, where b=10 is common, and b is very often in the range of 2-100.  The mini-batch approach uses b data points at once and alpha/b, meaning that 1) it can be vectorized, but 2) it requires an additional parameter.  If the code for mini-batch is not vectorized, then there is no real gain.  
+  
+Plotting cost curves is recommended with stochastic gradient descent or mini-batch gradient descent.  Basically, plot the cost after every 1,000 iterations and see how well it is converging.  If the cost is generally growing or oscillating too wildly, that may signal that alpha is too large.  
+  
+Let's try an example of the mini-batch approach for the neural network problem run above:  
+```{r, cache=TRUE}
+# Re-initialize vecPass to the beginning values
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+# Use a batch size of 50
+nBatch <- 50
+
+# What percentage of the data will be passed each time?  
+# Need to scale lambda by this while running mini-batch gradients
+keyRat <- nBatch / nrow(mtxX)
+
+
+# Calculate the starting cost (full dataset)
+startCost <- nnCost(vecMatrix=vecPass, nInputLayer, nHiddenNodes, nFinalLabels, 
+                    X=mtxX, y=mtxY, lambda=1
+                    )
+
+# Set vecUse as vecPass and alpha=1 (rather large)
+vecUse <- vecPass
+alpha <- 1
+
+# Set the number of runs and the timing for plotting the learning curve
+nRuns <- 5000
+nPerSave <- 1000
+nPerSave <- nBatch * ceiling(nPerSave/nBatch)
+costSave <- numeric(length=nRuns*nBatch/nPerSave)
+
+startTime <- proc.time()
+
+# Run through 5000 mini-batch descents
+# Since the gradients already come back with 1/m, do not divide alpha by nBatch
+for (intCtr in 1:nRuns) {
+    miniRand <- sample(1:nrow(mtxX), nBatch, replace=FALSE)
+    
+    # Pass a smaller lambda to nnGradient to not over-penalize large thetas
+    vecUse <- vecUse - (alpha) * nnGradient(vecMatrix=vecUse, nInputLayer, nHiddenNodes, 
+                                            nFinalLabels, X=mtxX[miniRand, ], 
+                                            y=mtxY[miniRand, ,drop=FALSE], lambda=1*keyRat
+                                            )
+    
+    # Calculate actual costs based on all data (unscaled lambda)
+    if ((intCtr * nBatch) %% nPerSave == 0) {
+        costSave[[(intCtr * nBatch) %/% nPerSave]] <- nnCost(vecMatrix=vecUse, nInputLayer, 
+                                                             nHiddenNodes, nFinalLabels, 
+                                                             X=mtxX, y=mtxY, lambda=1
+                                                             )
+    }
+    
+}
+
+proc.time() - startTime
+
+plot(x=0:length(costSave), y=c(startCost, costSave), pch=19, col="blue", cex=0.5,
+     ylim=c(0, max(startCost, costSave)), xlab="Sample Number", ylab="Total Cost",
+     main="Mini-Batch Descent for Neural Network"
+     )
+abline(h=0.365, lty=2, lwd=2)
+
+# Assess the optimized accuracies
+keyCut <- (nInputLayer + 1) * nHiddenNodes
+postBPThetaOne <- matrix(data=vecUse[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+postBPThetaTwo <- matrix(data=vecUse[(keyCut+1):length(vecUse)], 
+                         nrow=nFinalLabels, byrow=FALSE
+                         )
+
+predYMini <- forwardPredY(mtxX, postBPThetaOne, postBPThetaTwo)
+plot(x=1:length(predYMini), y=predYMini, col = 1 + (mtxY[,1] != predYMini), 
+     main="Predictions vs Actual (Mini-Batch)", ylab="Prediction (Red=Wrong)", xlab="Index"
+     )
+confusionMatrix(predYMini, mtxY[,1])
+
+plot(nnGradient(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, 
+                X=mtxX, y=mtxY, lambda=1
+                )
+     )
+
+# Comparison to the BFGS 150, CG 300, CG 150, and CG 50 algorithms
+nnCost(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+nnCost(vecMatrix=nnListBFGS150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+nnCost(vecMatrix=nnListCG300$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+nnCost(vecMatrix=nnListCG150$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+nnCost(vecMatrix=nnListCG050$par, nInputLayer, nHiddenNodes, nFinalLabels, X=mtxX, y=mtxY, lambda=1)
+
+sum(vecUse^2)
+sum((nnListBFGS150$par)^2)
+sum((nnListCG300$par)^2)
+sum((nnListCG150$par)^2)
+sum((nnListCG050$par)^2)
+```
+  
+So, the mini-batch (5000 batches of 50, or 50 times through the data in total) asymptotes to roughly the same cost as the BFGS 150 optimization, and is essentially at the asymptote by indices 50-100 (having been through the data 10-20 times in total).  Importantly, the mini-batch run takes ~40 seconds to get through the data 50 times, in contrast to the ~20 seconds that optim(method="CG") requires to get through the data 50 times.  However, the mini-batch approach has converged nicely well before the end of its 40 seconds, while the CG approach still has a bit more convergence to do by 150 iterations.  And, the CG approach is in the range of large thetas, so it is achieving its accuracy in a more risky manner.  
+
+Careful selection of alpha and lambda play a large role in the convergence, demonstrating how valuable a hold-out sample for tuning key parameters can be.  
+  
