@@ -47,3 +47,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 07-JUN-2016 - Created MachineLearning_v002 for small clean-ups and caching    
 * 08-JUN-2016 - Slightly edited MachineLearning_v002 for typos  
 * 09-JUN-2016 - Mini-batch gradient descent    
+* 10-JUN-2016 - Created MachineLearning_v003 to add regularization to nnGradient  
