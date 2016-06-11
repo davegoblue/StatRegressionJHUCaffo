@@ -2536,3 +2536,105 @@ So, the mini-batch (5000 batches of 50, or 50 times through the data in total) a
 
 Careful selection of alpha and lambda play a large role in the convergence, demonstrating how valuable a hold-out sample for tuning key parameters can be.  
   
+###_Holdout Sample for Mini-Batch_  
+The below code implements a brief hold-out example for mini-batch, exploring the predictive power on data the model has not yet seen:  
+```{r}
+
+testMiniBatch <- function(vecUse=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
+                          nFinalLabels=nFinalLabels, trainX, trainY, cvX, cvY,
+                          useLambda=1, useAlpha=1, nBatch=50, nRuns=5000, nPerSave=1000) {
+    
+    # Calculate the starting costs for train and test
+    startCostTrain <- nnCost(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, 
+                             X=trainX, y=trainY, lambda=useLambda
+                             )
+    startCostTest <- nnCost(vecMatrix=vecUse, nInputLayer, nHiddenNodes, nFinalLabels, 
+                            X=cvX, y=cvY, lambda=useLambda
+                            )
+    
+    # Set the number of runs and the timing for plotting the learning curve
+    keyRat <- nBatch / nrow(trainX)
+    nPerSave <- nBatch * ceiling(nPerSave/nBatch)
+    costTrainSave <- numeric(length=nRuns*nBatch/nPerSave)
+    costTestSave <- numeric(length=nRuns*nBatch/nPerSave)
+
+    startTime <- proc.time()
+
+    # Run through mini-batch routine for train data only
+    # Since gradients already come back with 1/m, do not divide useAlpha by nBatch
+    for (intCtr in 1:nRuns) {
+        miniRand <- sample(1:nrow(trainX), nBatch, replace=FALSE)
+    
+        # Pass a smaller lambda to nnGradient to not over-penalize large thetas
+        vecUse <- vecUse - (useAlpha) * nnGradient(vecMatrix=vecUse, nInputLayer, nHiddenNodes, 
+                                                   nFinalLabels, X=trainX[miniRand, ], 
+                                                   y=trainY[miniRand, ,drop=FALSE], 
+                                                   lambda=useLambda*keyRat
+                                            )
+    
+        # Calculate actual costs based on all data (unscaled lambda)
+        if ((intCtr * nBatch) %% nPerSave == 0) {
+            costTrainSave[[(intCtr * nBatch) %/% nPerSave]] <- nnCost(vecMatrix=vecUse, nInputLayer,
+                                                                      nHiddenNodes, nFinalLabels, 
+                                                                      X=trainX, y=trainY, lambda=useLambda
+                                                                 )
+            costTestSave[[(intCtr * nBatch) %/% nPerSave]] <- nnCost(vecMatrix=vecUse, nInputLayer,
+                                                                     nHiddenNodes, nFinalLabels, 
+                                                                     X=cvX, y=cvY, lambda=useLambda
+                                                                 )
+        }
+    
+    }
+
+    print(proc.time() - startTime)
+    
+    # Plot the learning curves
+    plot(x=0:length(costTrainSave), y=c(startCostTrain, costTrainSave), pch=19, col="blue", 
+         cex=0.5, ylim=c(0, max(startCostTrain, startCostTest, costTrainSave, costTestSave)), 
+         xlab="Sample Number", ylab="Total Cost", 
+         main="Mini-Batch Descent for Neural Network"
+         )
+    points(x=0:length(costTestSave), y=c(startCostTest, costTestSave), pch=19, col="red", cex=0.5)
+    legend("topright", legend=c("Train", "Test"), pch=19, cex=2, col=c("blue", "red"))
+    
+    # Assess optimized accuracies
+    keyCut <- (nInputLayer + 1) * nHiddenNodes
+    postBPThetaOne <- matrix(data=vecUse[1:keyCut], nrow=nHiddenNodes, byrow=FALSE)
+    postBPThetaTwo <- matrix(data=vecUse[(keyCut+1):length(vecUse)], 
+                             nrow=nFinalLabels, byrow=FALSE
+                             )
+
+    predYTrainMini <- forwardPredY(trainX, postBPThetaOne, postBPThetaTwo)
+    predYTestMini <- forwardPredY(cvX, postBPThetaOne, postBPThetaTwo)
+
+    par(mfrow=c(1,2))
+    
+    plot(x=1:length(predYTrainMini), y=predYTrainMini, col = 1 + (trainY[,1] != predYTrainMini), 
+         main="Predictions vs Actual (Train)", ylab="Prediction (Red=Wrong)", xlab="Index"
+         )
+    
+    plot(x=1:length(predYTestMini), y=predYTestMini, col = 1 + (cvY[,1] != predYTestMini), 
+         main="Predictions vs Actual (Test)", ylab="Prediction (Red=Wrong)", xlab="Index"
+         )
+    
+    par(mfrow=c(1,1))
+    
+    print(confusionMatrix(predYTrainMini, trainY[,1]))
+    print(confusionMatrix(predYTestMini, cvY[,1]))
+    
+}
+
+vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))  # Roll together bpThetaOne and bpThetaTwo
+
+idxTrain <- sample(1:nrow(mtxX), .7*nrow(mtxX), replace=FALSE)
+idxTrain <- idxTrain[order(idxTrain)]
+
+testMiniBatch(vecUse=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
+              nFinalLabels=nFinalLabels, trainX=mtxX[idxTrain, ], trainY=mtxY[idxTrain, ,drop=FALSE], 
+              cvX=mtxX[-idxTrain, ], cvY=mtxY[-idxTrain, ,drop=FALSE],
+              useLambda=1, useAlpha=1, nBatch=50, nRuns=2000, nPerSave=1000
+              )
+
+```
+  
+In this case, it appears that the model may be over-fitting, as Train accuracy is ~97% while CV accuracy is ~93%.  This may mean that we need a larger lambda to further penalize the parameters, or more data.
