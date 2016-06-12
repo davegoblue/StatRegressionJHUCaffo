@@ -49,3 +49,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 09-JUN-2016 - Mini-batch gradient descent    
 * 10-JUN-2016 - Created MachineLearning_v003 to add regularization to nnGradient  
 * 11-JUN-2016 - Cross-validation for mini-batch    
+* 12-JUN-2016 - Parameter exploration for mini-batch    
