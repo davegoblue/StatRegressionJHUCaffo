@@ -2541,7 +2541,7 @@ The below code implements a brief hold-out example for mini-batch, exploring the
 ```{r}
 
 testMiniBatch <- function(vecUse=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
-                          nFinalLabels=nFinalLabels, trainX, trainY, cvX, cvY,
+                          nFinalLabels=nFinalLabels, trainX, trainY, cvX, cvY, useSeed=NULL,
                           useLambda=1, useAlpha=1, nBatch=50, nRuns=5000, nPerSave=1000, cmFull=TRUE) {
     
     # Calculate the starting costs for train and test
@@ -2558,6 +2558,13 @@ testMiniBatch <- function(vecUse=vecPass, nInputLayer=nInputLayer, nHiddenNodes=
     costTrainSave <- numeric(length=nRuns*nBatch/nPerSave)
     costTestSave <- numeric(length=nRuns*nBatch/nPerSave)
 
+    # Use the random seed if it has been provided, so the sample goes in the same order
+    # Note that sample(a, b) returns different numbers than sample(a, b/2) followed by sample(a, b/2)
+    if (length(useSeed) > 0) {
+        print(paste0("Setting seed to: ", useSeed))
+        set.seed(useSeed)
+    }
+    
     startTime <- proc.time()
 
     # Run through mini-batch routine for train data only
@@ -2708,3 +2715,27 @@ for (lambdaSize in c(0.1, 0.25, 0.5, 1, 2, 4, 10)) {
 ```
   
 Lambda appears to be an interesting double-edged sword.  Smaller lambdas allow for a better fit (higher Train accuracy) and also a larger over-fit (differences between Train and CV accuracy).  Out-of-sample accuracy appears reasonably stable across lambdas given the other parameters in this mini-batch.
+  
+Lastly, we do a bit of space exploration using lambda of 1:  
+```{r, cache=TRUE}
+for (alphaSize in c(0.3, 0.6, 1, 1.5)) {
+    for (batchSize in c(10, 25, 50, 100)) {
+        
+        vecPass=c(as.vector(bpThetaOne), as.vector(bpThetaTwo))
+    
+        # Each run will cycle through the data (3500 records) 10 times
+        testMiniBatch(vecUse=vecPass, nInputLayer=nInputLayer, nHiddenNodes=nHiddenNodes, 
+                      nFinalLabels=nFinalLabels, trainX=mtxX[idxTrain, ], 
+                      trainY=mtxY[idxTrain, ,drop=FALSE], 
+                      cvX=mtxX[-idxTrain, ], cvY=mtxY[-idxTrain, ,drop=FALSE],
+                      useLambda=1, useAlpha=alphaSize, nBatch=batchSize, 
+                      nRuns=35000/batchSize, nPerSave=1000, cmFull=FALSE, useSeed=1606131243
+                      )
+        
+    }
+}
+
+```
+  
+In general, it seems that a larger batch size works better with a slightly larger alpha.  This may be due to a more stable average gradient, meaning you want to move farther in each step if you are only going to cycle through the data 10 times.  It is interesting how quickly the mini-batch gets to a reasonable solution.  If you can drive to 90%-95% accuracy in 10 seconds, that can also give you the starting thetas for BFGS or CG or the like in the search for the final 5%-10%.  
+  
