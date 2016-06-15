@@ -1,0 +1,198 @@
+---
+title: "Collaborative Filtering"
+author: "davegoblue"
+date: "June 15, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background and Overview  
+Collaborative filtering is an algorithm explored in the Ng Coursera "Machine Learning" course.  I am curious about the implications of choosing to normalize the response variable (movie rating) by subtracting its mean, as opposed to allowing the system to determine how to account for different movies having different means.  
+
+## Analysis
+###_Data Loading_  
+Data is loaded from the MATLAB files that were supplied during the course.  Specifically, there is data on:  
+  
+* Matrices for movie ratings by user/movie  
+* Initial theta matrices for predicting movie ratings as supplied by the instructors  
+  
+The data are loaded and inspected using the R.matlab() library:
+```{r}
+library(R.matlab, quietly=TRUE)
+
+# Part 1: Load the movie ratings
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movies.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+str(listMATData)  # Check that as expected - list with two items, $Y, $R
+
+# Movie ratings are the ratings (movie x user)
+# mtxSparse is a 1/0 indicator for whether the user has rated the movie
+movieRatings <- listMATData$Y
+mtxSparse <- listMATData$R
+
+str(movieRatings)  # Validate that 1682x943 matrix (1682 movies, 943 users)
+str(mtxSparse)  # Validate that 1682x943 matrix
+
+
+# Part 2: Load the initial thetas
+
+matPath <- "../../../OctaveDirectory/Week09/"  # Using relative path
+wgtData <- "ex8_movieParams.mat"
+
+listMATData <- readMat(paste0(matPath, wgtData))
+
+# Will only keep the $X and $Theta items; other fields can be derived
+str(listMATData)
+
+mtxX <- listMATData$X
+mtxTheta <- listMATData$Theta
+
+str(mtxX)  # Validate that 1682x10 matrix (1682 movies, 10 features)
+str(mtxTheta)  # Validate that 943x10 matrix (943 users, 10 features)
+
+```
+  
+###_Function Declarations for Optimization_  
+Next, functions are created to enable optimization to be run.  The functions include a cost calculation and then a gradient calculation:  
+```{r}
+
+cofiCost <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate cost
+    movJ <- 0.5 * sum( ( (useX %*% t(useTheta) - mtxY)^2)[mtxR==1] )
+    movJ <- movJ + 0.5 * lambda * ( sum(useX^2) + sum(useTheta^2) )
+    
+    return(movJ)
+}
+
+cofiGrad <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+    
+    # Calculate gradients
+    gradX <- ((useX %*% t(useTheta) - mtxY) * mtxR) %*% useTheta + (lambda * useX)
+    gradTheta <- t((useX %*% t(useTheta) - mtxY) * mtxR) %*% useX + (lambda * useTheta)
+    
+    return(c(as.vector(gradX), as.vector(gradTheta)))
+    
+}
+
+```
+  
+Further, the cost function is tested to ensure that it is consistent with the results the professor suggests to expect:  
+```{r}
+# Modify them for the test
+nUser <- 4
+nMovie <- 5
+nFeature <- 3
+
+# Validate that ~22.22
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+
+# Validate that ~31.34
+cofiCost(vecMatrix = c(as.vector(mtxX[1:nMovie, 1:nFeature]), as.vector(mtxTheta[1:nUser, 1:nFeature])),
+         mtxY = movieRatings[1:nMovie, 1:nUser], mtxR = mtxSparse[1:nMovie, 1:nUser], nUser=nUser,
+         nMovie=nMovie, nFeature=nFeature, lambda=1.5
+         )
+
+# Capture these properly for remainder of program
+nUser <- nrow(mtxTheta)
+nMovie <- nrow(mtxX)
+nFeature <- ncol(mtxX)
+
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+         )
+# Confirm that runs OK for full dataset also
+cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+         mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+         )
+
+```
+  
+It appears that the cost function is working as it should.  The cost using the instructors inputs is 74,000 of which 28,000 is driven by mismatched movies, and 46,000 is driven by penalties induced by lambda=10.
+  
+###_Assessing Movie Recommendations_  
+The quality of the movie recommendations depends on the degree of similarity between the predictions and the actual ratings, assessed only where a rating has been given.  A function is created to predict the approrpiate ratings and to plot their relationship to the actual ratings:  
+```{r}
+assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda, useTitle=FALSE) {
+    
+    # Roll vecMatrix back to feature matrix and theta matrix
+    keyCut <- nMovie * nFeature
+    vecX <- vecMatrix[1:keyCut]
+    vecTheta <- vecMatrix[(keyCut+1):length(vecMatrix)]
+    useX <- matrix(data=vecX, nrow=nMovie, ncol=nFeature, byrow=FALSE)
+    useTheta <- matrix(data=vecTheta, nrow=nUser, ncol=nFeature, byrow=FALSE)
+
+    # Calculate the projected movie ratings
+    predRatings <- useX %*% t(useTheta)
+    
+    # Create the confusion matrix assuming all ratings are forced to be 1-5
+    cmRound <- confusionMatrix(pmin(5, pmax(1, round(predRatings[mtxR==1], 0) ) ), mtxY[mtxR==1])
+    
+    # Create the lm, and without assuming all ratings are forced to be 1-5
+    lmAssess <- lm(predRatings[mtxR==1] ~ mtxY[mtxR==1])
+    print(summary(lmAssess))
+    
+    par(mfrow=c(1, 2))
+    
+    # Create a histogram of the ratings
+    hist(x=predRatings[mtxR==1], col=rgb(0.5,0,0,0.25), xlab="Rating", 
+         main=ifelse(useTitle == FALSE, "Instructor Inputs (R == 1)", useTitle),
+         breaks=seq(-1.5,8.5,by=1)
+         )
+    hist(x=mtxY[mtxR==1], col=rgb(0,0,0.5,0.25), add=TRUE, breaks=seq(-1.5,8.5,by=1))
+    legend("topleft", legend=c("Actual", "Predicted", "Overlap"), pch=20, cex=0.9, pt.cex=3,
+           col=c(rgb(0,0,0.5,0.25), rgb(0.5,0,0,0.25), rgb(0.25,0,0.25,0.5))
+           )
+    
+    # Create a boxplot of the ratings
+    trueRatings <- 0.5 * round(2*mtxY, 0)[mtxR==1]
+    boxplot(predRatings[mtxR==1] ~ trueRatings, col="light blue", 
+            xlab="Actual Rating", ylab="Predicted Rating",
+            main=ifelse(useTitle == FALSE, "Instructor Inputs (R == 1)", useTitle)
+            )
+    text(x=3, y=0.5, paste0("R^2: ", round(summary(lmAssess)$r.squared, 2) ), adj=c(0, 0), cex=0.8 )
+    text(x=3, y=0.1, paste0("Intercept: ", round(coef(lmAssess)[[1]], 2) ), adj=c(0, 0) , cex=0.8)
+    text(x=3, y=-0.3, paste0("Slope: ", round(coef(lmAssess)[[2]], 2) ), adj=c(0, 0) , cex=0.8)
+    text(x=3, y=-0.7, paste0("Accuracy: ", round(cmRound$overall[[1]], 2) ), adj=c(0, 0) , cex=0.8)
+    
+    par(mfrow=c(1, 1))
+    
+    return(cmRound)
+}
+```
+  
+Next, the function is called to check the instructors inputs:  
+```{r}
+library(caret, quietly=TRUE)
+
+# Assess the original movie data from the instructor
+assessRatings(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+              mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+              )
+
+```
+
