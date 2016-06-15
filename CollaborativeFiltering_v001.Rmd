@@ -137,7 +137,9 @@ It appears that the cost function is working as it should.  The cost using the i
 ###_Assessing Movie Recommendations_  
 The quality of the movie recommendations depends on the degree of similarity between the predictions and the actual ratings, assessed only where a rating has been given.  A function is created to predict the approrpiate ratings and to plot their relationship to the actual ratings:  
 ```{r}
-assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda, useTitle=FALSE) {
+assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda, 
+                          useTitle=FALSE, normData=NULL
+                          ) {
     
     # Roll vecMatrix back to feature matrix and theta matrix
     keyCut <- nMovie * nFeature
@@ -148,6 +150,14 @@ assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda
 
     # Calculate the projected movie ratings
     predRatings <- useX %*% t(useTheta)
+    
+    # Add back the means if requested
+    if (length(normData) > 0) {
+        # Add the averages back to the predictions
+        predRatings <- predRatings + normData * mtxR
+        # Add the averages back to the raw data
+        mtxY <- mtxY + normData * mtxR
+    }
     
     # Create the confusion matrix assuming all ratings are forced to be 1-5
     cmRound <- confusionMatrix(pmin(5, pmax(1, round(predRatings[mtxR==1], 0) ) ), mtxY[mtxR==1])
@@ -161,9 +171,9 @@ assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda
     # Create a histogram of the ratings
     hist(x=predRatings[mtxR==1], col=rgb(0.5,0,0,0.25), xlab="Rating", 
          main=ifelse(useTitle == FALSE, "Instructor Inputs (R == 1)", useTitle),
-         breaks=seq(-1.5,8.5,by=1)
+         breaks=seq(-2.5,7.5,by=1)
          )
-    hist(x=mtxY[mtxR==1], col=rgb(0,0,0.5,0.25), add=TRUE, breaks=seq(-1.5,8.5,by=1))
+    hist(x=mtxY[mtxR==1], col=rgb(0,0,0.5,0.25), add=TRUE, breaks=seq(-2.5,7.5,by=1))
     legend("topleft", legend=c("Actual", "Predicted", "Overlap"), pch=20, cex=0.9, pt.cex=3,
            col=c(rgb(0,0,0.5,0.25), rgb(0.5,0,0,0.25), rgb(0.25,0,0.25,0.5))
            )
@@ -174,10 +184,11 @@ assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda
             xlab="Actual Rating", ylab="Predicted Rating",
             main=ifelse(useTitle == FALSE, "Instructor Inputs (R == 1)", useTitle)
             )
-    text(x=3, y=0.5, paste0("R^2: ", round(summary(lmAssess)$r.squared, 2) ), adj=c(0, 0), cex=0.8 )
-    text(x=3, y=0.1, paste0("Intercept: ", round(coef(lmAssess)[[1]], 2) ), adj=c(0, 0) , cex=0.8)
-    text(x=3, y=-0.3, paste0("Slope: ", round(coef(lmAssess)[[2]], 2) ), adj=c(0, 0) , cex=0.8)
-    text(x=3, y=-0.7, paste0("Accuracy: ", round(cmRound$overall[[1]], 2) ), adj=c(0, 0) , cex=0.8)
+    text(x=2.2, y=0.3, paste0("R^2: ", round(summary(lmAssess)$r.squared, 2) ), adj=c(0, 0), cex=0.8 )
+    text(x=2.2, y=-0.1, paste0("Accur: ", round(cmRound$overall[[1]], 2) ), adj=c(0, 0) , cex=0.8)
+    text(x=4, y=0.3, paste0("Inter: ", round(coef(lmAssess)[[1]], 2) ), adj=c(0, 0) , cex=0.8)
+    text(x=4, y=-0.1, paste0("Slope: ", round(coef(lmAssess)[[2]], 2) ), adj=c(0, 0) , cex=0.8)
+    
     
     par(mfrow=c(1, 1))
     
@@ -193,6 +204,93 @@ library(caret, quietly=TRUE)
 assessRatings(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
               mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
               )
+
+```
+  
+###_Creating Movie Recommendations (Normalized)_  
+Creating movie recommendations requires two steps.  First, input values need to be randomized in to the prediction matrices, to ensure that the symmetries are broken.  Second, the inputs need to be optimized, whether using mini-batch, a global optimizer, or some other technique.  
+  
+For this example, we will further take the step of normalizing (subtracting the mean) all actual movie ratings prior to the optimization.  This means that thetas will not need to do any work coming up with the mean component, a significant savings when all coefficient-squared are penalized by 10.  
+  
+First, the lambda parameter is set to 10, the random initial matrices are set, and the normalized ratings data are created:  
+```{r}
+useLambda=10
+
+# Initialize mtxX and mtxTheta using N(0, 1) -- seems very high, but done to match Octave
+set.seed(1615161453)
+simTheta <- matrix(rnorm(length(mtxTheta)), nrow=nrow(mtxTheta))
+simX <- matrix(rnorm(length(mtxX)), nrow=nrow(mtxX))
+
+# Create the movie averages and normalized ratings
+movSum <- apply(movieRatings, 1, FUN=sum)
+movCount <- apply(mtxSparse, 1, FUN=sum)
+movAvg <- movSum / movCount
+
+normRatings <- movieRatings - movAvg * mtxSparse
+```
+  
+Next, optimization is run using the CG method capped at 250 iterations.  This is cached to avoid continually processing the same data:  
+```{r, cache=TRUE}
+
+vecMatrix = c(as.vector(simX), as.vector(simTheta))
+
+startTime <- proc.time()
+movNorm250 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=normRatings, mtxR=mtxSparse,
+                    nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta), 
+                    lambda=useLambda, control=list(maxit=250), method="CG"
+                 )
+proc.time() - startTime
+
+```
+  
+Then, the normalized movie ratings are assessed, with the request to add back the movie averages everywhere:  
+```{r}
+# Run the standard process
+assessRatings(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
+              nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta), 
+              lambda=useLambda, useTitle="Normalized CG 250 (R == 1)", normData=movAvg
+              )
+
+# Report back the costs using lambda=0 (true prediction error) and lambda=10 (regularized prediction error)
+cofiCost(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
+         nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta), lambda=0
+         )
+cofiCost(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
+         nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta), lambda=10
+         )
+
+```
+  
+###_Creating Movie Recommendations (Non-Normalized)_  
+In this step, we instead use the raw movie ratings in the algorithm, running the same process as before.  The same initial theta matrix is used for consistency, though this likely disadvantages the non-normalized process since it will need to seek out a surrogate for intercept.  Optimization is again run for CG 250:  
+```{r, cache=TRUE}
+
+vecMatrix = c(as.vector(simX), as.vector(simTheta))
+
+startTime <- proc.time()
+movAsIs250 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=movieRatings, mtxR=mtxSparse,
+                    nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+                    lambda=useLambda, control=list(maxit=250), method="CG"
+                 )
+proc.time() - startTime
+
+```
+  
+And, the predicted movie ratings are assessed, defaulted to leave all of the movie averages alone:  
+```{r}
+# Run the standard process
+assessRatings(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
+              nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+              lambda=useLambda, useTitle="As-Is CG 250 (R == 1)"
+              )
+
+# Report back the costs using lambda=0 (true prediction error) and lambda=10 (regularized prediction error)
+cofiCost(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
+         nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=0
+         )
+cofiCost(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
+         nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=10
+         )
 
 ```
 
