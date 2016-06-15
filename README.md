@@ -51,3 +51,6 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 11-JUN-2016 - Cross-validation for mini-batch    
 * 12-JUN-2016 - Parameter exploration for mini-batch    
 * 13-JUN-2016 - Continued mini-batch exploration  
+  
+### Collabarative Filtering Summaries  
+* 15-JUN-2016 - Initial Exploration of Collaborative Filtering  
