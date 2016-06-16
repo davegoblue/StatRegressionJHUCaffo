@@ -53,4 +53,4 @@ This repo is for summaries of a few e-book by Brian Caffo of JHU.  The books are
 * 13-JUN-2016 - Continued mini-batch exploration  
   
 ### Collabarative Filtering Summaries  
-* 15-JUN-2016 - Initial Exploration of Collaborative Filtering  
+* 15-JUN-2016 - Initial Exploration of Collaborative Filtering; Comparison of Mean Normalizations  
