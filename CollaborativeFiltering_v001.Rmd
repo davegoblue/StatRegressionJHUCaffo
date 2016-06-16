@@ -138,7 +138,7 @@ It appears that the cost function is working as it should.  The cost using the i
 The quality of the movie recommendations depends on the degree of similarity between the predictions and the actual ratings, assessed only where a rating has been given.  A function is created to predict the approrpiate ratings and to plot their relationship to the actual ratings:  
 ```{r}
 assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda, 
-                          useTitle=FALSE, normData=NULL
+                          useTitle=FALSE, normData=NULL, getPredOnly=FALSE
                           ) {
     
     # Roll vecMatrix back to feature matrix and theta matrix
@@ -159,6 +159,12 @@ assessRatings <- function(vecMatrix, mtxY, mtxR, nUser, nMovie, nFeature, lambda
         mtxY <- mtxY + normData * mtxR
     }
     
+    # Keep functionality to just return the predictions; user discretion
+    if (getPredOnly == TRUE) {
+        return(predRatings)
+    }
+    
+    # Provided the user does not just want the predictions, run their comparisons
     # Create the confusion matrix assuming all ratings are forced to be 1-5
     cmRound <- confusionMatrix(pmin(5, pmax(1, round(predRatings[mtxR==1], 0) ) ), mtxY[mtxR==1])
     
@@ -201,9 +207,10 @@ Next, the function is called to check the instructors inputs:
 library(caret, quietly=TRUE)
 
 # Assess the original movie data from the instructor
-assessRatings(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
-              mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
-              )
+cmOrig <- assessRatings(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+                        mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+                        )
+cmOrig
 
 ```
   
@@ -246,10 +253,11 @@ proc.time() - startTime
 Then, the normalized movie ratings are assessed, with the request to add back the movie averages everywhere:  
 ```{r}
 # Run the standard process
-assessRatings(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
-              nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta), 
-              lambda=useLambda, useTitle="Normalized CG 250 (R == 1)", normData=movAvg
-              )
+cmNorm <- assessRatings(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
+                        nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta),
+                        lambda=useLambda, useTitle="Normalized CG 250 (R == 1)", normData=movAvg
+                        )
+cmNorm
 
 # Report back the costs using lambda=0 (true prediction error) and lambda=10 (regularized prediction error)
 cofiCost(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, 
@@ -279,10 +287,11 @@ proc.time() - startTime
 And, the predicted movie ratings are assessed, defaulted to leave all of the movie averages alone:  
 ```{r}
 # Run the standard process
-assessRatings(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
-              nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
-              lambda=useLambda, useTitle="As-Is CG 250 (R == 1)"
-              )
+cmAsIs <- assessRatings(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
+                        nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+                        lambda=useLambda, useTitle="As-Is CG 250 (R == 1)"
+                        )
+cmAsIs
 
 # Report back the costs using lambda=0 (true prediction error) and lambda=10 (regularized prediction error)
 cofiCost(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
@@ -291,6 +300,161 @@ cofiCost(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse,
 cofiCost(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, 
          nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=10
          )
+
+```
+  
+###_Creating Movie Recommendations (Non-Normalized)_  
+Lastly, movie ratings are created assuming lambda=5, and with the "as is" method.  This is an attempt to replicate the 28k (lambda 0) / 74k (lambda 10) as seen from the original instructor data.  Optimization is again run for CG 250:  
+```{r, cache=TRUE}
+
+vecMatrix = c(as.vector(simX), as.vector(simTheta))
+
+startTime <- proc.time()
+movAsIs250lam5 <- optim(par=vecMatrix, fn=cofiCost, gr=cofiGrad, mtxY=movieRatings, mtxR=mtxSparse,
+                        nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+                        lambda=5, control=list(maxit=250), method="CG"
+                        )
+proc.time() - startTime
+
+```
+  
+Accuracy is then run as per previous, again defaulted to leave the raw movie ratings alone:  
+```{r}
+# Run the standard process
+cmAsIslam5 <- assessRatings(vecMatrix=movAsIs250lam5$par, mtxY=movieRatings, mtxR=mtxSparse, 
+                            nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+                            lambda=useLambda, useTitle="As-Is CG 250 (R == 1)"
+                            )
+cmAsIslam5
+
+# Report back the costs using lambda=0 (true prediction error) and lambda=10 (regularized prediction error)
+cofiCost(vecMatrix=movAsIs250lam5$par, mtxY=movieRatings, mtxR=mtxSparse, 
+         nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=0
+         )
+cofiCost(vecMatrix=movAsIs250lam5$par, mtxY=movieRatings, mtxR=mtxSparse, 
+         nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=10
+         )
+
+```
+  
+###_Summarizing Costs and Accuracies by Model_  
+First, the relevant costs for lambda=0 (prediction cost) and lambda=10 (theta penalty) are calculated for the instructor input as well as the relevant models in this program.  Further, the relevant accuracies are pulled out as well for plotting:  
+```{r}
+
+# Grab the relevant costs
+# Costs will be Original - Normalized - As-Is (run with lambda=10) - As-Is (run with lambda=5)
+modCosts <- matrix(data=0, nrow=4, ncol=3)
+dimnames(modCosts)[[1]] <- c("Original", "Normalized (lambda=10)", 
+                             "As-Is (lambda=10)", "As-Is (lambda=5)"
+                             )
+dimnames(modCosts)[[2]] <- c("Cost iff lambda=0", "Cost iff lambda=10", "In-Sample Accuracy")
+
+# Original Instructor Data
+modCosts[1, 1] <- cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+                           )
+modCosts[1, 2] <- cofiCost(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+                           )
+
+# Normalized Data
+modCosts[2, 1] <- cofiCost(vecMatrix = movNorm250$par, mtxY = normRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+                           )
+modCosts[2, 2] <- cofiCost(vecMatrix = movNorm250$par, mtxY = normRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+                           )
+
+# As-Is Data (run as lambda 10)
+modCosts[3, 1] <- cofiCost(vecMatrix = movAsIs250$par, mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+                           )
+modCosts[3, 2] <- cofiCost(vecMatrix = movAsIs250$par, mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+                           )
+
+# As-Is Data (run as lambda 5)
+modCosts[4, 1] <- cofiCost(vecMatrix = movAsIs250lam5$par, mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=0
+                           )
+modCosts[4, 2] <- cofiCost(vecMatrix = movAsIs250lam5$par, mtxY = movieRatings, 
+                           mtxR = mtxSparse, nUser=nUser, nMovie=nMovie, nFeature=nFeature, lambda=10
+                           )
+
+# Add the accuracies as Column 3
+modCosts[ , 3] <- c(cmOrig$overall[[1]], cmNorm$overall[[1]], 
+                    cmAsIs$overall[[1]], cmAsIslam5$overall[[1]]
+                    )
+```
+  
+Then, a plot is created for the costs by algorithm, and another plot is created for the accuracies by algorithm:  
+```{r}
+
+# Plot #1 - Costs by Model
+barplot(modCosts[,2]/1000, xlab="Model", ylab="Cost (000s)", col="light blue", ylim=c(0, 100), 
+        main="Costs by Model (In-Sample Error, Theta Penalty)", cex.lab=1.5, cex.main=1.5
+        )
+barplot(modCosts[,1]/1000, col="dark green", add=TRUE)
+abline(h=c(modCosts[1,1], modCosts[1,2])/1000, lty=2)
+legend("top", legend=c("Theta Penalty run @ lambda=10", "In-Sample Error Cost"), pch=15, pt.cex=2,
+       col=c("light blue", "dark green")
+       )
+
+# Plot #2 - Accuracies by Model
+plot(x=1:4, y=modCosts[,3], type="p", col="blue", pch=19, cex=2, ylim=c(0.3, 0.6), xaxt="n", 
+     cex.lab=1.5, cex.main=1.5,
+     ylab="Accuracy", xlab="Model", main="Accuracy (rounded predictions vs. actual)"
+     )
+axis(1, at=c(1.2, 2, 3, 3.8), labels=dimnames(modCosts)[[1]], tick=FALSE)
+text(x=1:4, y=modCosts[,3]-0.025, labels=round(modCosts[, 3], 3), col="blue", cex=0.75)
+abline(h=c(modCosts[1,3], cmOrig$overall[[5]]), lty=2, lwd=c(1, 2), col=c("black", "red"))
+legend("top", col=c("black", "red"), lty=2, lwd=c(1,2), 
+       legend=c(paste0("Original Model Accuracy: ", round(modCosts[1,3], 3)), 
+                paste0("Null Accuracy (NIR): ", round(cmOrig$overall[[5]], 3))
+                )
+       )
+
+```
+  
+Further, a boxplot is created showing the similarity of the recommendations made by the normalized (lambda=10) and as-is (lambda=10) models:  
+```{r}
+
+# Get the normalized predictions
+predNorm <- assessRatings(vecMatrix=movNorm250$par, mtxY=normRatings, mtxR=mtxSparse, getPredOnly=TRUE,
+                          nUser=ncol(normRatings), nMovie=nrow(normRatings), nFeature=ncol(mtxTheta),
+                          lambda=useLambda, normData=movAvg
+                          )
+# Get the as-is predictions
+predAsIs <- assessRatings(vecMatrix=movAsIs250$par, mtxY=movieRatings, mtxR=mtxSparse, getPredOnly=TRUE,
+                          nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta),
+                          lambda=useLambda
+                          )
+# Get the original predictions (note that lambda is not actually called)
+predOrig <- assessRatings(vecMatrix = c(as.vector(mtxX), as.vector(mtxTheta)), mtxY=movieRatings, 
+                          mtxR=mtxSparse, getPredOnly=TRUE, nUser=ncol(movieRatings), 
+                          nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), lambda=useLambda
+                          )
+# Get the lambda5 predictions (note that lambda is not actually called)
+predLam5 <- assessRatings(vecMatrix=movAsIs250lam5$par, mtxY=movieRatings, mtxR=mtxSparse, getPredOnly=TRUE,
+                          nUser=ncol(movieRatings), nMovie=nrow(movieRatings), nFeature=ncol(mtxTheta), 
+                          lambda=useLambda
+                          )
+
+# Create the first boxplot and confusionMatrix
+asisRatings <- pmax(1, pmin(5, predAsIs[mtxSparse==1] ) )
+normRatings <- pmax(1, pmin(5, round(predNorm, 0)[mtxSparse==1] ) )
+boxplot(asisRatings ~ normRatings, col="light blue", ylab="As-Is Rating (Bounded to 1-5)", 
+        xlab="Normalized Rating (Rounded)", main="Rounded Normalized vs. Bounded As-Is"
+        )
+confusionMatrix(round(asisRatings,0), normRatings)
+
+# Create the second boxplot and confusionMatrix
+lam5Ratings <- pmax(1, pmin(5, predLam5[mtxSparse==1] ) )
+origRatings <- pmax(1, pmin(5, round(predOrig, 0)[mtxSparse==1] ) )
+boxplot(lam5Ratings ~ origRatings, col="light blue", ylab="Lambda=5 As-Is Rating (Bounded to 1-5)", 
+        xlab="Original Inputs Rating (Rounded)", main="Rounded Original Inputs vs. Bounded Lambda=5"
+        )
+confusionMatrix(round(lam5Ratings,0), origRatings)
 
 ```
 
